@@ -1,0 +1,5 @@
+# Editor / OS
+.vs/
+*.user
+Thumbs.db
+desktop.ini
