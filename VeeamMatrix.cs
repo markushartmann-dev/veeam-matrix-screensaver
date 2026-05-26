@@ -1,4 +1,4 @@
-// VeeamMatrix.cs  –  Windows Screensaver v1.4
+// VeeamMatrix.cs  –  Windows Screensaver v1.5
 // Kompilieren: Build-VeeamMatrix.ps1
 using System;
 using System.Collections.Generic;
@@ -174,8 +174,10 @@ namespace VeeamMatrix
         public int    PopupFontSize = 22;
         public Color  PopupColor    = Color.FromArgb(0, 255, 65);
         // General
-        public string Orientation   = "TopDown";
-        public string ExtraWords    = "";
+        public string Orientation     = "TopDown";
+        public string WordOrientation = "Same";   // "Same" follows Orientation; or TopDown/BottomUp/LeftRight/RightLeft
+        public bool   ShowVeeam100    = false;
+        public string ExtraWords      = "";
 
         private static string ConfigDir
         { get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "VeeamMatrix"); } }
@@ -203,8 +205,10 @@ namespace VeeamMatrix
             sb.AppendLine("PopupCount="    + PopupCount);
             sb.AppendLine("PopupFontSize=" + PopupFontSize);
             sb.AppendLine("PopupColor="    + ToHex(PopupColor));
-            sb.AppendLine("Orientation="   + Orientation);
-            sb.AppendLine("ExtraWords="    + ExtraWords);
+            sb.AppendLine("Orientation="     + Orientation);
+            sb.AppendLine("WordOrientation=" + WordOrientation);
+            sb.AppendLine("ShowVeeam100="    + ShowVeeam100);
+            sb.AppendLine("ExtraWords="      + ExtraWords);
             File.WriteAllText(ConfigFile, sb.ToString(), Encoding.UTF8);
         }
 
@@ -240,8 +244,10 @@ namespace VeeamMatrix
                         case "PopupCount":    s.PopupCount    = int.Parse(v); break;
                         case "PopupFontSize": s.PopupFontSize = int.Parse(v); break;
                         case "PopupColor":    s.PopupColor    = FromHex(v); break;
-                        case "Orientation":   s.Orientation   = v; break;
-                        case "ExtraWords":    s.ExtraWords    = v; break;
+                        case "Orientation":     s.Orientation     = v; break;
+                        case "WordOrientation": s.WordOrientation = v; break;
+                        case "ShowVeeam100":    s.ShowVeeam100    = bool.Parse(v); break;
+                        case "ExtraWords":      s.ExtraWords      = v; break;
                     }
                 }
                 catch { }
@@ -302,6 +308,47 @@ namespace VeeamMatrix
         private static readonly char[] RAIN_CHARS =
             "VEEAMBCKUPRSTOLHDNGRY0123456789ZFWXQ#$-.:/\\|".ToCharArray();
 
+        // Veeam 100 community members (Vanguard 2026 + Legends)
+        private static readonly string[] VEEAM100_PEOPLE = new string[]
+        {
+            // Veeam Vanguard 2026
+            "AL RASHEED","ANDRE PULIA","ANDREA MAURO","BEN HARMER","BETH SOUZA",
+            "CARY SUN","CHRIS CHILDERHOSE","CHRISTIAN EROMOSELE","CHRISTOPHER GLEMOT",
+            "DAVE KAWULA","DEREK LOSEKE","DIDIER VAN HOYE","ERIC MACHABERT",
+            "FALKO BANASZAK","FEDERICO VENIER","GEOFF BURKE","IAN SANDERSON",
+            "JIM JONES","JOAQUIM SANTOS","JOE HOUGHES","JONAH MAY",
+            "JOS MALIEPAARD","JUSTIN FARRUGIA","KEIRAN SHELDEN","KRISTOF POPPE",
+            "LEAHA TORRES","LUIZ SERRANO","LUKAS KRUSBERSKI",
+            "MARCO SORRENTINO","MARK BOOTHMAN","MARKUS HARTMANN",
+            "MATEUS WOLFF","MATTHIAS BELLER","MAURICE KEVENAAR",
+            "MICHAEL KREBS","MIKHAIL KISSELYOV","MOHAMED ADEL",
+            "NICO STEIN","NICOLAS BONNET","NIKLAS PAULI",
+            "PAOLO VALSECCHI","PETER STEFFAN","PETR BOUSKA",
+            "STEPHEN SEAGRAVE","STEVEN NEW","THOMAS MAY",
+            "TOMASZ MAGDA","VICTOR WU","VLADAN SEGET",
+            "ZAMAAN ALI","ZANE ALLYN",
+            // Veeam Legends
+            "DAMIEN COMMENGE","CRAIG DALRYMPLE","ANTONIO D'ANDREA",
+            "PHILIPPE DUPUIS","MARCO FABBRI","LUIS FREIXAS",
+            "RALF GROSS","ALEX HEYLIN","MOUSTAFA HINDAWI",
+            "TYLER JURGENS","MARKUS KRETZER","DIPEN KUMAR",
+            "NICO LOSSCHAERT","DEREK MAYBERRY","JOCHEN MEIXNER",
+            "MICHAEL MELTER","BRYAN PARKERSON","SCOTT PATTERSON",
+            "MICHAEL PAUL","LUCA PORFIRI","WOLFGANG SCHEER",
+            "HIN TANG","ALBERT TEDJADIPUTRA","SHANE WILLIFORD","MICHAEL ZENKER",
+            // Roles & titles
+            "FIELD SOLUTIONS ARCHITECT","LEAD INFRASTRUCTURE ARCHITECT",
+            "CLOUD OPERATIONS ENGINEER","SENIOR BACKUP ENGINEER",
+            "PRESALES CONSULTANT","CLOUD INFRASTRUCTURE ENGINEER",
+            "IT INFRASTRUCTURE ENGINEER","INFRASTRUCTURE ARCHITECT",
+            "DATA PROTECTION CONSULTANT","SENIOR SYSTEMS ADMINISTRATOR",
+            "SYSTEMS ARCHITECT","SENIOR SYSTEM ENGINEER",
+            "CLOUD SOLUTIONS ARCHITECT","CERTIFIED ETHICAL HACKER",
+            "BACKUP SOLUTION ARCHITECT","ENTERPRISE ARCHITECT",
+            "COMMUNITY MANAGER","HEAD OF IT","CO-FOUNDER / CTO",
+            "VEEAM VANGUARD","VEEAM LEGEND","VEEAM MVP","VEEAM 100",
+        };
+
         private class WDrop { public char[] Chars; public float X, Y, V; public bool Glow; }
 
         private enum PopupMode { Fade, Flash, Glitch, Scan, Zoom }
@@ -337,10 +384,17 @@ namespace VeeamMatrix
         private bool IsVertical { get { return s.Orientation == "TopDown"   || s.Orientation == "BottomUp"; } }
         private bool IsForward  { get { return s.Orientation == "TopDown"   || s.Orientation == "LeftRight"; } }
 
+        // Word drops can have their own independent orientation
+        private string EffWordOrient { get { return (s.WordOrientation == "Same" || string.IsNullOrEmpty(s.WordOrientation)) ? s.Orientation : s.WordOrientation; } }
+        private bool WordIsVertical  { get { return EffWordOrient == "TopDown"  || EffWordOrient == "BottomUp";  } }
+        private bool WordIsForward   { get { return EffWordOrient == "TopDown"  || EffWordOrient == "LeftRight"; } }
+
         public MatrixEngine(Settings settings, int w, int h)
         {
             s = settings; W = w; H = h;
             var list = new List<string>(TERMS);
+            if (s.ShowVeeam100)
+                list.AddRange(VEEAM100_PEOPLE);
             if (!string.IsNullOrEmpty(s.ExtraWords))
                 foreach (string p in s.ExtraWords.Split(','))
                 { string t = p.Trim().ToUpper(); if (t.Length > 0) list.Add(t); }
@@ -416,11 +470,11 @@ namespace VeeamMatrix
             int fs = s.WordFontSize; float len = chars.Length * fs;
             float v = (float)((0.6 + rng.NextDouble() * 1.6) * s.SpeedFactor);
             float x, y;
-            if (IsVertical)
-            { x = fs*.5f+(float)(rng.NextDouble()*Math.Max(1,W-fs)); y=scatter?(float)(rng.NextDouble()*(H+len)-len):(IsForward?-(len+5):H+5); }
+            if (WordIsVertical)
+            { x = fs*.5f+(float)(rng.NextDouble()*Math.Max(1,W-fs)); y=scatter?(float)(rng.NextDouble()*(H+len)-len):(WordIsForward?-(len+5):H+5); }
             else
-            { y = fs*.5f+(float)(rng.NextDouble()*Math.Max(1,H-fs)); x=scatter?(float)(rng.NextDouble()*(W+len)-len):(IsForward?-(len+5):W+5); }
-            return new WDrop { Chars=chars, X=x, Y=y, V=IsForward?v:-v, Glow=rng.NextDouble()<s.GlowChance };
+            { y = fs*.5f+(float)(rng.NextDouble()*Math.Max(1,H-fs)); x=scatter?(float)(rng.NextDouble()*(W+len)-len):(WordIsForward?-(len+5):W+5); }
+            return new WDrop { Chars=chars, X=x, Y=y, V=WordIsForward?v:-v, Glow=rng.NextDouble()<s.GlowChance };
         }
 
         private WPopup SpawnPopup(bool scatter)
@@ -513,7 +567,7 @@ namespace VeeamMatrix
                 WDrop w=wdrops[i]; int n=w.Chars.Length;
                 for(int j=0;j<n;j++)
                 {
-                    float px=IsVertical?w.X:w.X+j*fs, py=IsVertical?w.Y+j*fs:w.Y;
+                    float px=WordIsVertical?w.X:w.X+j*fs, py=WordIsVertical?w.Y+j*fs:w.Y;
                     if(px<-fs||px>W+fs||py<-fs||py>H+fs) continue;
                     float fade=n>1?(float)j/(n-1):0f; int a=Clamp((int)(255*(1f-fade*0.55f)));
                     Color col;
@@ -522,8 +576,8 @@ namespace VeeamMatrix
                     else col=Color.FromArgb(a,Clamp((int)(s.WordColor.R*(1-fade*.5f))),Clamp((int)(s.WordColor.G*(1-fade*.3f)+30*(1-fade))),Clamp((int)(s.WordColor.B*(1-fade*.5f))));
                     tmpBrush.Color=col; bg.DrawString(w.Chars[j].ToString(),wordFont,tmpBrush,px,py);
                 }
-                if(IsVertical)w.Y+=w.V; else w.X+=w.V;
-                bool gone=IsVertical?(IsForward?w.Y>H+5:w.Y+n*fs<-5):(IsForward?w.X>W+5:w.X+n*fs<-5);
+                if(WordIsVertical)w.Y+=w.V; else w.X+=w.V;
+                bool gone=WordIsVertical?(WordIsForward?w.Y>H+5:w.Y+n*fs<-5):(WordIsForward?w.X>W+5:w.X+n*fs<-5);
                 if(gone){wdrops.RemoveAt(i);wdrops.Add(SpawnDrop(false));}
             }
         }
@@ -718,9 +772,9 @@ namespace VeeamMatrix
         private Button   btnRainColor, btnHeadColor, btnWordColor, btnWordHeadColor, btnPopupColor;
         private TrackBar trkFade, trkFont, trkSpeed, trkWordCount, trkWordFont, trkPopupCount, trkPopupFont;
         private Label    lblFade, lblFont, lblSpeed, lblWCount, lblWFont, lblPCount, lblPFont;
-        private ComboBox cboOrient, cboWordMode;
+        private ComboBox cboOrient, cboWordOrient, cboWordMode;
         private CheckBox chkFade, chkFlash, chkGlitch, chkScan, chkZoom;
-        private CheckBox chkScanlines, chkWatermark;
+        private CheckBox chkScanlines, chkWatermark, chkVeeam100;
         private TextBox  txtExtra;
         private ComboBox cboProfiles;
         private List<ColorProfile> profiles;
@@ -744,7 +798,8 @@ namespace VeeamMatrix
                 WordMode=s.WordMode, WordCount=s.WordCount, WordFontSize=s.WordFontSize,
                 WordColor=s.WordColor, WordHeadColor=s.WordHeadColor, GlowChance=s.GlowChance,
                 PopupEffects=s.PopupEffects, PopupCount=s.PopupCount, PopupFontSize=s.PopupFontSize,
-                PopupColor=s.PopupColor, Orientation=s.Orientation, ExtraWords=s.ExtraWords };
+                PopupColor=s.PopupColor, Orientation=s.Orientation, WordOrientation=s.WordOrientation,
+                ShowVeeam100=s.ShowVeeam100, ExtraWords=s.ExtraWords };
         }
 
         private Label    Lbl(string t,int x,int y){var l=new Label{Text=t,Location=new Point(x,y),AutoSize=true,ForeColor=Color.FromArgb(0,200,55)};Controls.Add(l);return l;}
@@ -804,8 +859,14 @@ namespace VeeamMatrix
             y+=42; Sep(y); y+=10;
 
             // ── Orientierung + Wortmodus ──────────────────────────────────────
-            Lbl("Richtung:",14,y); cboOrient=Combo(110,y-2,150,new string[]{"TopDown","BottomUp","LeftRight","RightLeft"},cur.Orientation);
-            Lbl("Wortmodus:",290,y); cboWordMode=Combo(380,y-2,140,new string[]{"Rain","Popup","Both"},cur.WordMode);
+            Lbl("Regen-Richtung:",14,y);
+            cboOrient=Combo(120,y-2,140,new string[]{"TopDown","BottomUp","LeftRight","RightLeft"},cur.Orientation);
+            Lbl("Wortmodus:",274,y);
+            cboWordMode=Combo(360,y-2,130,new string[]{"Rain","Popup","Both"},cur.WordMode);
+            y+=32;
+            Lbl("Wort-Richtung:",14,y);
+            cboWordOrient=Combo(120,y-2,180,new string[]{"Same","TopDown","BottomUp","LeftRight","RightLeft"},
+                string.IsNullOrEmpty(cur.WordOrientation)?"Same":cur.WordOrientation);
             y+=32; Sep(y); y+=10;
 
             // ── Fallende Woerter ──────────────────────────────────────────────
@@ -842,8 +903,9 @@ namespace VeeamMatrix
             y+=42; Sep(y); y+=10;
 
             // ── Extras ────────────────────────────────────────────────────────
-            chkScanlines=Chk("CRT-Scanlines",      cur.ShowScanlines,14, y);
-            chkWatermark=Chk("VEEAM-Wasserzeichen", cur.ShowWatermark,180,y);
+            chkScanlines=Chk("CRT-Scanlines",         cur.ShowScanlines, 14,  y);
+            chkWatermark=Chk("VEEAM-Wasserzeichen",   cur.ShowWatermark, 160, y);
+            chkVeeam100 =Chk("Veeam 100 Namen",       cur.ShowVeeam100,  340, y);
             y+=28; Sep(y); y+=10;
             Lbl("Eigene Begriffe (kommagetrennt):",14,y); y+=20;
             txtExtra=new TextBox{Location=new Point(14,y),Size=new Size(512,22),Text=cur.ExtraWords,
@@ -858,11 +920,13 @@ namespace VeeamMatrix
             btnOK.FlatAppearance.BorderColor=Color.FromArgb(0,200,55);
             btnOK.Click+=delegate
             {
-                cur.Orientation  =cboOrient.Text;
-                cur.WordMode     =cboWordMode.Text;
-                cur.ShowScanlines=chkScanlines.Checked;
-                cur.ShowWatermark=chkWatermark.Checked;
-                cur.ExtraWords   =txtExtra.Text.Trim();
+                cur.Orientation     =cboOrient.Text;
+                cur.WordOrientation =cboWordOrient.Text;
+                cur.WordMode        =cboWordMode.Text;
+                cur.ShowScanlines   =chkScanlines.Checked;
+                cur.ShowWatermark   =chkWatermark.Checked;
+                cur.ShowVeeam100    =chkVeeam100.Checked;
+                cur.ExtraWords      =txtExtra.Text.Trim();
                 // Build PopupEffects from checkboxes
                 var effects=new List<string>();
                 if(chkFade.Checked)   effects.Add("Fade");
