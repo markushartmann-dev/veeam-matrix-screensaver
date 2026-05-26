@@ -1,4 +1,4 @@
-// VeeamMatrix.cs  –  Windows Screensaver v1.5
+// VeeamMatrix.cs  –  Windows Screensaver v1.6
 // Kompilieren: Build-VeeamMatrix.ps1
 using System;
 using System.Collections.Generic;
@@ -176,6 +176,7 @@ namespace VeeamMatrix
         // General
         public string Orientation     = "TopDown";
         public string WordOrientation = "Same";   // "Same" follows Orientation; or TopDown/BottomUp/LeftRight/RightLeft
+        public string WordStyle       = "Scroll"; // "Scroll" | "Fade" | "Build"
         public bool   ShowVeeam100    = false;
         public string ExtraWords      = "";
 
@@ -207,6 +208,7 @@ namespace VeeamMatrix
             sb.AppendLine("PopupColor="    + ToHex(PopupColor));
             sb.AppendLine("Orientation="     + Orientation);
             sb.AppendLine("WordOrientation=" + WordOrientation);
+            sb.AppendLine("WordStyle="       + WordStyle);
             sb.AppendLine("ShowVeeam100="    + ShowVeeam100);
             sb.AppendLine("ExtraWords="      + ExtraWords);
             File.WriteAllText(ConfigFile, sb.ToString(), Encoding.UTF8);
@@ -246,6 +248,7 @@ namespace VeeamMatrix
                         case "PopupColor":    s.PopupColor    = FromHex(v); break;
                         case "Orientation":     s.Orientation     = v; break;
                         case "WordOrientation": s.WordOrientation = v; break;
+                        case "WordStyle":       s.WordStyle       = v; break;
                         case "ShowVeeam100":    s.ShowVeeam100    = bool.Parse(v); break;
                         case "ExtraWords":      s.ExtraWords      = v; break;
                     }
@@ -349,7 +352,14 @@ namespace VeeamMatrix
             "VEEAM VANGUARD","VEEAM LEGEND","VEEAM MVP","VEEAM 100",
         };
 
-        private class WDrop { public char[] Chars; public float X, Y, V; public bool Glow; }
+        private class WDrop
+        {
+            public char[]  Chars;
+            public float   X, Y, V;
+            public bool    Glow;
+            // static-mode fields (Fade / Build)
+            public int     Phase, Frame, AppearF, HoldF, FadeF;
+        }
 
         private enum PopupMode { Fade, Flash, Glitch, Scan, Zoom }
         private class WPopup
@@ -465,15 +475,42 @@ namespace VeeamMatrix
 
         private WDrop SpawnDrop(bool scatter)
         {
-            string term = allTerms[rng.Next(allTerms.Length)];
+            string term  = allTerms[rng.Next(allTerms.Length)];
             char[] chars = term.ToCharArray();
-            int fs = s.WordFontSize; float len = chars.Length * fs;
-            float v = (float)((0.6 + rng.NextDouble() * 1.6) * s.SpeedFactor);
+            int    fs    = s.WordFontSize;
+
+            // ── Static modes: word sits at a fixed position ───────────────────
+            if (s.WordStyle == "Fade" || s.WordStyle == "Build")
+            {
+                int    appF  = s.WordStyle == "Build" ? Math.Max(20, chars.Length * 5) : 22;
+                int    holF  = 70 + rng.Next(50);
+                int    fadF  = 30;
+                float  estW  = chars.Length * fs * 0.62f;
+                float  mgn   = fs * 2.5f;
+                float  sx    = mgn + (float)(rng.NextDouble() * Math.Max(1f, W - estW - mgn));
+                float  sy    = mgn + (float)(rng.NextDouble() * Math.Max(1f, H - fs * 3f - mgn));
+                var    wd    = new WDrop { Chars=chars, X=sx, Y=sy, V=0,
+                                           Glow=rng.NextDouble()<s.GlowChance,
+                                           AppearF=appF, HoldF=holF, FadeF=fadF };
+                if (scatter) // pre-scatter across all phases so screen is populated from the start
+                {
+                    int tot = appF + holF + fadF;
+                    int rf  = rng.Next(tot);
+                    if      (rf < appF)       { wd.Phase=0; wd.Frame=rf; }
+                    else if (rf < appF+holF)  { wd.Phase=1; wd.Frame=rf-appF; }
+                    else                       { wd.Phase=2; wd.Frame=rf-appF-holF; }
+                }
+                return wd;
+            }
+
+            // ── Scroll mode: word travels in a direction ──────────────────────
+            float len = chars.Length * fs;
+            float v   = (float)((0.6 + rng.NextDouble() * 1.6) * s.SpeedFactor);
             float x, y;
             if (WordIsVertical)
-            { x = fs*.5f+(float)(rng.NextDouble()*Math.Max(1,W-fs)); y=scatter?(float)(rng.NextDouble()*(H+len)-len):(WordIsForward?-(len+5):H+5); }
+            { x=fs*.5f+(float)(rng.NextDouble()*Math.Max(1,W-fs)); y=scatter?(float)(rng.NextDouble()*(H+len)-len):(WordIsForward?-(len+5):H+5); }
             else
-            { y = fs*.5f+(float)(rng.NextDouble()*Math.Max(1,H-fs)); x=scatter?(float)(rng.NextDouble()*(W+len)-len):(WordIsForward?-(len+5):W+5); }
+            { y=fs*.5f+(float)(rng.NextDouble()*Math.Max(1,H-fs)); x=scatter?(float)(rng.NextDouble()*(W+len)-len):(WordIsForward?-(len+5):W+5); }
             return new WDrop { Chars=chars, X=x, Y=y, V=WordIsForward?v:-v, Glow=rng.NextDouble()<s.GlowChance };
         }
 
@@ -561,25 +598,95 @@ namespace VeeamMatrix
 
         private void DrawDrops()
         {
-            int fs=s.WordFontSize;
-            for(int i=wdrops.Count-1;i>=0;i--)
+            bool isStatic = (s.WordStyle == "Fade" || s.WordStyle == "Build");
+            int  fs       = s.WordFontSize;
+
+            for (int i = wdrops.Count-1; i >= 0; i--)
             {
-                WDrop w=wdrops[i]; int n=w.Chars.Length;
-                for(int j=0;j<n;j++)
+                WDrop w = wdrops[i];
+
+                if (isStatic)
                 {
-                    float px=WordIsVertical?w.X:w.X+j*fs, py=WordIsVertical?w.Y+j*fs:w.Y;
-                    if(px<-fs||px>W+fs||py<-fs||py>H+fs) continue;
-                    float fade=n>1?(float)j/(n-1):0f; int a=Clamp((int)(255*(1f-fade*0.55f)));
-                    Color col;
-                    if(j==0) col=s.WordHeadColor;
-                    else if(w.Glow) col=Color.FromArgb(a,Clamp(s.WordColor.R+80),Clamp(s.WordColor.G+20),Clamp(s.WordColor.B+40));
-                    else col=Color.FromArgb(a,Clamp((int)(s.WordColor.R*(1-fade*.5f))),Clamp((int)(s.WordColor.G*(1-fade*.3f)+30*(1-fade))),Clamp((int)(s.WordColor.B*(1-fade*.5f))));
-                    tmpBrush.Color=col; bg.DrawString(w.Chars[j].ToString(),wordFont,tmpBrush,px,py);
+                    if (!TickStaticDrop(w)) { wdrops.RemoveAt(i); wdrops.Add(SpawnDrop(false)); }
                 }
-                if(WordIsVertical)w.Y+=w.V; else w.X+=w.V;
-                bool gone=WordIsVertical?(WordIsForward?w.Y>H+5:w.Y+n*fs<-5):(WordIsForward?w.X>W+5:w.X+n*fs<-5);
-                if(gone){wdrops.RemoveAt(i);wdrops.Add(SpawnDrop(false));}
+                else
+                {
+                    // ── Scroll mode ──────────────────────────────────────────
+                    int n = w.Chars.Length;
+                    for (int j = 0; j < n; j++)
+                    {
+                        float px=WordIsVertical?w.X:w.X+j*fs, py=WordIsVertical?w.Y+j*fs:w.Y;
+                        if (px<-fs||px>W+fs||py<-fs||py>H+fs) continue;
+                        float fade=n>1?(float)j/(n-1):0f;
+                        int   a   =Clamp((int)(255*(1f-fade*0.55f)));
+                        Color col;
+                        if (j==0) col=s.WordHeadColor;
+                        else if (w.Glow) col=Color.FromArgb(a,Clamp(s.WordColor.R+80),Clamp(s.WordColor.G+20),Clamp(s.WordColor.B+40));
+                        else col=Color.FromArgb(a,Clamp((int)(s.WordColor.R*(1-fade*.5f))),Clamp((int)(s.WordColor.G*(1-fade*.3f)+30*(1-fade))),Clamp((int)(s.WordColor.B*(1-fade*.5f))));
+                        tmpBrush.Color=col;
+                        bg.DrawString(w.Chars[j].ToString(),wordFont,tmpBrush,px,py);
+                    }
+                    if (WordIsVertical) w.Y+=w.V; else w.X+=w.V;
+                    bool gone=WordIsVertical?(WordIsForward?w.Y>H+5:w.Y+n*fs<-5):(WordIsForward?w.X>W+5:w.X+n*fs<-5);
+                    if (gone) { wdrops.RemoveAt(i); wdrops.Add(SpawnDrop(false)); }
+                }
             }
+        }
+
+        // Returns false when the drop has finished and should be respawned.
+        private bool TickStaticDrop(WDrop w)
+        {
+            w.Frame++;
+            if (w.Phase==0 && w.Frame>=w.AppearF) { w.Phase=1; w.Frame=0; }
+            else if (w.Phase==1 && w.Frame>=w.HoldF)  { w.Phase=2; w.Frame=0; }
+            else if (w.Phase==2 && w.Frame>=w.FadeF)   return false;
+
+            float prog  = w.Phase==0 ? (float)w.Frame/Math.Max(1,w.AppearF)
+                        : w.Phase==2 ? 1f-(float)w.Frame/Math.Max(1,w.FadeF)
+                        : 1f;
+            int   alpha = Clamp((int)(prog*255));
+            if (alpha < 3) return w.Phase < 2;
+
+            int fs = s.WordFontSize;
+
+            if (s.WordStyle == "Build")
+            {
+                // Reveal chars left-to-right; active char briefly scrambles before snapping
+                int total   = w.Chars.Length;
+                int snapped = w.Phase==0
+                    ? Math.Min(total, w.Frame * total / Math.Max(1, w.AppearF) + 1)
+                    : total;
+
+                for (int j = 0; j < snapped; j++)
+                {
+                    // Active (last) char in build phase: scramble randomly
+                    char drawCh = (j == snapped-1 && w.Phase==0)
+                        ? ((w.Frame % 4 < 2) ? RAIN_CHARS[rng.Next(RAIN_CHARS.Length)] : w.Chars[j])
+                        : w.Chars[j];
+                    if (drawCh == ' ') continue;
+
+                    Color col;
+                    if (j == snapped-1 && w.Phase==0)
+                        // active position: head colour
+                        col = Color.FromArgb(alpha, s.WordHeadColor.R, s.WordHeadColor.G, s.WordHeadColor.B);
+                    else if (w.Glow)
+                        col = Color.FromArgb(alpha, Clamp(s.WordColor.R+80), Clamp(s.WordColor.G+20), Clamp(s.WordColor.B+40));
+                    else
+                        col = Color.FromArgb(alpha, s.WordColor.R, s.WordColor.G, s.WordColor.B);
+
+                    tmpBrush.Color = col;
+                    bg.DrawString(drawCh.ToString(), wordFont, tmpBrush, w.X + j*fs*0.61f, w.Y);
+                }
+            }
+            else // Fade: whole word appears / disappears as one unit
+            {
+                Color col = w.Glow
+                    ? Color.FromArgb(alpha, Clamp(s.WordColor.R+80), Clamp(s.WordColor.G+20), Clamp(s.WordColor.B+40))
+                    : Color.FromArgb(alpha, s.WordColor.R, s.WordColor.G, s.WordColor.B);
+                tmpBrush.Color = col;
+                bg.DrawString(new string(w.Chars), wordFont, tmpBrush, w.X, w.Y);
+            }
+            return true;
         }
 
         private void DrawPopups()
@@ -772,7 +879,7 @@ namespace VeeamMatrix
         private Button   btnRainColor, btnHeadColor, btnWordColor, btnWordHeadColor, btnPopupColor;
         private TrackBar trkFade, trkFont, trkSpeed, trkWordCount, trkWordFont, trkPopupCount, trkPopupFont;
         private Label    lblFade, lblFont, lblSpeed, lblWCount, lblWFont, lblPCount, lblPFont;
-        private ComboBox cboOrient, cboWordOrient, cboWordMode;
+        private ComboBox cboOrient, cboWordOrient, cboWordMode, cboWordStyle;
         private CheckBox chkFade, chkFlash, chkGlitch, chkScan, chkZoom;
         private CheckBox chkScanlines, chkWatermark, chkVeeam100;
         private TextBox  txtExtra;
@@ -799,7 +906,7 @@ namespace VeeamMatrix
                 WordColor=s.WordColor, WordHeadColor=s.WordHeadColor, GlowChance=s.GlowChance,
                 PopupEffects=s.PopupEffects, PopupCount=s.PopupCount, PopupFontSize=s.PopupFontSize,
                 PopupColor=s.PopupColor, Orientation=s.Orientation, WordOrientation=s.WordOrientation,
-                ShowVeeam100=s.ShowVeeam100, ExtraWords=s.ExtraWords };
+                WordStyle=s.WordStyle, ShowVeeam100=s.ShowVeeam100, ExtraWords=s.ExtraWords };
         }
 
         private Label    Lbl(string t,int x,int y){var l=new Label{Text=t,Location=new Point(x,y),AutoSize=true,ForeColor=Color.FromArgb(0,200,55)};Controls.Add(l);return l;}
@@ -870,7 +977,11 @@ namespace VeeamMatrix
             y+=32; Sep(y); y+=10;
 
             // ── Fallende Woerter ──────────────────────────────────────────────
-            Lbl("── Fallende Woerter ───────────────────────", 14, y); y+=20;
+            Lbl("── Fallende Woerter ───────────────────────", 14, y); y+=22;
+            Lbl("Wort-Stil:", 14, y);
+            cboWordStyle = Combo(100, y-2, 180, new string[]{"Scroll","Fade","Build"},
+                string.IsNullOrEmpty(cur.WordStyle) ? "Scroll" : cur.WordStyle);
+            y += 32;
             lblWFont  = Lbl("Schriftgroesse:  "+cur.WordFontSize+" px",14,y); y+=18;
             trkWordFont=Trk(14,y,370,8,36,cur.WordFontSize);
             trkWordFont.ValueChanged+=delegate{cur.WordFontSize=trkWordFont.Value;lblWFont.Text="Schriftgroesse:  "+cur.WordFontSize+" px";};
@@ -923,6 +1034,7 @@ namespace VeeamMatrix
                 cur.Orientation     =cboOrient.Text;
                 cur.WordOrientation =cboWordOrient.Text;
                 cur.WordMode        =cboWordMode.Text;
+                cur.WordStyle       =cboWordStyle.Text;
                 cur.ShowScanlines   =chkScanlines.Checked;
                 cur.ShowWatermark   =chkWatermark.Checked;
                 cur.ShowVeeam100    =chkVeeam100.Checked;
