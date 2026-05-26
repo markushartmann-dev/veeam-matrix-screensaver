@@ -1,4 +1,4 @@
-// VeeamMatrix.cs  –  Windows Screensaver v1.6
+// VeeamMatrix.cs  –  Windows Screensaver v1.7
 // Kompilieren: Build-VeeamMatrix.ps1
 using System;
 using System.Collections.Generic;
@@ -311,45 +311,70 @@ namespace VeeamMatrix
         private static readonly char[] RAIN_CHARS =
             "VEEAMBCKUPRSTOLHDNGRY0123456789ZFWXQ#$-.:/\\|".ToCharArray();
 
-        // Veeam 100 community members (Vanguard 2026 + Legends)
+        // Veeam 100 community members 2026 — name + designation
+        // Source: community.veeam.com/p/veeamvanguard2026
+        //         community.veeam.com/p/veeamlegends2026
+        //         community.veeam.com/p/veeammvp2026
         private static readonly string[] VEEAM100_PEOPLE = new string[]
         {
-            // Veeam Vanguard 2026
-            "AL RASHEED","ANDRE PULIA","ANDREA MAURO","BEN HARMER","BETH SOUZA",
-            "CARY SUN","CHRIS CHILDERHOSE","CHRISTIAN EROMOSELE","CHRISTOPHER GLEMOT",
-            "DAVE KAWULA","DEREK LOSEKE","DIDIER VAN HOYE","ERIC MACHABERT",
-            "FALKO BANASZAK","FEDERICO VENIER","GEOFF BURKE","IAN SANDERSON",
-            "JIM JONES","JOAQUIM SANTOS","JOE HOUGHES","JONAH MAY",
-            "JOS MALIEPAARD","JUSTIN FARRUGIA","KEIRAN SHELDEN","KRISTOF POPPE",
-            "LEAHA TORRES","LUIZ SERRANO","LUKAS KRUSBERSKI",
-            "MARCO SORRENTINO","MARK BOOTHMAN","MARKUS HARTMANN",
-            "MATEUS WOLFF","MATTHIAS BELLER","MAURICE KEVENAAR",
-            "MICHAEL KREBS","MIKHAIL KISSELYOV","MOHAMED ADEL",
-            "NICO STEIN","NICOLAS BONNET","NIKLAS PAULI",
-            "PAOLO VALSECCHI","PETER STEFFAN","PETR BOUSKA",
-            "STEPHEN SEAGRAVE","STEVEN NEW","THOMAS MAY",
-            "TOMASZ MAGDA","VICTOR WU","VLADAN SEGET",
-            "ZAMAAN ALI","ZANE ALLYN",
-            // Veeam Legends
-            "DAMIEN COMMENGE","CRAIG DALRYMPLE","ANTONIO D'ANDREA",
-            "PHILIPPE DUPUIS","MARCO FABBRI","LUIS FREIXAS",
-            "RALF GROSS","ALEX HEYLIN","MOUSTAFA HINDAWI",
-            "TYLER JURGENS","MARKUS KRETZER","DIPEN KUMAR",
-            "NICO LOSSCHAERT","DEREK MAYBERRY","JOCHEN MEIXNER",
-            "MICHAEL MELTER","BRYAN PARKERSON","SCOTT PATTERSON",
-            "MICHAEL PAUL","LUCA PORFIRI","WOLFGANG SCHEER",
-            "HIN TANG","ALBERT TEDJADIPUTRA","SHANE WILLIFORD","MICHAEL ZENKER",
-            // Roles & titles
-            "FIELD SOLUTIONS ARCHITECT","LEAD INFRASTRUCTURE ARCHITECT",
-            "CLOUD OPERATIONS ENGINEER","SENIOR BACKUP ENGINEER",
-            "PRESALES CONSULTANT","CLOUD INFRASTRUCTURE ENGINEER",
-            "IT INFRASTRUCTURE ENGINEER","INFRASTRUCTURE ARCHITECT",
-            "DATA PROTECTION CONSULTANT","SENIOR SYSTEMS ADMINISTRATOR",
-            "SYSTEMS ARCHITECT","SENIOR SYSTEM ENGINEER",
-            "CLOUD SOLUTIONS ARCHITECT","CERTIFIED ETHICAL HACKER",
-            "BACKUP SOLUTION ARCHITECT","ENTERPRISE ARCHITECT",
-            "COMMUNITY MANAGER","HEAD OF IT","CO-FOUNDER / CTO",
-            "VEEAM VANGUARD","VEEAM LEGEND","VEEAM MVP","VEEAM 100",
+            // ── Category headers ───────────────────────────────────────────────
+            "VEEAM VANGUARD 2026", "VEEAM LEGEND 2026", "VEEAM MVP 2026",
+
+            // ── Veeam Vanguard 2026 (52) ───────────────────────────────────────
+            "MUHAMMAD ADEL · VANGUARD",      "ZAMAAN ALI · VANGUARD",
+            "ZANE ALLYN · VANGUARD",          "FALKO BANASZAK · VANGUARD",
+            "MATTHIAS BELLER · VANGUARD",     "NICOLAS BONNET · VANGUARD",
+            "PETR BOUSKA · VANGUARD",          "MARK BOOTHMAN · VANGUARD",
+            "GEOFF BURKE · VANGUARD",          "CHRIS CHILDERHOSE · VANGUARD",
+            "CHRISTIAN EROMOSELE · VANGUARD",  "JUSTIN FARRUGIA · VANGUARD",
+            "CHRISTOPHER GLEMOT · VANGUARD",   "BEN HARMER · VANGUARD",
+            "MARKUS HARTMANN · VANGUARD",      "JOE HOUGHES · VANGUARD",
+            "DIDIER VAN HOYE · VANGUARD",      "JIM JONES · VANGUARD",
+            "DAVE KAWULA · VANGUARD",          "MAURICE KEVENAAR · VANGUARD",
+            "MIKHAIL KISSELYOV · VANGUARD",    "MICHAEL KREBS · VANGUARD",
+            "LUKAS KRUSBERSKI · VANGUARD",     "DEREK LOSEKE · VANGUARD",
+            "ERIC MACHABERT · VANGUARD",       "TOMASZ MAGDA · VANGUARD",
+            "JOS MALIEPAARD · VANGUARD",       "ANDREA MAURO · VANGUARD",
+            "JONAH MAY · VANGUARD",            "TOM MAY · VANGUARD",
+            "STEVEN NEW · VANGUARD",           "OTHON OLIVEIRA · VANGUARD",
+            "NIKLAS PAULI · VANGUARD",         "KRISTOF POPPE · VANGUARD",
+            "ANDRE PULIA · VANGUARD",          "AL RASHEED · VANGUARD",
+            "IAN SANDERSON · VANGUARD",        "JOAQUIM SANTOS · VANGUARD",
+            "STEPHEN SEAGRAVE · VANGUARD",     "VLADAN SEGET · VANGUARD",
+            "LUIZ SERRANO · VANGUARD",         "KEIRAN SHELDEN · VANGUARD",
+            "MARCO SORRENTINO · VANGUARD",     "ELIZABETH SOUZA · VANGUARD",
+            "PETER STEFFAN · VANGUARD",        "NICO STEIN · VANGUARD",
+            "CARY SUN · VANGUARD",             "LEAHA TORRES · VANGUARD",
+            "PAOLO VALSECCHI · VANGUARD",      "FEDERICO VENIER · VANGUARD",
+            "VICTOR WU · VANGUARD",            "MATEUS WOLFF · VANGUARD",
+
+            // ── Veeam Legends 2026 (20) ────────────────────────────────────────
+            "CHRIS CHILDERHOSE · LEGEND",      "DAMIEN COMMENGE · LEGEND",
+            "ANTONIO D'ANDREA · LEGEND",        "DANNY DE HEER · LEGEND",
+            "PHILIPPE DUPUIS · LEGEND",         "CHALID FATHALLAH · LEGEND",
+            "LUIS FREIXAS · LEGEND",            "MATHEUS GIOVANINI · LEGEND",
+            "MARCEL KACMAR · LEGEND",           "MARKUS KRETZER · LEGEND",
+            "STEPHAN LANG · LEGEND",            "TIMO MARFURT · LEGEND",
+            "MICHAEL MELTER · LEGEND",          "TOMMY O'SHEA · LEGEND",
+            "SCOTT PATTERSON · LEGEND",         "JEAN SCZEPANSKI PERES · LEGEND",
+            "LUCA PORFIRI · LEGEND",            "ESTEBAN PRIETO · LEGEND",
+            "ALESSANDRO TINIVELLI · LEGEND",    "SHANE WILLIFORD · LEGEND",
+
+            // ── Veeam MVP 2026 (27) ────────────────────────────────────────────
+            "ANDRE ATKINSON · MVP",             "CHRIS ARCENEAUX · MVP",
+            "DAVID BEWERNICK · MVP",            "PATRICIO CERDA · MVP",
+            "DANILO CHIAVARI · MVP",            "ADAM CONGDON · MVP",
+            "RICARDO CONZATTI · MVP",           "LUCA DELL'OCA · MVP",
+            "JOE GREMILLION · MVP",             "RYAN JOHNSTON · MVP",
+            "ADRIAN LOWE · MVP",                "RAGHU MANIVANNAN · MVP",
+            "STIJN MARIVOET · MVP",             "WESLEY MARTINS · MVP",
+            "MAXIMILIAN MAIER · MVP",           "BRANDON MCCOY · MVP",
+            "CHRIS MCDONALD · MVP",             "MARVIN MICHALSKI · MVP",
+            "MICHAEL PAUL · MVP",               "YOUSSEF SALEM · MVP",
+            "SEAN SIMPSON · MVP",               "TIM SMITH · MVP",
+            "BEN THOMAS · MVP",                 "BAPTISTE TELLIER · MVP",
+            "DAVID TOSOFF · MVP",               "LEI WEI · MVP",
+            "MICHAEL WISNIEWSKI · MVP",
         };
 
         private class WDrop
