@@ -1,4 +1,4 @@
-// VeeamMatrix.cs  –  Windows Screensaver v1.2
+// VeeamMatrix.cs  –  Windows Screensaver v1.3
 // Kompilieren: Build-VeeamMatrix.ps1
 using System;
 using System.Collections.Generic;
@@ -28,11 +28,14 @@ namespace VeeamMatrix
         public string WordMode      = "Both";   // Rain | Popup | Both
         public int    WordCount     = 10;
         public int    WordFontSize  = 16;
+        public Color  WordColor     = Color.FromArgb(0, 255, 65);   // body color
+        public Color  WordHeadColor = Color.White;                   // head color
         public float  GlowChance    = 0.22f;
         // Popup words
         public string PopupStyle    = "Mixed";  // Fade|Flash|Glitch|Scan|Zoom|Mixed
         public int    PopupCount    = 5;        // 1-12
         public int    PopupFontSize = 22;       // 10-48
+        public Color  PopupColor    = Color.FromArgb(0, 255, 65);   // popup base color
         // General
         public string Orientation   = "TopDown"; // TopDown|BottomUp|LeftRight|RightLeft
         public string ExtraWords    = "";
@@ -58,10 +61,13 @@ namespace VeeamMatrix
             sb.AppendLine("WordMode="      + WordMode);
             sb.AppendLine("WordCount="     + WordCount);
             sb.AppendLine("WordFontSize="  + WordFontSize);
+            sb.AppendLine("WordColor="     + ToHex(WordColor));
+            sb.AppendLine("WordHeadColor=" + ToHex(WordHeadColor));
             sb.AppendLine("GlowChance="    + GlowChance.ToString("F2", System.Globalization.CultureInfo.InvariantCulture));
             sb.AppendLine("PopupStyle="    + PopupStyle);
             sb.AppendLine("PopupCount="    + PopupCount);
             sb.AppendLine("PopupFontSize=" + PopupFontSize);
+            sb.AppendLine("PopupColor="    + ToHex(PopupColor));
             sb.AppendLine("Orientation="   + Orientation);
             sb.AppendLine("ExtraWords="    + ExtraWords);
             File.WriteAllText(ConfigFile, sb.ToString(), Encoding.UTF8);
@@ -93,10 +99,13 @@ namespace VeeamMatrix
                         case "WordMode":      s.WordMode      = v; break;
                         case "WordCount":     s.WordCount     = int.Parse(v); break;
                         case "WordFontSize":  s.WordFontSize  = int.Parse(v); break;
+                        case "WordColor":     s.WordColor     = FromHex(v); break;
+                        case "WordHeadColor": s.WordHeadColor = FromHex(v); break;
                         case "GlowChance":    s.GlowChance    = float.Parse(v, ic); break;
                         case "PopupStyle":    s.PopupStyle    = v; break;
                         case "PopupCount":    s.PopupCount    = int.Parse(v); break;
                         case "PopupFontSize": s.PopupFontSize = int.Parse(v); break;
+                        case "PopupColor":    s.PopupColor    = FromHex(v); break;
                         case "Orientation":   s.Orientation   = v; break;
                         case "ExtraWords":    s.ExtraWords    = v; break;
                     }
@@ -422,9 +431,9 @@ namespace VeeamMatrix
                     float fade = n>1 ? (float)j/(n-1) : 0f;
                     int   a    = Clamp((int)(255*(1f-fade*0.55f)));
                     Color col;
-                    if (j==0) col = s.HeadColor;
-                    else if (w.Glow) col = Color.FromArgb(a, Clamp(s.RainColor.R+80), s.RainColor.G, Clamp(s.RainColor.B+40));
-                    else col = Color.FromArgb(a, Clamp((int)(s.RainColor.R*(1-fade*.5f))), Clamp((int)(s.RainColor.G*(1-fade*.3f)+30*(1-fade))), Clamp((int)(s.RainColor.B*(1-fade*.5f))));
+                    if (j==0) col = s.WordHeadColor;
+                    else if (w.Glow) col = Color.FromArgb(a, Clamp(s.WordColor.R+80), Clamp(s.WordColor.G+20), Clamp(s.WordColor.B+40));
+                    else col = Color.FromArgb(a, Clamp((int)(s.WordColor.R*(1-fade*.5f))), Clamp((int)(s.WordColor.G*(1-fade*.3f)+30*(1-fade))), Clamp((int)(s.WordColor.B*(1-fade*.5f))));
                     tmpBrush.Color = col;
                     bg.DrawString(w.Chars[j].ToString(), wordFont, tmpBrush, px, py);
                 }
@@ -563,9 +572,9 @@ namespace VeeamMatrix
                 if (flash)
                     col = Color.FromArgb(a, 255, 255, 255);
                 else if (glow)
-                    col = Color.FromArgb(a, Clamp(s.RainColor.R+90), Clamp(s.RainColor.G+20), Clamp(s.RainColor.B+60));
+                    col = Color.FromArgb(a, Clamp(s.PopupColor.R+90), Clamp(s.PopupColor.G+20), Clamp(s.PopupColor.B+60));
                 else
-                    col = Color.FromArgb(a, s.RainColor.R, s.RainColor.G, s.RainColor.B);
+                    col = Color.FromArgb(a, s.PopupColor.R, s.PopupColor.G, s.PopupColor.B);
 
                 tmpBrush.Color = col;
                 bg.DrawString(text, useFont, tmpBrush, drawX, drawY);
@@ -715,14 +724,16 @@ namespace VeeamMatrix
         {
             return new Settings
             {
-                RainColor    = s.RainColor,    HeadColor    = s.HeadColor,
-                FadeAlpha    = s.FadeAlpha,    FontSize     = s.FontSize,
-                SpeedFactor  = s.SpeedFactor,  ShowScanlines= s.ShowScanlines,
-                ShowWatermark= s.ShowWatermark, WordMode    = s.WordMode,
-                WordCount    = s.WordCount,    WordFontSize = s.WordFontSize,
-                GlowChance   = s.GlowChance,   PopupStyle  = s.PopupStyle,
-                PopupCount   = s.PopupCount,   PopupFontSize= s.PopupFontSize,
-                Orientation  = s.Orientation,  ExtraWords  = s.ExtraWords
+                RainColor    = s.RainColor,    HeadColor     = s.HeadColor,
+                FadeAlpha    = s.FadeAlpha,    FontSize      = s.FontSize,
+                SpeedFactor  = s.SpeedFactor,  ShowScanlines = s.ShowScanlines,
+                ShowWatermark= s.ShowWatermark, WordMode     = s.WordMode,
+                WordCount    = s.WordCount,    WordFontSize  = s.WordFontSize,
+                WordColor    = s.WordColor,    WordHeadColor = s.WordHeadColor,
+                GlowChance   = s.GlowChance,   PopupStyle   = s.PopupStyle,
+                PopupCount   = s.PopupCount,   PopupFontSize = s.PopupFontSize,
+                PopupColor   = s.PopupColor,
+                Orientation  = s.Orientation,  ExtraWords   = s.ExtraWords
             };
         }
 
@@ -760,11 +771,23 @@ namespace VeeamMatrix
             int y = 16;
 
             // ── Farben
-            AddLabel("Farben", 14, y); y += 22;
-            btnRainColor = AddColorBtn("Regen-Farbe",  cur.RainColor, 14,  y);
-            btnHeadColor = AddColorBtn("Kopf-Farbe",   cur.HeadColor, 162, y);
+            AddLabel("Regen-Zeichen", 14, y); y += 20;
+            btnRainColor = AddColorBtn("Zeichen",       cur.RainColor,     14,  y);
+            btnHeadColor = AddColorBtn("Kopf (hell)",   cur.HeadColor,     162, y);
             btnRainColor.Click += delegate { PickColor(ref cur.RainColor, btnRainColor); };
             btnHeadColor.Click += delegate { PickColor(ref cur.HeadColor, btnHeadColor); };
+            y += 36;
+
+            AddLabel("Fallende Woerter", 14, y); y += 20;
+            Button btnWordColor     = AddColorBtn("Woerter",        cur.WordColor,     14,  y);
+            Button btnWordHeadColor = AddColorBtn("Kopf (hell)",    cur.WordHeadColor, 162, y);
+            btnWordColor.Click     += delegate { PickColor(ref cur.WordColor,     btnWordColor);     };
+            btnWordHeadColor.Click += delegate { PickColor(ref cur.WordHeadColor, btnWordHeadColor); };
+            y += 36;
+
+            AddLabel("Popup-Woerter", 14, y); y += 20;
+            Button btnPopupColor = AddColorBtn("Popup-Farbe", cur.PopupColor, 14, y);
+            btnPopupColor.Click += delegate { PickColor(ref cur.PopupColor, btnPopupColor); };
             y += 36; AddSep(y); y += 10;
 
             // ── Regen
