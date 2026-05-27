@@ -169,10 +169,11 @@ namespace VeeaMatrix
         public Color  WordHeadColor = Color.White;
         public float  GlowChance    = 0.22f;
         // Popup words
-        public string PopupEffects  = "Fade,Flash,Glitch,Scan,Zoom";
-        public int    PopupCount    = 5;
-        public int    PopupFontSize = 22;
-        public Color  PopupColor    = Color.FromArgb(0, 255, 65);
+        public string PopupEffects      = "Fade,Flash,Glitch,Scan,Zoom";
+        public int    PopupCount        = 5;
+        public int    PopupFontSize     = 22;
+        public Color  PopupColor        = Color.FromArgb(0, 255, 65);
+        public float  PopupSpeedFactor  = 1.0f;
         // General
         public string Orientation     = "TopDown";
         public string WordOrientation  = "Same";
@@ -225,10 +226,11 @@ namespace VeeaMatrix
             sb.AppendLine("WordColor="     + ToHex(WordColor));
             sb.AppendLine("WordHeadColor=" + ToHex(WordHeadColor));
             sb.AppendLine("GlowChance="    + GlowChance.ToString("F2", System.Globalization.CultureInfo.InvariantCulture));
-            sb.AppendLine("PopupEffects="  + PopupEffects);
-            sb.AppendLine("PopupCount="    + PopupCount);
-            sb.AppendLine("PopupFontSize=" + PopupFontSize);
-            sb.AppendLine("PopupColor="    + ToHex(PopupColor));
+            sb.AppendLine("PopupEffects="      + PopupEffects);
+            sb.AppendLine("PopupCount="        + PopupCount);
+            sb.AppendLine("PopupFontSize="     + PopupFontSize);
+            sb.AppendLine("PopupColor="        + ToHex(PopupColor));
+            sb.AppendLine("PopupSpeedFactor="  + PopupSpeedFactor.ToString("F2", System.Globalization.CultureInfo.InvariantCulture));
             sb.AppendLine("Orientation="     + Orientation);
             sb.AppendLine("WordOrientation="  + WordOrientation);
             sb.AppendLine("WordStyle="        + WordStyle);
@@ -273,7 +275,8 @@ namespace VeeaMatrix
                         case "PopupStyle":    s.PopupEffects  = v == "Mixed" ? "Fade,Flash,Glitch,Scan,Zoom" : v; break;
                         case "PopupCount":    s.PopupCount    = int.Parse(v); break;
                         case "PopupFontSize": s.PopupFontSize = int.Parse(v); break;
-                        case "PopupColor":    s.PopupColor    = FromHex(v); break;
+                        case "PopupColor":        s.PopupColor       = FromHex(v); break;
+                        case "PopupSpeedFactor":  s.PopupSpeedFactor = float.Parse(v, ic); break;
                         case "Orientation":     s.Orientation     = v; break;
                         case "WordOrientation":  s.WordOrientation  = v; break;
                         case "WordStyle":        s.WordStyle        = v; break;
@@ -426,7 +429,7 @@ namespace VeeaMatrix
 
         private Bitmap      buf;
         private Graphics    bg;
-        private Font        rainFont, wordFont;
+        private Font        rainFont, wordFont, popupFont;
         private SolidBrush  fadeBrush, rainBrush, brightBrush, tmpBrush;
         private Bitmap      scanBmp;
 
@@ -488,8 +491,9 @@ namespace VeeaMatrix
             bg.SmoothingMode     = System.Drawing.Drawing2D.SmoothingMode.None;
             bg.Clear(Color.Black);
 
-            rainFont    = new Font("Courier New", Math.Max(6, s.FontSize    - 1), FontStyle.Bold, GraphicsUnit.Pixel);
+            rainFont    = new Font("Courier New", Math.Max(6, s.FontSize     - 1), FontStyle.Bold, GraphicsUnit.Pixel);
             wordFont    = new Font(s.WordFontName, Math.Max(6, s.WordFontSize - 1), FontStyle.Bold, GraphicsUnit.Pixel);
+            popupFont   = new Font(s.WordFontName, Math.Max(6, s.PopupFontSize- 1), FontStyle.Bold, GraphicsUnit.Pixel);
             fadeBrush   = new SolidBrush(Color.FromArgb(Math.Max(2, Math.Min(60, s.FadeAlpha)), 0, 0, 0));
             rainBrush   = new SolidBrush(s.RainColor);
             brightBrush = new SolidBrush(s.HeadColor);
@@ -572,6 +576,14 @@ namespace VeeaMatrix
                 case PopupMode.Scan:   appearF=word.Length*3; holdF=80; disappearF=28; break;
                 case PopupMode.Zoom:   appearF=18; holdF=90; disappearF=28; break;
                 default:               appearF=22; holdF=90; disappearF=32; break;
+            }
+            // Apply popup speed factor (higher = faster = fewer frames)
+            float pspd = Math.Max(0.1f, s.PopupSpeedFactor);
+            if (pspd != 1.0f)
+            {
+                appearF    = Math.Max(1, (int)Math.Round(appearF    / pspd));
+                holdF      = Math.Max(1, (int)Math.Round(holdF      / pspd));
+                disappearF = Math.Max(1, (int)Math.Round(disappearF / pspd));
             }
 
             float estW = word.Length * fs * 0.64f, margin = fs * 2f;
@@ -802,8 +814,8 @@ namespace VeeaMatrix
             if(alpha<=0.01f) return;
             int a=Clamp((int)(alpha*255));
             Font useFont=null; bool own=false;
-            if(fontSize==s.WordFontSize-1||fontSize==s.WordFontSize) useFont=wordFont;
-            else { useFont=new Font("Courier New",Math.Max(6,fontSize),FontStyle.Bold,GraphicsUnit.Pixel); own=true; }
+            if(fontSize==s.PopupFontSize-1||fontSize==s.PopupFontSize) useFont=popupFont;
+            else { useFont=new Font(s.WordFontName,Math.Max(6,fontSize),FontStyle.Bold,GraphicsUnit.Pixel); own=true; }
             try
             {
                 string text=new string(chars);
@@ -831,6 +843,7 @@ namespace VeeaMatrix
             if(buf        !=null){buf.Dispose();        buf        =null;}
             if(rainFont   !=null){rainFont.Dispose();   rainFont   =null;}
             if(wordFont   !=null){wordFont.Dispose();   wordFont   =null;}
+            if(popupFont  !=null){popupFont.Dispose();  popupFont  =null;}
             if(scanBmp    !=null){scanBmp.Dispose();    scanBmp    =null;}
         }
         public void Dispose(){DisposeAll();}
@@ -920,8 +933,8 @@ namespace VeeaMatrix
     {
         private Settings   cur;
         private Button     btnRainColor, btnHeadColor, btnWordColor, btnWordHeadColor, btnPopupColor;
-        private TrackBar   trkFade, trkFont, trkSpeed, trkWordCount, trkWordFont, trkPopupCount, trkPopupFont, trkWordSpeed;
-        private Label      lblFade, lblFont, lblSpeed, lblWCount, lblWFont, lblPCount, lblPFont, lblWordSpeed;
+        private TrackBar   trkFade, trkFont, trkSpeed, trkWordCount, trkWordFont, trkPopupCount, trkPopupFont, trkWordSpeed, trkPopupSpeed;
+        private Label      lblFade, lblFont, lblSpeed, lblWCount, lblWFont, lblPCount, lblPFont, lblWordSpeed, lblPopupSpeed;
         private ComboBox   cboOrient, cboWordOrient, cboWordMode, cboWordStyle;
         private TextBox    txtWatermark, txtWatermarkSub, txtExtra;
         private CheckBox   chkFade, chkFlash, chkGlitch, chkScan, chkZoom;
@@ -973,8 +986,8 @@ namespace VeeaMatrix
             Controls.Clear();
             // Reset all control references so Build() re-creates them cleanly
             btnRainColor = btnHeadColor = btnWordColor = btnWordHeadColor = btnPopupColor = null;
-            trkFade = trkFont = trkSpeed = trkWordCount = trkWordFont = trkPopupCount = trkPopupFont = trkWordSpeed = null;
-            lblFade = lblFont = lblSpeed = lblWCount = lblWFont = lblPCount = lblPFont = lblWordSpeed = null;
+            trkFade = trkFont = trkSpeed = trkWordCount = trkWordFont = trkPopupCount = trkPopupFont = trkWordSpeed = trkPopupSpeed = null;
+            lblFade = lblFont = lblSpeed = lblWCount = lblWFont = lblPCount = lblPFont = lblWordSpeed = lblPopupSpeed = null;
             cboOrient = cboWordOrient = cboWordMode = cboWordStyle = cboLanguage = null;
             txtWatermark = txtWatermarkSub = txtExtra = null;
             chkFade = chkFlash = chkGlitch = chkScan = chkZoom = null;
@@ -996,7 +1009,8 @@ namespace VeeaMatrix
                 PopupColor=s.PopupColor, Orientation=s.Orientation, WordOrientation=s.WordOrientation,
                 WordStyle=s.WordStyle, WordSpeedFactor=s.WordSpeedFactor, ShowVeeam100=s.ShowVeeam100,
                 WatermarkText=s.WatermarkText, WatermarkSubText=s.WatermarkSubText, ExtraWords=s.ExtraWords,
-                WordFontName=s.WordFontName, Language=s.Language };
+                WordFontName=s.WordFontName, Language=s.Language,
+                PopupSpeedFactor=s.PopupSpeedFactor };
         }
 
         // ── layout helpers ────────────────────────────────────────────────────
@@ -1070,7 +1084,7 @@ namespace VeeaMatrix
             // ── Layout constants ─────────────────────────────────────────────
             const int c1   = 14,  cW1  = 400;   // left column
             const int c2   = 428, cW2  = 418;   // right column
-            const int PREV_W = 480, PREV_H = 270; // 16:9 live preview
+            const int PREV_W = 960, PREV_H = 540; // 16:9 live preview (double size)
             const int c3   = c2 + cW2 + 14;     // = 860  preview column x
             const int cW3  = PREV_W + 2;         // = 482  preview column width (incl. 1px border each side)
             const int fw   = c3 + cW3 + 14;      // = 1356 total form width
@@ -1237,6 +1251,11 @@ namespace VeeaMatrix
             trkPopupCount.ValueChanged += delegate { cur.PopupCount=trkPopupCount.Value; lblPCount.Text=cur.PopupCount.ToString(); };
             yR += SL;
 
+            trkPopupSpeed = SlRow(T("Popup Speed","Popup-Geschwindigkeit"), c2,yR,cW2, 1,30, (int)(cur.PopupSpeedFactor*10), out lblPopupSpeed);
+            lblPopupSpeed.Text = cur.PopupSpeedFactor.ToString("F1")+"x";
+            trkPopupSpeed.ValueChanged += delegate { cur.PopupSpeedFactor=trkPopupSpeed.Value/10f; lblPopupSpeed.Text=cur.PopupSpeedFactor.ToString("F1")+"x"; };
+            yR += SL;
+
             yR += 10;
 
             // ── GENERAL ───────────────────────────────────────────────────────
@@ -1329,7 +1348,8 @@ namespace VeeaMatrix
                 cur.WatermarkText    = txtWatermark.Text.Trim();
                 cur.WatermarkSubText = txtWatermarkSub.Text.Trim();
                 cur.ExtraWords       = txtExtra.Text.Trim();
-                cur.Language         = cboLanguage != null ? cboLanguage.Text : cur.Language;
+                cur.Language         = cboLanguage  != null ? cboLanguage.Text  : cur.Language;
+                if (trkPopupSpeed != null) cur.PopupSpeedFactor = trkPopupSpeed.Value / 10f;
                 if (cboWordFontName.SelectedItem != null) cur.WordFontName = cboWordFontName.SelectedItem.ToString();
                 var effects = new List<string>();
                 if (chkFade.Checked)   effects.Add("Fade");
@@ -1414,6 +1434,7 @@ namespace VeeaMatrix
             if (trkWordCount    != null) s.WordCount        = trkWordCount.Value;
             if (trkPopupFont    != null) s.PopupFontSize    = trkPopupFont.Value;
             if (trkPopupCount   != null) s.PopupCount       = trkPopupCount.Value;
+            if (trkPopupSpeed   != null) s.PopupSpeedFactor = trkPopupSpeed.Value / 10f;
             if (txtWatermark    != null) s.WatermarkText    = txtWatermark.Text.Trim();
             if (txtWatermarkSub != null) s.WatermarkSubText = txtWatermarkSub.Text.Trim();
             if (txtExtra        != null) s.ExtraWords       = txtExtra.Text.Trim();
