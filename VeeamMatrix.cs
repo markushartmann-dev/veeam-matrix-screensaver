@@ -934,6 +934,11 @@ namespace VeeamMatrix
         private ComboBox   cboWordFontName;
         private PictureBox picFontPreview;
         private TextBox    txtFontPreviewText;
+        // live preview
+        private MatrixEngine _prevEngine;
+        private Timer        _prevTimer;
+        private PictureBox   picPreview;
+        private bool         _previewDirty = true;
 
         public Settings Result { get; private set; }
 
@@ -1042,9 +1047,11 @@ namespace VeeamMatrix
         private void Build()
         {
             const int c1=14, cW1=400;   // left column
-            const int c2=428, cW2=418;  // right column
+            const int c2=428, cW2=418;  // right column (content)
+            const int c3=862, cW3=282;  // right preview column
             const int SL=42;            // slider step
             const int CM=32;            // combo/button row step
+            int fw = c3 + cW3 + 14;     // total form width = 1158
 
             int y = 14;
 
@@ -1062,7 +1069,7 @@ namespace VeeamMatrix
             btnLoad.Click += delegate { LoadSelectedProfile(); };
             btnSave.Click += delegate { SaveCurrentAsProfile(); };
             Controls.Add(btnLoad); Controls.Add(btnSave);
-            y += 34; HSep(y); y += 12;
+            y += 34; HSep(y, 14, fw-28); y += 12;
 
             // Two independent y cursors — left and right columns
             int yL = y, yR = y;
@@ -1225,11 +1232,50 @@ namespace VeeamMatrix
             Controls.Add(txtExtra);
             yR += 30;
 
+            // ── PREVIEW COLUMN ────────────────────────────────────────────────
+            int colH = Math.Max(yL, yR) - y;   // y is still yColStart
+            // thin vertical divider
+            Controls.Add(new Panel { Location=new Point(858,y), Size=new Size(1,colH+14),
+                BackColor=Color.FromArgb(0,52,16) });
+            Section("LIVE-VORSCHAU", c3, y, cW3);
+            picPreview = new PictureBox {
+                Location=new Point(c3, y+26),
+                Size=new Size(cW3-4, colH-28),
+                BackColor=Color.FromArgb(4,4,4),
+                BorderStyle=BorderStyle.FixedSingle
+            };
+            Controls.Add(picPreview);
+            picPreview.Paint += delegate(object ps, PaintEventArgs pe)
+            {
+                if (_prevEngine != null) _prevEngine.Render(pe.Graphics);
+            };
+
+            // Wire all controls to mark preview dirty
+            foreach (Control ctrl in Controls)
+            {
+                if (ctrl is TrackBar) ((TrackBar)ctrl).ValueChanged      += delegate { MarkDirty(); };
+                if (ctrl is CheckBox) ((CheckBox)ctrl).CheckedChanged    += delegate { MarkDirty(); };
+                if (ctrl is ComboBox && ctrl != cboProfiles)
+                    ((ComboBox)ctrl).SelectedIndexChanged += delegate { MarkDirty(); };
+            }
+
+            // Clean up preview engine + timer when dialog closes
+            FormClosing += delegate {
+                if (_prevTimer  != null) { _prevTimer.Stop(); _prevTimer.Dispose(); _prevTimer = null; }
+                if (_prevEngine != null) { _prevEngine.Dispose(); _prevEngine = null; }
+            };
+
+            // Build initial engine and start animation
+            RebuildPreview();
+            _prevTimer = new Timer { Interval = 25 };
+            _prevTimer.Tick += OnPreviewTick;
+            _prevTimer.Start();
+
             // ── Bottom bar ────────────────────────────────────────────────────
             int yBot = Math.Max(yL, yR) + 14;
-            HSep(yBot); yBot += 12;
+            HSep(yBot, 14, fw-28); yBot += 12;
 
-            int bRight = c2 + cW2;   // right edge of content = 846
+            int bRight = c2 + cW2;   // buttons right-aligned to content columns
             var btnOK = new Button { Text="OK",
                 Location=new Point(bRight-232, yBot), Size=new Size(108,32),
                 DialogResult=DialogResult.OK,
@@ -1264,7 +1310,7 @@ namespace VeeamMatrix
             btnCancel.FlatAppearance.BorderColor = Color.FromArgb(130,36,36);
             Controls.Add(btnOK); Controls.Add(btnCancel);
             AcceptButton=btnOK; CancelButton=btnCancel;
-            ClientSize = new Size(c2+cW2+14, yBot+48);
+            ClientSize = new Size(fw, yBot+48);
         }
 
         private void UpdateFontPreview()
@@ -1311,6 +1357,50 @@ namespace VeeamMatrix
             if (old != null) old.Dispose();
         }
 
+        private void MarkDirty() { _previewDirty = true; }
+
+        private void RebuildPreview()
+        {
+            _previewDirty = false;
+            // Snapshot current live control values into a temporary Settings object
+            var s = Clone(cur);
+            if (cboOrient      != null) s.Orientation    = cboOrient.Text;
+            if (cboWordOrient  != null) s.WordOrientation = string.IsNullOrEmpty(cboWordOrient.Text) ? "Same" : cboWordOrient.Text;
+            if (cboWordMode    != null) s.WordMode        = cboWordMode.Text;
+            if (cboWordStyle   != null) s.WordStyle       = cboWordStyle.Text;
+            if (cboWordFontName!= null && cboWordFontName.SelectedItem != null)
+                s.WordFontName = cboWordFontName.SelectedItem.ToString();
+            if (trkFont        != null) s.FontSize        = trkFont.Value;
+            if (trkSpeed       != null) s.SpeedFactor     = trkSpeed.Value / 10f;
+            if (trkFade        != null) s.FadeAlpha       = trkFade.Value;
+            if (trkWordFont    != null) s.WordFontSize    = trkWordFont.Value;
+            if (trkWordSpeed   != null) s.WordSpeedFactor = trkWordSpeed.Value / 10f;
+            if (trkWordCount   != null) s.WordCount       = trkWordCount.Value;
+            if (trkPopupFont   != null) s.PopupFontSize   = trkPopupFont.Value;
+            if (trkPopupCount  != null) s.PopupCount      = trkPopupCount.Value;
+            var fx = new List<string>();
+            if (chkFade  !=null&&chkFade.Checked)   fx.Add("Fade");
+            if (chkFlash !=null&&chkFlash.Checked)  fx.Add("Flash");
+            if (chkGlitch!=null&&chkGlitch.Checked) fx.Add("Glitch");
+            if (chkScan  !=null&&chkScan.Checked)   fx.Add("Scan");
+            if (chkZoom  !=null&&chkZoom.Checked)   fx.Add("Zoom");
+            if (fx.Count > 0) s.PopupEffects = string.Join(",", fx.ToArray());
+            if (chkScanlines != null) s.ShowScanlines = chkScanlines.Checked;
+            if (chkWatermark != null) s.ShowWatermark = chkWatermark.Checked;
+
+            if (_prevEngine != null) { _prevEngine.Dispose(); _prevEngine = null; }
+            if (picPreview != null && picPreview.Width > 8 && picPreview.Height > 8)
+                _prevEngine = new MatrixEngine(s, picPreview.Width-2, picPreview.Height-2);
+        }
+
+        private void OnPreviewTick(object sender, EventArgs e)
+        {
+            if (_previewDirty) RebuildPreview();
+            if (_prevEngine == null || picPreview == null) return;
+            _prevEngine.Tick();
+            picPreview.Invalidate();
+        }
+
         private void LoadSelectedProfile()
         {
             if(cboProfiles.SelectedIndex<0) return;
@@ -1322,6 +1412,7 @@ namespace VeeamMatrix
                 cur.WordColor=p.WordColor; cur.WordHeadColor=p.WordHeadColor;
                 cur.PopupColor=p.PopupColor;
                 RefreshColorButtons();
+                MarkDirty();
                 break;
             }
         }
@@ -1350,8 +1441,8 @@ namespace VeeamMatrix
 
         private void Pick(ref Color field, Button btn)
         {
-            using(ColorDialog dlg=new ColorDialog{Color=field,FullOpen=true})
-                if(dlg.ShowDialog(this)==DialogResult.OK){field=dlg.Color;SetBtn(btn,dlg.Color);}
+            using (ColorDialog dlg = new ColorDialog { Color=field, FullOpen=true })
+                if (dlg.ShowDialog(this)==DialogResult.OK) { field=dlg.Color; SetBtn(btn,dlg.Color); MarkDirty(); }
         }
     }
 
