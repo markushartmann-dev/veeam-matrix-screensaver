@@ -1074,7 +1074,7 @@ namespace VeeaMatrix
             const int c3   = c2 + cW2 + 14;     // = 860  preview column x
             const int cW3  = PREV_W + 2;         // = 482  preview column width (incl. 1px border each side)
             const int fw   = c3 + cW3 + 14;      // = 1356 total form width
-            const int SL   = 42;                 // slider row step
+            const int SL   = 46;                 // slider row step
             const int CM   = 32;                 // combo row step
 
             int y = 14;
