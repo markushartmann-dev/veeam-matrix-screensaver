@@ -1,5 +1,5 @@
-﻿// VeeamMatrix.cs  –  Windows Screensaver v1.9
-// Kompilieren: Build-VeeamMatrix.ps1
+// VeeaMatrix.cs  –  Windows Screensaver v1.10
+// Build: Build-VeeamMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows.Forms;
 
-namespace VeeamMatrix
+namespace VeeaMatrix
 {
     // =========================================================================
     // COLOR PROFILE  +  PROFILE MANAGER
@@ -24,19 +24,19 @@ namespace VeeamMatrix
             new ColorProfile
             {
                 Name          = "Veeam",
-                RainColor     = Color.FromArgb(0,   179,  54),   // #00B336 brand green
+                RainColor     = Color.FromArgb(0,   179,  54),
                 HeadColor     = Color.FromArgb(255, 255, 255),
-                WordColor     = Color.FromArgb(0,   224,  78),   // brighter accent
+                WordColor     = Color.FromArgb(0,   224,  78),
                 WordHeadColor = Color.FromArgb(170, 255, 196),
                 PopupColor    = Color.FromArgb(0,   179,  54),
             },
             new ColorProfile
             {
                 Name          = "Hello Kitty",
-                RainColor     = Color.FromArgb(255, 105, 180),   // hot pink
+                RainColor     = Color.FromArgb(255, 105, 180),
                 HeadColor     = Color.FromArgb(255, 255, 255),
-                WordColor     = Color.FromArgb(255,  20, 147),   // deep pink
-                WordHeadColor = Color.FromArgb(255, 215,   0),   // gold bow
+                WordColor     = Color.FromArgb(255,  20, 147),
+                WordHeadColor = Color.FromArgb(255, 215,   0),
                 PopupColor    = Color.FromArgb(255, 105, 180),
             },
             new ColorProfile
@@ -51,10 +51,10 @@ namespace VeeamMatrix
             new ColorProfile
             {
                 Name          = "Cyberpunk",
-                RainColor     = Color.FromArgb(0,   240, 255),   // cyan
+                RainColor     = Color.FromArgb(0,   240, 255),
                 HeadColor     = Color.FromArgb(255, 255, 255),
-                WordColor     = Color.FromArgb(255,  20, 147),   // magenta
-                WordHeadColor = Color.FromArgb(255, 255,   0),   // yellow
+                WordColor     = Color.FromArgb(255,  20, 147),
+                WordHeadColor = Color.FromArgb(255, 255,   0),
                 PopupColor    = Color.FromArgb(0,   240, 255),
             },
             new ColorProfile
@@ -70,7 +70,7 @@ namespace VeeamMatrix
 
         private static string ProfileFile
         {
-            get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "VeeamMatrix", "profiles.ini"); }
+            get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "VeeaMatrix", "profiles.ini"); }
         }
 
         public static List<ColorProfile> LoadAll()
@@ -168,32 +168,50 @@ namespace VeeamMatrix
         public Color  WordColor     = Color.FromArgb(0, 255, 65);
         public Color  WordHeadColor = Color.White;
         public float  GlowChance    = 0.22f;
-        // Popup words  — comma-separated list of ENABLED effects
-        public string PopupEffects  = "Fade,Flash,Glitch,Scan,Zoom";  // all on by default
+        // Popup words
+        public string PopupEffects  = "Fade,Flash,Glitch,Scan,Zoom";
         public int    PopupCount    = 5;
         public int    PopupFontSize = 22;
         public Color  PopupColor    = Color.FromArgb(0, 255, 65);
         // General
         public string Orientation     = "TopDown";
-        public string WordOrientation  = "Same";    // "Same" follows Orientation; or TopDown/BottomUp/LeftRight/RightLeft
-        public string WordStyle        = "Scroll";  // "Scroll" | "Fade" | "Build"
-        public float  WordSpeedFactor  = 1.0f;      // separate speed multiplier for word drops
+        public string WordOrientation  = "Same";
+        public string WordStyle        = "Scroll";
+        public float  WordSpeedFactor  = 1.0f;
         public bool   ShowVeeam100     = false;
         // Watermark
         public string WatermarkText    = "VEEAM";
         public string WatermarkSubText = "DATA PROTECTION  *  CYBER RESILIENCE  *  ALWAYS-ON";
         public string ExtraWords      = "";
         public string WordFontName    = "Segoe UI";
+        // UI
+        public string Language        = "EN";
 
         private static string ConfigDir
-        { get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "VeeamMatrix"); } }
+        { get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "VeeaMatrix"); } }
         private static string ConfigFile { get { return Path.Combine(ConfigDir, "config.ini"); } }
+
+        // One-time migration from old VeeamMatrix folder
+        private static void MigrateIfNeeded()
+        {
+            string newDir = ConfigDir;
+            if (Directory.Exists(newDir)) return;
+            string oldDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "VeeamMatrix");
+            if (!Directory.Exists(oldDir)) return;
+            try
+            {
+                Directory.CreateDirectory(newDir);
+                foreach (string f in Directory.GetFiles(oldDir))
+                    File.Copy(f, Path.Combine(newDir, Path.GetFileName(f)), false);
+            }
+            catch { }
+        }
 
         public void Save()
         {
             Directory.CreateDirectory(ConfigDir);
             var sb = new StringBuilder();
-            sb.AppendLine("[VeeamMatrix]");
+            sb.AppendLine("[VeeaMatrix]");
             sb.AppendLine("RainColor="     + ToHex(RainColor));
             sb.AppendLine("HeadColor="     + ToHex(HeadColor));
             sb.AppendLine("FadeAlpha="     + FadeAlpha);
@@ -218,13 +236,15 @@ namespace VeeamMatrix
             sb.AppendLine("ShowVeeam100="     + ShowVeeam100);
             sb.AppendLine("WatermarkText="    + WatermarkText);
             sb.AppendLine("WatermarkSubText=" + WatermarkSubText);
-            sb.AppendLine("ExtraWords="      + ExtraWords);
-            sb.AppendLine("WordFontName="    + WordFontName);
+            sb.AppendLine("ExtraWords="       + ExtraWords);
+            sb.AppendLine("WordFontName="     + WordFontName);
+            sb.AppendLine("Language="         + Language);
             File.WriteAllText(ConfigFile, sb.ToString(), Encoding.UTF8);
         }
 
         public static Settings Load()
         {
+            MigrateIfNeeded();
             var s = new Settings();
             if (!File.Exists(ConfigFile)) return s;
             var ic = System.Globalization.CultureInfo.InvariantCulture;
@@ -250,7 +270,6 @@ namespace VeeamMatrix
                         case "WordHeadColor": s.WordHeadColor = FromHex(v); break;
                         case "GlowChance":    s.GlowChance    = float.Parse(v, ic); break;
                         case "PopupEffects":  s.PopupEffects  = v; break;
-                        // legacy key
                         case "PopupStyle":    s.PopupEffects  = v == "Mixed" ? "Fade,Flash,Glitch,Scan,Zoom" : v; break;
                         case "PopupCount":    s.PopupCount    = int.Parse(v); break;
                         case "PopupFontSize": s.PopupFontSize = int.Parse(v); break;
@@ -262,8 +281,9 @@ namespace VeeamMatrix
                         case "ShowVeeam100":     s.ShowVeeam100     = bool.Parse(v); break;
                         case "WatermarkText":    s.WatermarkText    = v; break;
                         case "WatermarkSubText": s.WatermarkSubText = v; break;
-                        case "ExtraWords":      s.ExtraWords      = v; break;
-                        case "WordFontName":    s.WordFontName    = v; break;
+                        case "ExtraWords":       s.ExtraWords       = v; break;
+                        case "WordFontName":     s.WordFontName     = v; break;
+                        case "Language":         s.Language         = v; break;
                     }
                 }
                 catch { }
@@ -324,16 +344,9 @@ namespace VeeamMatrix
         private static readonly char[] RAIN_CHARS =
             "VEEAMBCKUPRSTOLHDNGRY0123456789ZFWXQ#$-.:/\\|".ToCharArray();
 
-        // Veeam 100 community members 2026 — name + designation
-        // Source: community.veeam.com/p/veeamvanguard2026
-        //         community.veeam.com/p/veeamlegends2026
-        //         community.veeam.com/p/veeammvp2026
         private static readonly string[] VEEAM100_PEOPLE = new string[]
         {
-            // ── Category headers ───────────────────────────────────────────────
             "VEEAM VANGUARD 2026", "VEEAM LEGEND 2026", "VEEAM MVP 2026",
-
-            // ── Veeam Vanguard 2026 (52) ───────────────────────────────────────
             "MUHAMMAD ADEL · VANGUARD",      "ZAMAAN ALI · VANGUARD",
             "ZANE ALLYN · VANGUARD",          "FALKO BANASZAK · VANGUARD",
             "MATTHIAS BELLER · VANGUARD",     "NICOLAS BONNET · VANGUARD",
@@ -360,8 +373,6 @@ namespace VeeamMatrix
             "CARY SUN · VANGUARD",             "LEAHA TORRES · VANGUARD",
             "PAOLO VALSECCHI · VANGUARD",      "FEDERICO VENIER · VANGUARD",
             "VICTOR WU · VANGUARD",            "MATEUS WOLFF · VANGUARD",
-
-            // ── Veeam Legends 2026 (20) ────────────────────────────────────────
             "CHRIS CHILDERHOSE · LEGEND",      "DAMIEN COMMENGE · LEGEND",
             "ANTONIO D'ANDREA · LEGEND",        "DANNY DE HEER · LEGEND",
             "PHILIPPE DUPUIS · LEGEND",         "CHALID FATHALLAH · LEGEND",
@@ -372,8 +383,6 @@ namespace VeeamMatrix
             "SCOTT PATTERSON · LEGEND",         "JEAN SCZEPANSKI PERES · LEGEND",
             "LUCA PORFIRI · LEGEND",            "ESTEBAN PRIETO · LEGEND",
             "ALESSANDRO TINIVELLI · LEGEND",    "SHANE WILLIFORD · LEGEND",
-
-            // ── Veeam MVP 2026 (27) ────────────────────────────────────────────
             "ANDRE ATKINSON · MVP",             "CHRIS ARCENEAUX · MVP",
             "DAVID BEWERNICK · MVP",            "PATRICIO CERDA · MVP",
             "DANILO CHIAVARI · MVP",            "ADAM CONGDON · MVP",
@@ -395,7 +404,6 @@ namespace VeeamMatrix
             public char[]  Chars;
             public float   X, Y, V;
             public bool    Glow;
-            // static-mode fields (Fade / Build)
             public int     Phase, Frame, AppearF, HoldF, FadeF;
         }
 
@@ -432,7 +440,6 @@ namespace VeeamMatrix
         private bool IsVertical { get { return s.Orientation == "TopDown"   || s.Orientation == "BottomUp"; } }
         private bool IsForward  { get { return s.Orientation == "TopDown"   || s.Orientation == "LeftRight"; } }
 
-        // Word drops can have their own independent orientation
         private string EffWordOrient { get { return (s.WordOrientation == "Same" || string.IsNullOrEmpty(s.WordOrientation)) ? s.Orientation : s.WordOrientation; } }
         private bool WordIsVertical  { get { return EffWordOrient == "TopDown"  || EffWordOrient == "BottomUp";  } }
         private bool WordIsForward   { get { return EffWordOrient == "TopDown"  || EffWordOrient == "LeftRight"; } }
@@ -448,7 +455,6 @@ namespace VeeamMatrix
                 { string t = p.Trim().ToUpper(); if (t.Length > 0) list.Add(t); }
             allTerms = list.ToArray();
 
-            // Parse enabled popup effects
             var modes = new List<PopupMode>();
             foreach (string part in s.PopupEffects.Split(','))
             {
@@ -483,7 +489,6 @@ namespace VeeamMatrix
             bg.Clear(Color.Black);
 
             rainFont    = new Font("Courier New", Math.Max(6, s.FontSize    - 1), FontStyle.Bold, GraphicsUnit.Pixel);
-            // Use selected system font for word drops and popups
             wordFont    = new Font(s.WordFontName, Math.Max(6, s.WordFontSize - 1), FontStyle.Bold, GraphicsUnit.Pixel);
             fadeBrush   = new SolidBrush(Color.FromArgb(Math.Max(2, Math.Min(60, s.FadeAlpha)), 0, 0, 0));
             rainBrush   = new SolidBrush(s.RainColor);
@@ -518,10 +523,8 @@ namespace VeeamMatrix
             char[] chars = term.ToCharArray();
             int    fs    = s.WordFontSize;
 
-            // ── Static modes: word sits at a fixed position ───────────────────
             if (s.WordStyle == "Fade" || s.WordStyle == "Build")
             {
-                // WordSpeedFactor affects how long each phase takes (lower factor = longer display)
                 float  spd   = Math.Max(0.1f, s.WordSpeedFactor);
                 int    appF  = (int)Math.Round((s.WordStyle == "Build" ? Math.Max(20, chars.Length * 5) : 22) / spd);
                 int    holF  = (int)Math.Round((70 + rng.Next(50)) / spd);
@@ -533,7 +536,7 @@ namespace VeeamMatrix
                 var    wd    = new WDrop { Chars=chars, X=sx, Y=sy, V=0,
                                            Glow=rng.NextDouble()<s.GlowChance,
                                            AppearF=appF, HoldF=holF, FadeF=fadF };
-                if (scatter) // pre-scatter across all phases so screen is populated from the start
+                if (scatter)
                 {
                     int tot = appF + holF + fadF;
                     int rf  = rng.Next(tot);
@@ -544,7 +547,6 @@ namespace VeeamMatrix
                 return wd;
             }
 
-            // ── Scroll mode: word travels in a direction ──────────────────────
             float len = chars.Length * fs;
             float v   = (float)((0.6 + rng.NextDouble() * 1.6) * s.WordSpeedFactor);
             float x, y;
@@ -657,7 +659,6 @@ namespace VeeamMatrix
                 }
                 else
                 {
-                    // ── Scroll mode ──────────────────────────────────────────
                     int n = w.Chars.Length;
                     for (int j = 0; j < n; j++)
                     {
@@ -679,7 +680,6 @@ namespace VeeamMatrix
             }
         }
 
-        // Returns false when the drop has finished and should be respawned.
         private bool TickStaticDrop(WDrop w)
         {
             w.Frame++;
@@ -697,7 +697,6 @@ namespace VeeamMatrix
 
             if (s.WordStyle == "Build")
             {
-                // Reveal chars left-to-right; active char briefly scrambles before snapping
                 int total   = w.Chars.Length;
                 int snapped = w.Phase==0
                     ? Math.Min(total, w.Frame * total / Math.Max(1, w.AppearF) + 1)
@@ -705,7 +704,6 @@ namespace VeeamMatrix
 
                 for (int j = 0; j < snapped; j++)
                 {
-                    // Active (last) char in build phase: scramble randomly
                     char drawCh = (j == snapped-1 && w.Phase==0)
                         ? ((w.Frame % 4 < 2) ? RAIN_CHARS[rng.Next(RAIN_CHARS.Length)] : w.Chars[j])
                         : w.Chars[j];
@@ -713,7 +711,6 @@ namespace VeeamMatrix
 
                     Color col;
                     if (j == snapped-1 && w.Phase==0)
-                        // active position: head colour
                         col = Color.FromArgb(alpha, s.WordHeadColor.R, s.WordHeadColor.G, s.WordHeadColor.B);
                     else if (w.Glow)
                         col = Color.FromArgb(alpha, Clamp(s.WordColor.R+80), Clamp(s.WordColor.G+20), Clamp(s.WordColor.B+40));
@@ -724,7 +721,7 @@ namespace VeeamMatrix
                     bg.DrawString(drawCh.ToString(), wordFont, tmpBrush, w.X + j*fs*0.61f, w.Y);
                 }
             }
-            else // Fade: whole word appears / disappears as one unit
+            else
             {
                 Color col = w.Glow
                     ? Color.FromArgb(alpha, Clamp(s.WordColor.R+80), Clamp(s.WordColor.G+20), Clamp(s.WordColor.B+40))
@@ -932,6 +929,7 @@ namespace VeeamMatrix
         private ComboBox   cboProfiles;
         private List<ColorProfile> profiles;
         private ComboBox   cboWordFontName;
+        private ComboBox   cboLanguage;
         private PictureBox picFontPreview;
         private TextBox    txtFontPreviewText;
         // live preview
@@ -942,17 +940,48 @@ namespace VeeamMatrix
 
         public Settings Result { get; private set; }
 
+        // ── Language helpers ─────────────────────────────────────────────────
+        private bool   IsDE { get { return cur != null && cur.Language == "DE"; } }
+        private string T(string en, string de) { return IsDE ? de : en; }
+
         public ConfigForm(Settings s)
         {
             cur = Clone(s);
-            Text = "Veeam Matrix  –  Einstellungen";
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false; MinimizeBox = false;
-            ClientSize  = new Size(860, 100);
+            ClientSize  = new Size(860, 100);   // placeholder; Build() sets final size
             BackColor   = Color.FromArgb(18, 18, 18);
             ForeColor   = Color.FromArgb(0, 200, 55);
             Font        = new Font("Segoe UI", 9f);
             profiles    = ColorProfile.LoadAll();
+            // Wire FormClosing once (not inside Build, so it survives RebuildUI)
+            FormClosing += OnFormClosingHandler;
+            Build();
+        }
+
+        private void OnFormClosingHandler(object sender, FormClosingEventArgs e)
+        {
+            if (_prevTimer  != null) { _prevTimer.Stop(); _prevTimer.Dispose(); _prevTimer = null; }
+            if (_prevEngine != null) { _prevEngine.Dispose(); _prevEngine = null; }
+        }
+
+        // Full UI rebuild (called on language toggle)
+        private void RebuildUI()
+        {
+            if (_prevTimer  != null) { _prevTimer.Stop(); _prevTimer.Dispose(); _prevTimer = null; }
+            if (_prevEngine != null) { _prevEngine.Dispose(); _prevEngine = null; }
+            Controls.Clear();
+            // Reset all control references so Build() re-creates them cleanly
+            btnRainColor = btnHeadColor = btnWordColor = btnWordHeadColor = btnPopupColor = null;
+            trkFade = trkFont = trkSpeed = trkWordCount = trkWordFont = trkPopupCount = trkPopupFont = trkWordSpeed = null;
+            lblFade = lblFont = lblSpeed = lblWCount = lblWFont = lblPCount = lblPFont = lblWordSpeed = null;
+            cboOrient = cboWordOrient = cboWordMode = cboWordStyle = cboLanguage = null;
+            txtWatermark = txtWatermarkSub = txtExtra = null;
+            chkFade = chkFlash = chkGlitch = chkScan = chkZoom = null;
+            chkScanlines = chkWatermark = chkVeeam100 = null;
+            cboProfiles = cboWordFontName = null;
+            picFontPreview = null; txtFontPreviewText = null; picPreview = null;
+            _previewDirty = true;
             Build();
         }
 
@@ -967,7 +996,7 @@ namespace VeeamMatrix
                 PopupColor=s.PopupColor, Orientation=s.Orientation, WordOrientation=s.WordOrientation,
                 WordStyle=s.WordStyle, WordSpeedFactor=s.WordSpeedFactor, ShowVeeam100=s.ShowVeeam100,
                 WatermarkText=s.WatermarkText, WatermarkSubText=s.WatermarkSubText, ExtraWords=s.ExtraWords,
-                WordFontName=s.WordFontName };
+                WordFontName=s.WordFontName, Language=s.Language };
         }
 
         // ── layout helpers ────────────────────────────────────────────────────
@@ -975,7 +1004,6 @@ namespace VeeamMatrix
         private static void SetBtn(Button b, Color c)
         { b.BackColor=c; b.ForeColor=c.GetBrightness()>.45f?Color.Black:Color.White; }
 
-        // Coloured section-header bar (dark green bg + bold label)
         private void Section(string title, int x, int y, int w)
         {
             var pnl = new Panel { Location=new Point(x,y), Size=new Size(w,20),
@@ -986,11 +1014,9 @@ namespace VeeamMatrix
                 Font=new Font("Segoe UI",8.5f,FontStyle.Bold) });
         }
 
-        // Horizontal separator line
         private void HSep(int y, int x=14, int w=832)
         { Controls.Add(new Panel { Location=new Point(x,y), Size=new Size(w,1), BackColor=Color.FromArgb(0,52,16) }); }
 
-        // Dim label (grey, for captions)
         private Label DLbl(string t, int x, int y, int w=-1)
         {
             var l = new Label { Text=t, Location=new Point(x,y), AutoSize=(w<0),
@@ -999,7 +1025,6 @@ namespace VeeamMatrix
             Controls.Add(l); return l;
         }
 
-        // Coloured button for picking a colour
         private Button ColBtn(string text, Color col, int x, int y, int w=130)
         {
             var b = new Button { Text=text, Location=new Point(x,y), Size=new Size(w,26),
@@ -1009,7 +1034,6 @@ namespace VeeamMatrix
             Controls.Add(b); return b;
         }
 
-        // DropDown combo
         private ComboBox Cbo(int x, int y, int w, string[] items, string sel)
         {
             var c = new ComboBox { Location=new Point(x,y), Size=new Size(w,24),
@@ -1019,7 +1043,6 @@ namespace VeeamMatrix
             Controls.Add(c); return c;
         }
 
-        // Checkbox with grey label
         private CheckBox Chk(string text, bool val, int x, int y)
         {
             var c = new CheckBox { Text=text, Checked=val, Location=new Point(x,y),
@@ -1027,11 +1050,9 @@ namespace VeeamMatrix
             Controls.Add(c); return c;
         }
 
-        // Single-row slider: [dim label 128px] [──trackbar──] [green value 54px]
-        // Returns the TrackBar; vLbl receives the value label reference.
         private TrackBar SlRow(string name, int x, int y, int cw, int min, int max, int val, out Label vLbl)
         {
-            const int LW=128, VW=54, G=6;
+            const int LW=132, VW=54, G=6;
             DLbl(name, x, y+6, LW);
             var trk = new TrackBar { Location=new Point(x+LW+G,y), Size=new Size(cw-LW-VW-G*2,26),
                 Minimum=min, Maximum=max, Value=Clamp(val,min,max),
@@ -1046,110 +1067,89 @@ namespace VeeamMatrix
 
         private void Build()
         {
-            const int c1=14, cW1=400;   // left column
-            const int c2=428, cW2=418;  // right column (content)
-            const int c3=862, cW3=282;  // right preview column
-            const int SL=42;            // slider step
-            const int CM=32;            // combo/button row step
-            int fw = c3 + cW3 + 14;     // total form width = 1158
+            // ── Layout constants ─────────────────────────────────────────────
+            const int c1   = 14,  cW1  = 400;   // left column
+            const int c2   = 428, cW2  = 418;   // right column
+            const int PREV_W = 480, PREV_H = 270; // 16:9 live preview
+            const int c3   = c2 + cW2 + 14;     // = 860  preview column x
+            const int cW3  = PREV_W + 2;         // = 482  preview column width (incl. 1px border each side)
+            const int fw   = c3 + cW3 + 14;      // = 1356 total form width
+            const int SL   = 42;                 // slider row step
+            const int CM   = 32;                 // combo row step
 
             int y = 14;
 
-            // ── Colour profile strip (full width) ────────────────────────────
-            DLbl("Farbprofil:", c1, y+5);
+            // ── Full-width profile strip + language toggle ───────────────────
+            DLbl(T("Color Profile:", "Farbprofil:"), c1, y+5, 94);
             var profileNames = new List<string>();
             foreach (var p in profiles) profileNames.Add(p.Name);
-            cboProfiles = Cbo(c1+88, y, 180, profileNames.ToArray(), "");
-            var btnLoad = new Button { Text="Laden", Location=new Point(c1+276,y), Size=new Size(72,24),
+            cboProfiles = Cbo(c1+98, y, 180, profileNames.ToArray(), "");
+            var btnLoad = new Button { Text=T("Load","Laden"), Location=new Point(c1+286,y), Size=new Size(72,24),
                 BackColor=Color.FromArgb(0,76,22), ForeColor=Color.White, FlatStyle=FlatStyle.Flat };
             btnLoad.FlatAppearance.BorderColor = Color.FromArgb(0,110,32);
-            var btnSave = new Button { Text="Speichern als…", Location=new Point(c1+356,y), Size=new Size(128,24),
+            var btnSave = new Button { Text=T("Save as…","Speichern als…"), Location=new Point(c1+366,y), Size=new Size(128,24),
                 BackColor=Color.FromArgb(34,34,0), ForeColor=Color.White, FlatStyle=FlatStyle.Flat };
             btnSave.FlatAppearance.BorderColor = Color.FromArgb(90,90,0);
             btnLoad.Click += delegate { LoadSelectedProfile(); };
             btnSave.Click += delegate { SaveCurrentAsProfile(); };
             Controls.Add(btnLoad); Controls.Add(btnSave);
+
+            // Language selector – right-aligned in profile strip
+            DLbl(T("Language:", "Sprache:"), fw-148, y+5, 72);
+            cboLanguage = Cbo(fw-72, y, 60, new string[]{"EN","DE"}, cur.Language);
+            // Wire language change BEFORE the generic wiring loop (so we can exclude it there)
+            cboLanguage.SelectedIndexChanged += delegate { cur.Language = cboLanguage.Text; RebuildUI(); };
+
             y += 34; HSep(y, 14, fw-28); y += 12;
 
-            // Two independent y cursors — left and right columns
-            int yL = y, yR = y;
+            int yL = y, yR = y;   // independent column y cursors
 
-            // ═══ LEFT COLUMN ═════════════════════════════════════════════════
-
-            // ── REGEN ─────────────────────────────────────────────────────────
-            Section("REGEN", c1, yL, cW1); yL += 26;
-            DLbl("Zeichen:", c1, yL+5); yL += 20;
-            btnRainColor = ColBtn("Zeichen",     cur.RainColor, c1,     yL);
-            btnHeadColor = ColBtn("Kopf (hell)", cur.HeadColor, c1+136, yL);
+            // ═══════════════════════════════════════════════════════════════════
+            // LEFT COLUMN — RAIN
+            // ═══════════════════════════════════════════════════════════════════
+            Section(T("RAIN", "REGEN"), c1, yL, cW1); yL += 26;
+            DLbl(T("Characters:", "Zeichen:"), c1, yL+5); yL += 20;
+            btnRainColor = ColBtn(T("Characters","Zeichen"),  cur.RainColor, c1,     yL);
+            btnHeadColor = ColBtn(T("Head (bright)","Kopf (hell)"), cur.HeadColor, c1+136, yL);
             btnRainColor.Click += delegate { Pick(ref cur.RainColor, btnRainColor); };
             btnHeadColor.Click += delegate { Pick(ref cur.HeadColor, btnHeadColor); };
             yL += 32;
 
-            trkFont  = SlRow("Schriftgroesse", c1,yL,cW1, 8,36, cur.FontSize, out lblFont);
+            trkFont = SlRow(T("Font Size","Schriftgröße"), c1,yL,cW1, 8,36, cur.FontSize, out lblFont);
             lblFont.Text = cur.FontSize+" px";
             trkFont.ValueChanged += delegate { cur.FontSize=trkFont.Value; lblFont.Text=cur.FontSize+" px"; };
             yL += SL;
 
-            trkSpeed = SlRow("Geschwindigkeit", c1,yL,cW1, 1,30, (int)(cur.SpeedFactor*10), out lblSpeed);
+            trkSpeed = SlRow(T("Speed","Geschwindigkeit"), c1,yL,cW1, 1,30, (int)(cur.SpeedFactor*10), out lblSpeed);
             lblSpeed.Text = cur.SpeedFactor.ToString("F1")+"x";
             trkSpeed.ValueChanged += delegate { cur.SpeedFactor=trkSpeed.Value/10f; lblSpeed.Text=cur.SpeedFactor.ToString("F1")+"x"; };
             yL += SL;
 
-            trkFade  = SlRow("Spurlaenge", c1,yL,cW1, 2,60, cur.FadeAlpha, out lblFade);
+            trkFade = SlRow(T("Trail Length","Spurlänge"), c1,yL,cW1, 2,60, cur.FadeAlpha, out lblFade);
             lblFade.Text = cur.FadeAlpha.ToString();
             trkFade.ValueChanged += delegate { cur.FadeAlpha=trkFade.Value; lblFade.Text=cur.FadeAlpha.ToString(); };
             yL += SL;
 
-            DLbl("Richtung:", c1, yL+5, 72);
-            cboOrient   = Cbo(c1+76,  yL, 138, new string[]{"TopDown","BottomUp","LeftRight","RightLeft"}, cur.Orientation);
-            DLbl("Wortmodus:", c1+222, yL+5, 68);
-            cboWordMode = Cbo(c1+294, yL, 102, new string[]{"Rain","Popup","Both"}, cur.WordMode);
+            DLbl(T("Direction:","Richtung:"), c1, yL+5, 76);
+            cboOrient   = Cbo(c1+80,  yL, 138, new string[]{"TopDown","BottomUp","LeftRight","RightLeft"}, cur.Orientation);
+            DLbl(T("Word Mode:","Wortmodus:"), c1+226, yL+5, 74);
+            cboWordMode = Cbo(c1+304, yL, 102, new string[]{"Rain","Popup","Both"}, cur.WordMode);
             yL += CM;
-
             yL += 10;
 
-            // ── POPUP-EFFEKTE ─────────────────────────────────────────────────
-            Section("POPUP-EFFEKTE", c1, yL, cW1); yL += 26;
-            DLbl("Farbe:", c1, yL+5, 46);
-            btnPopupColor = ColBtn("Popup-Farbe", cur.PopupColor, c1+50, yL);
-            btnPopupColor.Click += delegate { Pick(ref cur.PopupColor, btnPopupColor); };
-            yL += 32;
-
-            bool hasFade  = cur.PopupEffects.Contains("Fade");
-            bool hasFlash = cur.PopupEffects.Contains("Flash");
-            bool hasGlitch= cur.PopupEffects.Contains("Glitch");
-            bool hasScan  = cur.PopupEffects.Contains("Scan");
-            bool hasZoom  = cur.PopupEffects.Contains("Zoom");
-            chkFade   = Chk("Fade",   hasFade,   c1,     yL);
-            chkFlash  = Chk("Flash",  hasFlash,  c1+68,  yL);
-            chkGlitch = Chk("Glitch", hasGlitch, c1+144, yL);
-            chkScan   = Chk("Scan",   hasScan,   c1+222, yL);
-            chkZoom   = Chk("Zoom",   hasZoom,   c1+296, yL);
-            yL += 28;
-
-            trkPopupFont  = SlRow("Schriftgroesse", c1,yL,cW1, 10,72, cur.PopupFontSize, out lblPFont);
-            lblPFont.Text  = cur.PopupFontSize+" px";
-            trkPopupFont.ValueChanged  += delegate { cur.PopupFontSize=trkPopupFont.Value;  lblPFont.Text=cur.PopupFontSize+" px"; };
-            yL += SL;
-
-            trkPopupCount = SlRow("Gleichzeitig", c1,yL,cW1, 1,20, cur.PopupCount, out lblPCount);
-            lblPCount.Text = cur.PopupCount.ToString();
-            trkPopupCount.ValueChanged += delegate { cur.PopupCount=trkPopupCount.Value; lblPCount.Text=cur.PopupCount.ToString(); };
-            yL += SL;
-
-            // ═══ RIGHT COLUMN ════════════════════════════════════════════════
-
-            // ── WOERTER ───────────────────────────────────────────────────────
-            Section("WÖRTER", c2, yR, cW2); yR += 26;
-            DLbl("Farben:", c2, yR+5); yR += 20;
-            btnWordColor     = ColBtn("Woerter",     cur.WordColor,     c2,     yR, 130);
-            btnWordHeadColor = ColBtn("Kopf (hell)",  cur.WordHeadColor, c2+136, yR, 130);
+            // ═══════════════════════════════════════════════════════════════════
+            // RIGHT COLUMN — WORDS  (includes popup section below)
+            // ═══════════════════════════════════════════════════════════════════
+            Section(T("WORDS", "WÖRTER"), c2, yR, cW2); yR += 26;
+            DLbl(T("Colors:", "Farben:"), c2, yR+5); yR += 20;
+            btnWordColor     = ColBtn(T("Words","Wörter"),      cur.WordColor,     c2,     yR, 130);
+            btnWordHeadColor = ColBtn(T("Head (bright)","Kopf (hell)"), cur.WordHeadColor, c2+136, yR, 130);
             btnWordColor.Click     += delegate { Pick(ref cur.WordColor,     btnWordColor); };
             btnWordHeadColor.Click += delegate { Pick(ref cur.WordHeadColor, btnWordHeadColor); };
             yR += 32;
 
-            // Font picker row: [label] [combo] [preview textbox]
-            DLbl("Schriftart:", c2, yR+5, 80);
+            // Font picker row
+            DLbl(T("Font:", "Schriftart:"), c2, yR+5, 80);
             cboWordFontName = new ComboBox { Location=new Point(c2+84, yR), Size=new Size(200, 24),
                 DropDownStyle=ComboBoxStyle.DropDownList,
                 BackColor=Color.FromArgb(28,28,28), ForeColor=Color.FromArgb(0,210,60) };
@@ -1163,14 +1163,12 @@ namespace VeeamMatrix
             cboWordFontName.SelectedIndex = selIdx >= 0 ? selIdx : 0;
             Controls.Add(cboWordFontName);
 
-            // Editable preview-text field (right of combo)
             txtFontPreviewText = new TextBox { Location=new Point(c2+292, yR), Size=new Size(cW2-292-4, 24),
                 Text="VEEAM", BackColor=Color.FromArgb(28,28,28),
                 ForeColor=Color.FromArgb(0,210,60), BorderStyle=BorderStyle.FixedSingle };
             Controls.Add(txtFontPreviewText);
             yR += 30;
 
-            // Preview panel (full column width, taller)
             picFontPreview = new PictureBox { Location=new Point(c2, yR), Size=new Size(cW2-4, 44),
                 BackColor=Color.Black, BorderStyle=BorderStyle.FixedSingle };
             Controls.Add(picFontPreview);
@@ -1179,52 +1177,92 @@ namespace VeeamMatrix
             txtFontPreviewText.TextChanged       += delegate { UpdateFontPreview(); };
             yR += 50;
 
-            // Style + direction on one row
-            DLbl("Stil:", c2, yR+5, 36);
-            cboWordStyle  = Cbo(c2+40,  yR, 130, new string[]{"Scroll","Fade","Build"},
+            DLbl(T("Style:","Stil:"), c2, yR+5, 44);
+            cboWordStyle  = Cbo(c2+48, yR, 124, new string[]{"Scroll","Fade","Build"},
                 string.IsNullOrEmpty(cur.WordStyle)?"Scroll":cur.WordStyle);
-            DLbl("Richtung:", c2+178, yR+5, 64);
-            cboWordOrient = Cbo(c2+246, yR, 168, new string[]{"Same","TopDown","BottomUp","LeftRight","RightLeft"},
+            DLbl(T("Direction:","Richtung:"), c2+180, yR+5, 68);
+            cboWordOrient = Cbo(c2+252, yR, 162, new string[]{"Same","TopDown","BottomUp","LeftRight","RightLeft"},
                 string.IsNullOrEmpty(cur.WordOrientation)?"Same":cur.WordOrientation);
             yR += CM;
 
-            trkWordFont  = SlRow("Schriftgroesse", c2,yR,cW2, 8,36, cur.WordFontSize, out lblWFont);
-            lblWFont.Text  = cur.WordFontSize+" px";
-            trkWordFont.ValueChanged  += delegate { cur.WordFontSize=trkWordFont.Value;   lblWFont.Text=cur.WordFontSize+" px"; };
+            trkWordFont = SlRow(T("Font Size","Schriftgröße"), c2,yR,cW2, 8,36, cur.WordFontSize, out lblWFont);
+            lblWFont.Text = cur.WordFontSize+" px";
+            trkWordFont.ValueChanged += delegate { cur.WordFontSize=trkWordFont.Value; lblWFont.Text=cur.WordFontSize+" px"; };
             yR += SL;
 
-            trkWordSpeed = SlRow("Geschwindigkeit", c2,yR,cW2, 1,30, (int)(cur.WordSpeedFactor*10), out lblWordSpeed);
+            trkWordSpeed = SlRow(T("Speed","Geschwindigkeit"), c2,yR,cW2, 1,30, (int)(cur.WordSpeedFactor*10), out lblWordSpeed);
             lblWordSpeed.Text = cur.WordSpeedFactor.ToString("F1")+"x";
             trkWordSpeed.ValueChanged += delegate { cur.WordSpeedFactor=trkWordSpeed.Value/10f; lblWordSpeed.Text=cur.WordSpeedFactor.ToString("F1")+"x"; };
             yR += SL;
 
-            trkWordCount = SlRow("Gleichzeitig", c2,yR,cW2, 1,30, cur.WordCount, out lblWCount);
+            trkWordCount = SlRow(T("Simultaneous","Gleichzeitig"), c2,yR,cW2, 1,30, cur.WordCount, out lblWCount);
             lblWCount.Text = cur.WordCount.ToString();
             trkWordCount.ValueChanged += delegate { cur.WordCount=trkWordCount.Value; lblWCount.Text=cur.WordCount.ToString(); };
             yR += SL;
 
-            yR += 10;
+            // ── Popup sub-section (within WÖRTER) ────────────────────────────
+            yR += 6;
+            Controls.Add(new Panel { Location=new Point(c2, yR), Size=new Size(cW2, 1), BackColor=Color.FromArgb(0,60,20) });
+            yR += 6;
+            var subLbl = new Label { Text=T("  POPUP EFFECTS", "  POPUP-EFFEKTE"),
+                Location=new Point(c2, yR), Size=new Size(cW2, 16), AutoSize=false,
+                ForeColor=Color.FromArgb(0,170,50), Font=new Font("Segoe UI",8f,FontStyle.Bold) };
+            Controls.Add(subLbl);
+            yR += 20;
 
-            // ── ALLGEMEIN ─────────────────────────────────────────────────────
-            Section("ALLGEMEIN", c2, yR, cW2); yR += 26;
-            chkScanlines = Chk("CRT-Scanlines",  cur.ShowScanlines, c2,     yR);
-            chkWatermark = Chk("Wasserzeichen",   cur.ShowWatermark, c2+124, yR);
-            chkVeeam100  = Chk("Veeam 100 Namen", cur.ShowVeeam100,  c2+252, yR);
+            DLbl(T("Color:","Farbe:"), c2, yR+5, 50);
+            btnPopupColor = ColBtn(T("Popup Color","Popup-Farbe"), cur.PopupColor, c2+54, yR, 148);
+            btnPopupColor.Click += delegate { Pick(ref cur.PopupColor, btnPopupColor); };
+            yR += 32;
+
+            bool hasFade  = cur.PopupEffects.Contains("Fade");
+            bool hasFlash = cur.PopupEffects.Contains("Flash");
+            bool hasGlitch= cur.PopupEffects.Contains("Glitch");
+            bool hasScan  = cur.PopupEffects.Contains("Scan");
+            bool hasZoom  = cur.PopupEffects.Contains("Zoom");
+            chkFade   = Chk("Fade",   hasFade,   c2,     yR);
+            chkFlash  = Chk("Flash",  hasFlash,  c2+68,  yR);
+            chkGlitch = Chk("Glitch", hasGlitch, c2+144, yR);
+            chkScan   = Chk("Scan",   hasScan,   c2+222, yR);
+            chkZoom   = Chk("Zoom",   hasZoom,   c2+296, yR);
             yR += 28;
 
-            DLbl("Wasserzeichen:", c2, yR+5, 92);
-            txtWatermark = new TextBox { Location=new Point(c2+96, yR), Size=new Size(174, 24),
+            trkPopupFont = SlRow(T("Font Size","Schriftgröße"), c2,yR,cW2, 10,72, cur.PopupFontSize, out lblPFont);
+            lblPFont.Text = cur.PopupFontSize+" px";
+            trkPopupFont.ValueChanged += delegate { cur.PopupFontSize=trkPopupFont.Value; lblPFont.Text=cur.PopupFontSize+" px"; };
+            yR += SL;
+
+            trkPopupCount = SlRow(T("Simultaneous","Gleichzeitig"), c2,yR,cW2, 1,20, cur.PopupCount, out lblPCount);
+            lblPCount.Text = cur.PopupCount.ToString();
+            trkPopupCount.ValueChanged += delegate { cur.PopupCount=trkPopupCount.Value; lblPCount.Text=cur.PopupCount.ToString(); };
+            yR += SL;
+
+            yR += 10;
+
+            // ── GENERAL ───────────────────────────────────────────────────────
+            Section(T("GENERAL","ALLGEMEIN"), c2, yR, cW2); yR += 26;
+            chkScanlines = Chk("CRT Scanlines",   cur.ShowScanlines, c2,     yR);
+            chkWatermark = Chk(T("Watermark","Wasserzeichen"), cur.ShowWatermark, c2+126, yR);
+            chkVeeam100  = Chk(T("Veeam 100 Names","Veeam 100 Namen"), cur.ShowVeeam100, c2+256, yR);
+            yR += 28;
+
+            // Watermark text – own row
+            DLbl(T("Watermark:", "Wasserzeichen:"), c2, yR+5, 96);
+            txtWatermark = new TextBox { Location=new Point(c2+100, yR), Size=new Size(cW2-104, 24),
                 Text=cur.WatermarkText, BackColor=Color.FromArgb(28,28,28),
                 ForeColor=Color.FromArgb(0,210,60), BorderStyle=BorderStyle.FixedSingle };
             Controls.Add(txtWatermark);
-            DLbl("Untertitel:", c2+278, yR+5, 62);
-            txtWatermarkSub = new TextBox { Location=new Point(c2+344, yR), Size=new Size(cW2-344-4, 24),
+            yR += 30;
+
+            // Subtitle text – own row (wide!)
+            DLbl(T("Subtitle:", "Untertitel:"), c2, yR+5, 62);
+            txtWatermarkSub = new TextBox { Location=new Point(c2+66, yR), Size=new Size(cW2-70, 24),
                 Text=cur.WatermarkSubText, BackColor=Color.FromArgb(28,28,28),
                 ForeColor=Color.FromArgb(0,210,60), BorderStyle=BorderStyle.FixedSingle };
             Controls.Add(txtWatermarkSub);
             yR += 30;
 
-            DLbl("Eigene Begriffe (kommagetrennt):", c2, yR+5);
+            DLbl(T("Custom terms (comma-separated):","Eigene Begriffe (kommagetrennt):"), c2, yR+5);
             yR += 22;
             txtExtra = new TextBox { Location=new Point(c2, yR), Size=new Size(cW2-4, 24),
                 Text=cur.ExtraWords, BackColor=Color.FromArgb(28,28,28),
@@ -1232,17 +1270,17 @@ namespace VeeamMatrix
             Controls.Add(txtExtra);
             yR += 30;
 
-            // ── PREVIEW COLUMN ────────────────────────────────────────────────
-            int colH = Math.Max(yL, yR) - y;   // y is still yColStart
-            // thin vertical divider
-            Controls.Add(new Panel { Location=new Point(858,y), Size=new Size(1,colH+14),
+            // ── PREVIEW COLUMN (16:9 fixed) ───────────────────────────────────
+            int colH = Math.Max(yL, yR) - y;
+            // Thin vertical divider between content and preview
+            Controls.Add(new Panel { Location=new Point(858, y), Size=new Size(1, colH+14),
                 BackColor=Color.FromArgb(0,52,16) });
-            Section("LIVE-VORSCHAU", c3, y, cW3);
+            Section(T("LIVE PREVIEW","LIVE-VORSCHAU"), c3, y, cW3);
             picPreview = new PictureBox {
-                Location=new Point(c3, y+26),
-                Size=new Size(cW3-4, colH-28),
-                BackColor=Color.FromArgb(4,4,4),
-                BorderStyle=BorderStyle.FixedSingle
+                Location   = new Point(c3, y + 26),
+                Size       = new Size(PREV_W + 2, PREV_H + 2),   // +2 for FixedSingle border
+                BackColor  = Color.FromArgb(4, 4, 4),
+                BorderStyle = BorderStyle.FixedSingle
             };
             Controls.Add(picPreview);
             picPreview.Paint += delegate(object ps, PaintEventArgs pe)
@@ -1250,20 +1288,18 @@ namespace VeeamMatrix
                 if (_prevEngine != null) _prevEngine.Render(pe.Graphics);
             };
 
-            // Wire all controls to mark preview dirty
+            // Wire all controls to mark preview dirty (exclude cboLanguage and txtFontPreviewText)
             foreach (Control ctrl in Controls)
             {
-                if (ctrl is TrackBar) ((TrackBar)ctrl).ValueChanged      += delegate { MarkDirty(); };
-                if (ctrl is CheckBox) ((CheckBox)ctrl).CheckedChanged    += delegate { MarkDirty(); };
-                if (ctrl is ComboBox && ctrl != cboProfiles)
+                if (ctrl is TrackBar)
+                    ((TrackBar)ctrl).ValueChanged += delegate { MarkDirty(); };
+                if (ctrl is CheckBox)
+                    ((CheckBox)ctrl).CheckedChanged += delegate { MarkDirty(); };
+                if (ctrl is ComboBox && ctrl != cboProfiles && ctrl != cboLanguage)
                     ((ComboBox)ctrl).SelectedIndexChanged += delegate { MarkDirty(); };
+                if (ctrl is TextBox && ctrl != txtFontPreviewText)
+                    ((TextBox)ctrl).TextChanged += delegate { MarkDirty(); };
             }
-
-            // Clean up preview engine + timer when dialog closes
-            FormClosing += delegate {
-                if (_prevTimer  != null) { _prevTimer.Stop(); _prevTimer.Dispose(); _prevTimer = null; }
-                if (_prevEngine != null) { _prevEngine.Dispose(); _prevEngine = null; }
-            };
 
             // Build initial engine and start animation
             RebuildPreview();
@@ -1275,7 +1311,7 @@ namespace VeeamMatrix
             int yBot = Math.Max(yL, yR) + 14;
             HSep(yBot, 14, fw-28); yBot += 12;
 
-            int bRight = c2 + cW2;   // buttons right-aligned to content columns
+            int bRight = c2 + cW2;
             var btnOK = new Button { Text="OK",
                 Location=new Point(bRight-232, yBot), Size=new Size(108,32),
                 DialogResult=DialogResult.OK,
@@ -1283,16 +1319,17 @@ namespace VeeamMatrix
             btnOK.FlatAppearance.BorderColor = Color.FromArgb(0,200,55);
             btnOK.Click += delegate
             {
-                cur.Orientation     = cboOrient.Text;
-                cur.WordOrientation = cboWordOrient.Text;
-                cur.WordMode        = cboWordMode.Text;
-                cur.WordStyle       = cboWordStyle.Text;
-                cur.ShowScanlines   = chkScanlines.Checked;
-                cur.ShowWatermark   = chkWatermark.Checked;
-                cur.ShowVeeam100    = chkVeeam100.Checked;
-                cur.WatermarkText   = txtWatermark.Text.Trim();
-                cur.WatermarkSubText= txtWatermarkSub.Text.Trim();
-                cur.ExtraWords      = txtExtra.Text.Trim();
+                cur.Orientation      = cboOrient.Text;
+                cur.WordOrientation  = cboWordOrient.Text;
+                cur.WordMode         = cboWordMode.Text;
+                cur.WordStyle        = cboWordStyle.Text;
+                cur.ShowScanlines    = chkScanlines.Checked;
+                cur.ShowWatermark    = chkWatermark.Checked;
+                cur.ShowVeeam100     = chkVeeam100.Checked;
+                cur.WatermarkText    = txtWatermark.Text.Trim();
+                cur.WatermarkSubText = txtWatermarkSub.Text.Trim();
+                cur.ExtraWords       = txtExtra.Text.Trim();
+                cur.Language         = cboLanguage != null ? cboLanguage.Text : cur.Language;
                 if (cboWordFontName.SelectedItem != null) cur.WordFontName = cboWordFontName.SelectedItem.ToString();
                 var effects = new List<string>();
                 if (chkFade.Checked)   effects.Add("Fade");
@@ -1303,14 +1340,16 @@ namespace VeeamMatrix
                 cur.PopupEffects = effects.Count>0 ? string.Join(",", effects.ToArray()) : "Fade";
                 Result=cur; Result.Save();
             };
-            var btnCancel = new Button { Text="Abbrechen",
+            var btnCancel = new Button { Text=T("Cancel","Abbrechen"),
                 Location=new Point(bRight-118, yBot), Size=new Size(118,32),
                 DialogResult=DialogResult.Cancel,
                 BackColor=Color.FromArgb(50,15,15), ForeColor=Color.White, FlatStyle=FlatStyle.Flat };
             btnCancel.FlatAppearance.BorderColor = Color.FromArgb(130,36,36);
             Controls.Add(btnOK); Controls.Add(btnCancel);
             AcceptButton=btnOK; CancelButton=btnCancel;
+
             ClientSize = new Size(fw, yBot+48);
+            Text = T("VeeaMatrix  –  Settings", "VeeaMatrix  –  Einstellungen");
         }
 
         private void UpdateFontPreview()
@@ -1327,12 +1366,10 @@ namespace VeeamMatrix
                 g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
                 try
                 {
-                    // fit font to available height
                     float fs = ph * 0.56f;
                     using (Font f = new Font(fname, fs, FontStyle.Bold, GraphicsUnit.Pixel))
                     {
                         SizeF sz = g.MeasureString(sample, f);
-                        // scale down if wider than panel
                         if (sz.Width > pw-8)
                         {
                             fs = fs * (pw-8) / sz.Width;
@@ -1362,22 +1399,24 @@ namespace VeeamMatrix
         private void RebuildPreview()
         {
             _previewDirty = false;
-            // Snapshot current live control values into a temporary Settings object
             var s = Clone(cur);
-            if (cboOrient      != null) s.Orientation    = cboOrient.Text;
-            if (cboWordOrient  != null) s.WordOrientation = string.IsNullOrEmpty(cboWordOrient.Text) ? "Same" : cboWordOrient.Text;
-            if (cboWordMode    != null) s.WordMode        = cboWordMode.Text;
-            if (cboWordStyle   != null) s.WordStyle       = cboWordStyle.Text;
-            if (cboWordFontName!= null && cboWordFontName.SelectedItem != null)
+            if (cboOrient       != null) s.Orientation     = cboOrient.Text;
+            if (cboWordOrient   != null) s.WordOrientation  = string.IsNullOrEmpty(cboWordOrient.Text) ? "Same" : cboWordOrient.Text;
+            if (cboWordMode     != null) s.WordMode         = cboWordMode.Text;
+            if (cboWordStyle    != null) s.WordStyle        = cboWordStyle.Text;
+            if (cboWordFontName != null && cboWordFontName.SelectedItem != null)
                 s.WordFontName = cboWordFontName.SelectedItem.ToString();
-            if (trkFont        != null) s.FontSize        = trkFont.Value;
-            if (trkSpeed       != null) s.SpeedFactor     = trkSpeed.Value / 10f;
-            if (trkFade        != null) s.FadeAlpha       = trkFade.Value;
-            if (trkWordFont    != null) s.WordFontSize    = trkWordFont.Value;
-            if (trkWordSpeed   != null) s.WordSpeedFactor = trkWordSpeed.Value / 10f;
-            if (trkWordCount   != null) s.WordCount       = trkWordCount.Value;
-            if (trkPopupFont   != null) s.PopupFontSize   = trkPopupFont.Value;
-            if (trkPopupCount  != null) s.PopupCount      = trkPopupCount.Value;
+            if (trkFont         != null) s.FontSize         = trkFont.Value;
+            if (trkSpeed        != null) s.SpeedFactor      = trkSpeed.Value / 10f;
+            if (trkFade         != null) s.FadeAlpha        = trkFade.Value;
+            if (trkWordFont     != null) s.WordFontSize     = trkWordFont.Value;
+            if (trkWordSpeed    != null) s.WordSpeedFactor  = trkWordSpeed.Value / 10f;
+            if (trkWordCount    != null) s.WordCount        = trkWordCount.Value;
+            if (trkPopupFont    != null) s.PopupFontSize    = trkPopupFont.Value;
+            if (trkPopupCount   != null) s.PopupCount       = trkPopupCount.Value;
+            if (txtWatermark    != null) s.WatermarkText    = txtWatermark.Text.Trim();
+            if (txtWatermarkSub != null) s.WatermarkSubText = txtWatermarkSub.Text.Trim();
+            if (txtExtra        != null) s.ExtraWords       = txtExtra.Text.Trim();
             var fx = new List<string>();
             if (chkFade  !=null&&chkFade.Checked)   fx.Add("Fade");
             if (chkFlash !=null&&chkFlash.Checked)  fx.Add("Flash");
@@ -1419,7 +1458,10 @@ namespace VeeamMatrix
 
         private void SaveCurrentAsProfile()
         {
-            string name = Microsoft.VisualBasic.Interaction.InputBox("Profilname:", "Profil speichern", "Mein Profil");
+            string name = Microsoft.VisualBasic.Interaction.InputBox(
+                T("Profile name:", "Profilname:"),
+                T("Save Profile", "Profil speichern"),
+                T("My Profile", "Mein Profil"));
             if(string.IsNullOrWhiteSpace(name)) return;
             var p=new ColorProfile{Name=name.Trim(),RainColor=cur.RainColor,HeadColor=cur.HeadColor,
                                     WordColor=cur.WordColor,WordHeadColor=cur.WordHeadColor,PopupColor=cur.PopupColor};
@@ -1470,8 +1512,6 @@ namespace VeeamMatrix
             }
             else
             {
-                // Primary form runs the message loop.
-                // Secondary forms are created in the Load event so the loop is already running.
                 Screen primary = Screen.PrimaryScreen;
                 var mainForm   = new ScreenSaverForm(s, primary.Bounds, true);
 
@@ -1481,7 +1521,6 @@ namespace VeeamMatrix
                     {
                         if (scr == primary) continue;
                         var sec = new ScreenSaverForm(s, scr.Bounds, false);
-                        // Close secondary when primary closes
                         mainForm.FormClosed += delegate { try { sec.Close(); } catch { } };
                         sec.Show();
                     }
