@@ -1,4 +1,4 @@
-// VeeaMatrix.cs  –  Windows Screensaver v1.14
+// VeeaMatrix.cs  –  Windows Screensaver v1.15
 // Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
@@ -1053,6 +1053,10 @@ namespace VeeaMatrix
         private PictureBox   picPreview;
         private bool         _previewDirty = true;
         private ToolTip      _tip;
+        // Controls grouped by word-mode layer — toggled by SyncWordModeVisibility()
+        private List<Control> _streamControls = new List<Control>();
+        private List<Control> _popupControls  = new List<Control>();
+        private Label         lblPopupHeader;
 
         public Settings Result { get; private set; }
 
@@ -1186,6 +1190,8 @@ namespace VeeaMatrix
 
         private void Build()
         {
+            _streamControls = new List<Control>();
+            _popupControls  = new List<Control>();
             // ── Layout constants ─────────────────────────────────────────────
             const int c1   = 14,  cW1  = 400;   // left column
             const int c2   = 428, cW2  = 418;   // right column
@@ -1254,7 +1260,7 @@ namespace VeeaMatrix
             DLbl(T("Word Mode:","Wortmodus:"), c1+226, yL+5, 74);
             cboWordMode = Cbo(c1+304, yL, 102, new string[]{"Rain","Popup","Both"}, cur.WordMode);
             cboOrient.SelectedIndexChanged   += delegate { cur.Orientation = cboOrient.Text; };
-            cboWordMode.SelectedIndexChanged += delegate { cur.WordMode    = cboWordMode.Text; };
+            cboWordMode.SelectedIndexChanged += delegate { cur.WordMode = cboWordMode.Text; SyncWordModeVisibility(); };
             yL += CM;
             yL += 10;
 
@@ -1262,11 +1268,12 @@ namespace VeeaMatrix
             // RIGHT COLUMN — WORDS  (includes popup section below)
             // ═══════════════════════════════════════════════════════════════════
             Section(T("WORD STREAMS  (Rain / Both)", "WORT-STREAMS  (Regen / Beides)"), c2, yR, cW2); yR += 26;
-            DLbl(T("Colors:", "Farben:"), c2, yR+5); yR += 20;
+            _streamControls.Add(DLbl(T("Colors:", "Farben:"), c2, yR+5)); yR += 20;
             btnWordColor     = ColBtn(T("Words","Wörter"),      cur.WordColor,     c2,     yR, 130);
             btnWordHeadColor = ColBtn(T("Head (bright)","Kopf (hell)"), cur.WordHeadColor, c2+136, yR, 130);
             btnWordColor.Click     += delegate { Pick(ref cur.WordColor,     btnWordColor); };
             btnWordHeadColor.Click += delegate { Pick(ref cur.WordHeadColor, btnWordHeadColor); };
+            _streamControls.Add(btnWordColor); _streamControls.Add(btnWordHeadColor);
             yR += 32;
 
             // Font picker row
@@ -1298,12 +1305,14 @@ namespace VeeaMatrix
             txtFontPreviewText.TextChanged       += delegate { UpdateFontPreview(); };
             yR += 50;
 
-            DLbl(T("Style:","Stil:"), c2, yR+5, 44);
+            _streamControls.Add(DLbl(T("Style:","Stil:"), c2, yR+5, 44));
             cboWordStyle  = Cbo(c2+48, yR, 158, new string[]{"Scroll","Fade","Build","Scramble","Blink"},
                 string.IsNullOrEmpty(cur.WordStyle)?"Scroll":cur.WordStyle);
-            DLbl(T("Direction:","Richtung:"), c2+214, yR+5, 68);
+            _streamControls.Add(cboWordStyle);
+            _streamControls.Add(DLbl(T("Direction:","Richtung:"), c2+214, yR+5, 68));
             cboWordOrient = Cbo(c2+286, yR, 128, new string[]{"Same","TopDown","BottomUp","LeftRight","RightLeft"},
                 string.IsNullOrEmpty(cur.WordOrientation)?"Same":cur.WordOrientation);
+            _streamControls.Add(cboWordOrient);
             cboWordStyle.SelectedIndexChanged  += delegate { cur.WordStyle       = cboWordStyle.Text; };
             cboWordOrient.SelectedIndexChanged += delegate { cur.WordOrientation = cboWordOrient.Text; };
             yR += CM;
@@ -1311,31 +1320,36 @@ namespace VeeaMatrix
             trkWordFont = SlRow(T("Font Size","Schriftgröße"), c2,yR,cW2, 8,36, cur.WordFontSize, out lblWFont);
             lblWFont.Text = cur.WordFontSize+" px";
             trkWordFont.ValueChanged += delegate { cur.WordFontSize=trkWordFont.Value; lblWFont.Text=cur.WordFontSize+" px"; };
+            _streamControls.Add(trkWordFont); _streamControls.Add(lblWFont);
             yR += SL;
 
             trkWordSpeed = SlRow(T("Speed","Geschwindigkeit"), c2,yR,cW2, 1,30, (int)(cur.WordSpeedFactor*10), out lblWordSpeed);
             lblWordSpeed.Text = cur.WordSpeedFactor.ToString("F1")+"x";
             trkWordSpeed.ValueChanged += delegate { cur.WordSpeedFactor=trkWordSpeed.Value/10f; lblWordSpeed.Text=cur.WordSpeedFactor.ToString("F1")+"x"; };
+            _streamControls.Add(trkWordSpeed); _streamControls.Add(lblWordSpeed);
             yR += SL;
 
             trkWordCount = SlRow(T("Simultaneous","Gleichzeitig"), c2,yR,cW2, 1,30, cur.WordCount, out lblWCount);
             lblWCount.Text = cur.WordCount.ToString();
             trkWordCount.ValueChanged += delegate { cur.WordCount=trkWordCount.Value; lblWCount.Text=cur.WordCount.ToString(); };
+            _streamControls.Add(trkWordCount); _streamControls.Add(lblWCount);
             yR += SL;
 
             // ── Popup sub-section (within WÖRTER) ────────────────────────────
             yR += 6;
             Controls.Add(new Panel { Location=new Point(c2, yR), Size=new Size(cW2, 1), BackColor=Color.FromArgb(0,60,20) });
             yR += 6;
-            var subLbl = new Label { Text=T("  POPUP WORDS  (Popup / Both)", "  POPUP-WÖRTER  (Popup / Beides)"),
+            lblPopupHeader = new Label { Text=T("  POPUP WORDS  (Popup / Both)", "  POPUP-WÖRTER  (Popup / Beides)"),
                 Location=new Point(c2, yR), Size=new Size(cW2, 16), AutoSize=false,
                 ForeColor=Color.FromArgb(0,170,50), Font=new Font("Segoe UI",8f,FontStyle.Bold) };
-            Controls.Add(subLbl);
+            Controls.Add(lblPopupHeader);
+            _popupControls.Add(lblPopupHeader);
             yR += 20;
 
-            DLbl(T("Color:","Farbe:"), c2, yR+5, 50);
+            _popupControls.Add(DLbl(T("Color:","Farbe:"), c2, yR+5, 50));
             btnPopupColor = ColBtn(T("Popup Color","Popup-Farbe"), cur.PopupColor, c2+54, yR, 148);
             btnPopupColor.Click += delegate { Pick(ref cur.PopupColor, btnPopupColor); };
+            _popupControls.Add(btnPopupColor);
             yR += 32;
 
             bool hasFade  = cur.PopupEffects.Contains("Fade");
@@ -1354,21 +1368,26 @@ namespace VeeaMatrix
             chkGlitch.CheckedChanged += delegate { SyncPopupEffects(); };
             chkScan.CheckedChanged   += delegate { SyncPopupEffects(); };
             chkZoom.CheckedChanged   += delegate { SyncPopupEffects(); };
+            _popupControls.Add(chkFade); _popupControls.Add(chkFlash); _popupControls.Add(chkGlitch);
+            _popupControls.Add(chkScan); _popupControls.Add(chkZoom);
             yR += 28;
 
             trkPopupFont = SlRow(T("Font Size","Schriftgröße"), c2,yR,cW2, 10,72, cur.PopupFontSize, out lblPFont);
             lblPFont.Text = cur.PopupFontSize+" px";
             trkPopupFont.ValueChanged += delegate { cur.PopupFontSize=trkPopupFont.Value; lblPFont.Text=cur.PopupFontSize+" px"; };
+            _popupControls.Add(trkPopupFont); _popupControls.Add(lblPFont);
             yR += SL;
 
             trkPopupCount = SlRow(T("Simultaneous","Gleichzeitig"), c2,yR,cW2, 1,20, cur.PopupCount, out lblPCount);
             lblPCount.Text = cur.PopupCount.ToString();
             trkPopupCount.ValueChanged += delegate { cur.PopupCount=trkPopupCount.Value; lblPCount.Text=cur.PopupCount.ToString(); };
+            _popupControls.Add(trkPopupCount); _popupControls.Add(lblPCount);
             yR += SL;
 
             trkPopupSpeed = SlRow(T("Popup Speed","Popup-Geschwindigkeit"), c2,yR,cW2, 1,30, (int)(cur.PopupSpeedFactor*10), out lblPopupSpeed);
             lblPopupSpeed.Text = cur.PopupSpeedFactor.ToString("F1")+"x";
             trkPopupSpeed.ValueChanged += delegate { cur.PopupSpeedFactor=trkPopupSpeed.Value/10f; lblPopupSpeed.Text=cur.PopupSpeedFactor.ToString("F1")+"x"; };
+            _popupControls.Add(trkPopupSpeed); _popupControls.Add(lblPopupSpeed);
             yR += SL;
 
             yR += 10;
@@ -1487,6 +1506,9 @@ namespace VeeaMatrix
             Controls.Add(btnOK); Controls.Add(btnCancel);
             AcceptButton=btnOK; CancelButton=btnCancel;
 
+            // ── Enable/disable sections based on initial WordMode ────────────
+            SyncWordModeVisibility();
+
             // ── Hover tooltips ────────────────────────────────────────────────
             _tip = new ToolTip { AutoPopDelay=9000, InitialDelay=500, ReshowDelay=300, ShowAlways=true };
             Action<Control,string,string> tip = (ctrl,en,de) => { if (ctrl!=null) _tip.SetToolTip(ctrl, T(en,de)); };
@@ -1585,6 +1607,16 @@ namespace VeeaMatrix
             if (chkScan  !=null&&chkScan.Checked)   fx.Add("Scan");
             if (chkZoom  !=null&&chkZoom.Checked)   fx.Add("Zoom");
             cur.PopupEffects = fx.Count > 0 ? string.Join(",", fx.ToArray()) : "Fade";
+        }
+
+        // Enable / disable controls depending on which layers are active
+        private void SyncWordModeVisibility()
+        {
+            string mode = cboWordMode != null ? cboWordMode.Text : cur.WordMode;
+            bool hasStream = (mode == "Rain" || mode == "Both");
+            bool hasPopup  = (mode == "Popup" || mode == "Both");
+            foreach (var c in _streamControls) c.Enabled = hasStream;
+            foreach (var c in _popupControls)  c.Enabled = hasPopup;
         }
 
         private void RebuildPreview()
