@@ -6,7 +6,7 @@
 $src    = Join-Path $PSScriptRoot "VeeamMatrix.cs"
 $out    = Join-Path $PSScriptRoot "VeeamMatrix.scr"
 $csc    = "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
-$refs   = "System.Windows.Forms.dll,System.Drawing.dll,System.dll"
+$refs   = "System.Windows.Forms.dll,System.Drawing.dll,System.dll,Microsoft.VisualBasic.dll"
 
 if (-not (Test-Path $csc)) {
     Write-Host "FEHLER: csc.exe nicht gefunden unter $csc" -ForegroundColor Red
