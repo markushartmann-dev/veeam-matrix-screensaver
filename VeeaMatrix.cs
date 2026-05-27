@@ -1,4 +1,4 @@
-// VeeaMatrix.cs  –  Windows Screensaver v1.13
+// VeeaMatrix.cs  –  Windows Screensaver v1.14
 // Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
@@ -432,6 +432,7 @@ namespace VeeaMatrix
         private Graphics    bg;
         private Font        rainFont, wordFont, popupFont;
         private StringFormat typFmt;
+        private float       wordLineH;   // actual line height of wordFont in pixels
         private SolidBrush  fadeBrush, rainBrush, brightBrush, tmpBrush;
         private Bitmap      scanBmp;
 
@@ -497,6 +498,7 @@ namespace VeeaMatrix
             wordFont    = new Font(s.WordFontName, Math.Max(6, s.WordFontSize - 1), FontStyle.Bold, GraphicsUnit.Pixel);
             popupFont   = new Font(s.WordFontName, Math.Max(6, s.PopupFontSize- 1), FontStyle.Bold, GraphicsUnit.Pixel);
             typFmt      = StringFormat.GenericTypographic;
+            wordLineH   = wordFont.GetHeight(bg);
             fadeBrush   = new SolidBrush(Color.FromArgb(Math.Max(2, Math.Min(60, s.FadeAlpha)), 0, 0, 0));
             rainBrush   = new SolidBrush(s.RainColor);
             brightBrush = new SolidBrush(s.HeadColor);
@@ -589,9 +591,9 @@ namespace VeeaMatrix
                 return wd;
             }
 
-            // Scroll mode — use measured widths for horizontal layout
+            // Scroll mode — use measured widths for horizontal, line height for vertical
             float[] charOff = WordIsVertical ? null : ComputeCharOffsets(chars);
-            float   len     = WordIsVertical ? chars.Length * fs : charOff[chars.Length];
+            float   len     = WordIsVertical ? chars.Length * wordLineH : charOff[chars.Length];
             float   v       = (float)((0.6 + rng.NextDouble() * 1.6) * s.WordSpeedFactor);
             float   x, y;
             if (WordIsVertical)
@@ -719,7 +721,7 @@ namespace VeeaMatrix
                     {
                         float px = WordIsVertical ? w.X
                                                   : w.X + (w.CharOffsets != null ? w.CharOffsets[j] : j*(float)fs);
-                        float py = WordIsVertical ? w.Y + j*(float)fs : w.Y;
+                        float py = WordIsVertical ? w.Y + j * wordLineH : w.Y;
                         if (px<-fs||px>W+fs||py<-fs||py>H+fs) continue;
                         float fade = n>1 ? (float)Math.Abs(j - headIdx)/(n-1) : 0f;
                         int   a    = Clamp((int)(255*(1f-fade*0.55f)));
@@ -733,7 +735,7 @@ namespace VeeaMatrix
                     if (WordIsVertical) w.Y+=w.V; else w.X+=w.V;
                     float totalLen = (w.CharOffsets != null) ? w.CharOffsets[n] : n*(float)fs;
                     bool gone = WordIsVertical
-                        ? (WordIsForward ? w.Y > H+5 : w.Y + n*(float)fs < -5)
+                        ? (WordIsForward ? w.Y > H+5 : w.Y + n*wordLineH < -5)
                         : (WordIsForward ? w.X > W+5 : w.X + totalLen < -5);
                     if (gone) { wdrops.RemoveAt(i); wdrops.Add(SpawnDrop(false)); }
                 }
@@ -772,21 +774,23 @@ namespace VeeaMatrix
             int   alpha2 = Clamp((int)(prog*255));
             if (alpha2 < 3) return w.Phase < 2;
 
-            // ── Scramble: all chars shown as noise, resolve left-to-right ─────
+            // ── Scramble: all chars as noise, resolve in direction order ──────
             if (s.WordStyle == "Scramble")
             {
-                int total        = w.Chars.Length;
-                int resolvedCount = w.Phase == 0
+                int  total         = w.Chars.Length;
+                bool rev           = !WordIsForward;
+                int  resolvedCount = w.Phase == 0
                     ? Math.Min(total, w.Frame * total / Math.Max(1, w.AppearF) + 1)
                     : total;
                 for (int j = 0; j < total; j++)
                 {
-                    char drawCh = (j >= resolvedCount)
-                        ? RAIN_CHARS[rng.Next(RAIN_CHARS.Length)]
-                        : w.Chars[j];
+                    // Forward: j < resolvedCount → resolved; reverse: j >= total-resolvedCount → resolved
+                    bool resolved = rev ? (j >= total - resolvedCount) : (j < resolvedCount);
+                    bool isCursor = rev ? (j == total - resolvedCount) : (j == resolvedCount - 1);
+                    char drawCh   = resolved ? w.Chars[j] : RAIN_CHARS[rng.Next(RAIN_CHARS.Length)];
                     if (drawCh == ' ') continue;
                     Color col;
-                    if (j == resolvedCount-1 && w.Phase == 0)
+                    if (isCursor && w.Phase == 0)
                         col = Color.FromArgb(alpha2, s.WordHeadColor.R, s.WordHeadColor.G, s.WordHeadColor.B);
                     else if (w.Glow)
                         col = Color.FromArgb(alpha2, Clamp(s.WordColor.R+80), Clamp(s.WordColor.G+20), Clamp(s.WordColor.B+40));
@@ -799,21 +803,27 @@ namespace VeeaMatrix
                 return true;
             }
 
-            // ── Build: chars decode one-by-one left to right ──────────────────
+            // ── Build: chars decode one-by-one in direction order ─────────────
             if (s.WordStyle == "Build")
             {
-                int total   = w.Chars.Length;
-                int snapped = w.Phase==0
+                int  total   = w.Chars.Length;
+                bool rev     = !WordIsForward;
+                int  snapped = w.Phase==0
                     ? Math.Min(total, w.Frame * total / Math.Max(1, w.AppearF) + 1)
                     : total;
-                for (int j = 0; j < snapped; j++)
+                // Forward: reveal 0..snapped-1, cursor at snapped-1
+                // Reverse: reveal (total-snapped)..total-1, cursor at total-snapped
+                int startJ  = rev ? total - snapped : 0;
+                int endJ    = rev ? total            : snapped;
+                int cursorJ = rev ? startJ           : endJ - 1;
+                for (int j = startJ; j < endJ; j++)
                 {
-                    char drawCh = (j == snapped-1 && w.Phase==0)
+                    char drawCh = (j == cursorJ && w.Phase==0)
                         ? ((w.Frame % 4 < 2) ? RAIN_CHARS[rng.Next(RAIN_CHARS.Length)] : w.Chars[j])
                         : w.Chars[j];
                     if (drawCh == ' ') continue;
                     Color col;
-                    if (j == snapped-1 && w.Phase==0)
+                    if (j == cursorJ && w.Phase==0)
                         col = Color.FromArgb(alpha2, s.WordHeadColor.R, s.WordHeadColor.G, s.WordHeadColor.B);
                     else if (w.Glow)
                         col = Color.FromArgb(alpha2, Clamp(s.WordColor.R+80), Clamp(s.WordColor.G+20), Clamp(s.WordColor.B+40));
@@ -1251,7 +1261,7 @@ namespace VeeaMatrix
             // ═══════════════════════════════════════════════════════════════════
             // RIGHT COLUMN — WORDS  (includes popup section below)
             // ═══════════════════════════════════════════════════════════════════
-            Section(T("WORDS", "WÖRTER"), c2, yR, cW2); yR += 26;
+            Section(T("WORD STREAMS  (Rain / Both)", "WORT-STREAMS  (Regen / Beides)"), c2, yR, cW2); yR += 26;
             DLbl(T("Colors:", "Farben:"), c2, yR+5); yR += 20;
             btnWordColor     = ColBtn(T("Words","Wörter"),      cur.WordColor,     c2,     yR, 130);
             btnWordHeadColor = ColBtn(T("Head (bright)","Kopf (hell)"), cur.WordHeadColor, c2+136, yR, 130);
@@ -1317,7 +1327,7 @@ namespace VeeaMatrix
             yR += 6;
             Controls.Add(new Panel { Location=new Point(c2, yR), Size=new Size(cW2, 1), BackColor=Color.FromArgb(0,60,20) });
             yR += 6;
-            var subLbl = new Label { Text=T("  POPUP EFFECTS", "  POPUP-EFFEKTE"),
+            var subLbl = new Label { Text=T("  POPUP WORDS  (Popup / Both)", "  POPUP-WÖRTER  (Popup / Beides)"),
                 Location=new Point(c2, yR), Size=new Size(cW2, 16), AutoSize=false,
                 ForeColor=Color.FromArgb(0,170,50), Font=new Font("Segoe UI",8f,FontStyle.Bold) };
             Controls.Add(subLbl);
