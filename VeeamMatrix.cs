@@ -921,37 +921,40 @@ namespace VeeamMatrix
     // =========================================================================
     class ConfigForm : Form
     {
-        private Settings cur;
-        private Button   btnRainColor, btnHeadColor, btnWordColor, btnWordHeadColor, btnPopupColor;
-        private TrackBar trkFade, trkFont, trkSpeed, trkWordCount, trkWordFont, trkPopupCount, trkPopupFont;
-        private Label    lblFade, lblFont, lblSpeed, lblWCount, lblWFont, lblPCount, lblPFont;
-        private ComboBox cboOrient, cboWordOrient, cboWordMode, cboWordStyle;
-        private TrackBar trkWordSpeed;
-        private Label    lblWordSpeed;
-        private TextBox  txtWatermark, txtWatermarkSub;
-        private CheckBox chkFade, chkFlash, chkGlitch, chkScan, chkZoom;
-        private CheckBox chkScanlines, chkWatermark, chkVeeam100;
-        private TextBox  txtExtra;
-        private ComboBox cboProfiles;
+        private Settings   cur;
+        private Button     btnRainColor, btnHeadColor, btnWordColor, btnWordHeadColor, btnPopupColor;
+        private TrackBar   trkFade, trkFont, trkSpeed, trkWordCount, trkWordFont, trkPopupCount, trkPopupFont, trkWordSpeed;
+        private Label      lblFade, lblFont, lblSpeed, lblWCount, lblWFont, lblPCount, lblPFont, lblWordSpeed;
+        private ComboBox   cboOrient, cboWordOrient, cboWordMode, cboWordStyle;
+        private TextBox    txtWatermark, txtWatermarkSub, txtExtra;
+        private CheckBox   chkFade, chkFlash, chkGlitch, chkScan, chkZoom;
+        private CheckBox   chkScanlines, chkWatermark, chkVeeam100;
+        private ComboBox   cboProfiles;
         private List<ColorProfile> profiles;
         private ComboBox   cboWordFontName;
         private PictureBox picFontPreview;
+        private TextBox    txtFontPreviewText;
 
         public Settings Result { get; private set; }
 
         public ConfigForm(Settings s)
         {
-            cur=Clone(s); Text="Veeam Matrix – Einstellungen"; FormBorderStyle=FormBorderStyle.FixedDialog;
-            MaximizeBox=false; MinimizeBox=false; ClientSize=new Size(540,100);
-            BackColor=Color.FromArgb(18,18,18); ForeColor=Color.FromArgb(0,200,55);
-            Font=new Font("Segoe UI",9f);
-            profiles=ColorProfile.LoadAll();
+            cur = Clone(s);
+            Text = "Veeam Matrix  –  Einstellungen";
+            FormBorderStyle = FormBorderStyle.FixedDialog;
+            MaximizeBox = false; MinimizeBox = false;
+            ClientSize  = new Size(860, 100);
+            BackColor   = Color.FromArgb(18, 18, 18);
+            ForeColor   = Color.FromArgb(0, 200, 55);
+            Font        = new Font("Segoe UI", 9f);
+            profiles    = ColorProfile.LoadAll();
             Build();
         }
 
         private static Settings Clone(Settings s)
         {
-            return new Settings { RainColor=s.RainColor, HeadColor=s.HeadColor, FadeAlpha=s.FadeAlpha, FontSize=s.FontSize,
+            return new Settings {
+                RainColor=s.RainColor, HeadColor=s.HeadColor, FadeAlpha=s.FadeAlpha, FontSize=s.FontSize,
                 SpeedFactor=s.SpeedFactor, ShowScanlines=s.ShowScanlines, ShowWatermark=s.ShowWatermark,
                 WordMode=s.WordMode, WordCount=s.WordCount, WordFontSize=s.WordFontSize,
                 WordColor=s.WordColor, WordHeadColor=s.WordHeadColor, GlowChance=s.GlowChance,
@@ -962,211 +965,344 @@ namespace VeeamMatrix
                 WordFontName=s.WordFontName };
         }
 
-        private Label    Lbl(string t,int x,int y){var l=new Label{Text=t,Location=new Point(x,y),AutoSize=true,ForeColor=Color.FromArgb(0,200,55)};Controls.Add(l);return l;}
-        private void     Sep(int y){Controls.Add(new Panel{Location=new Point(14,y),Size=new Size(512,1),BackColor=Color.FromArgb(0,80,25)});}
-        private TrackBar Trk(int x,int y,int w,int min,int max,int val){var t=new TrackBar{Location=new Point(x,y),Size=new Size(w,36),Minimum=min,Maximum=max,Value=Clamp(val,min,max),TickFrequency=Math.Max(1,(max-min)/10),SmallChange=1,BackColor=Color.FromArgb(18,18,18)};Controls.Add(t);return t;}
-        private Button   ColBtn(string text,Color col,int x,int y){var b=new Button{Text=text,Location=new Point(x,y),Size=new Size(120,26),BackColor=col,ForeColor=col.GetBrightness()>.45f?Color.Black:Color.White,FlatStyle=FlatStyle.Flat};b.FlatAppearance.BorderColor=Color.FromArgb(0,160,45);Controls.Add(b);return b;}
-        private ComboBox Combo(int x,int y,int w,string[] items,string sel){var c=new ComboBox{Location=new Point(x,y),Size=new Size(w,24),DropDownStyle=ComboBoxStyle.DropDownList,BackColor=Color.FromArgb(30,30,30),ForeColor=Color.FromArgb(0,200,55)};c.Items.AddRange(items);c.Text=sel;Controls.Add(c);return c;}
-        private CheckBox Chk(string text,bool val,int x,int y){var c=new CheckBox{Text=text,Checked=val,Location=new Point(x,y),AutoSize=true,ForeColor=Color.FromArgb(0,200,55)};Controls.Add(c);return c;}
-        private static int Clamp(int v,int min,int max){return v<min?min:v>max?max:v;}
+        // ── layout helpers ────────────────────────────────────────────────────
+        private static int Clamp(int v, int lo, int hi) { return v<lo?lo:v>hi?hi:v; }
+        private static void SetBtn(Button b, Color c)
+        { b.BackColor=c; b.ForeColor=c.GetBrightness()>.45f?Color.Black:Color.White; }
+
+        // Coloured section-header bar (dark green bg + bold label)
+        private void Section(string title, int x, int y, int w)
+        {
+            var pnl = new Panel { Location=new Point(x,y), Size=new Size(w,20),
+                BackColor=Color.FromArgb(0,50,16) };
+            Controls.Add(pnl);
+            pnl.Controls.Add(new Label { Text=title, Location=new Point(8,2), AutoSize=true,
+                ForeColor=Color.FromArgb(0,220,65),
+                Font=new Font("Segoe UI",8.5f,FontStyle.Bold) });
+        }
+
+        // Horizontal separator line
+        private void HSep(int y, int x=14, int w=832)
+        { Controls.Add(new Panel { Location=new Point(x,y), Size=new Size(w,1), BackColor=Color.FromArgb(0,52,16) }); }
+
+        // Dim label (grey, for captions)
+        private Label DLbl(string t, int x, int y, int w=-1)
+        {
+            var l = new Label { Text=t, Location=new Point(x,y), AutoSize=(w<0),
+                ForeColor=Color.FromArgb(155,155,155) };
+            if (w>0) { l.AutoSize=false; l.Size=new Size(w,15); }
+            Controls.Add(l); return l;
+        }
+
+        // Coloured button for picking a colour
+        private Button ColBtn(string text, Color col, int x, int y, int w=130)
+        {
+            var b = new Button { Text=text, Location=new Point(x,y), Size=new Size(w,26),
+                BackColor=col, ForeColor=col.GetBrightness()>.45f?Color.Black:Color.White,
+                FlatStyle=FlatStyle.Flat };
+            b.FlatAppearance.BorderColor = Color.FromArgb(0,85,24);
+            Controls.Add(b); return b;
+        }
+
+        // DropDown combo
+        private ComboBox Cbo(int x, int y, int w, string[] items, string sel)
+        {
+            var c = new ComboBox { Location=new Point(x,y), Size=new Size(w,24),
+                DropDownStyle=ComboBoxStyle.DropDownList,
+                BackColor=Color.FromArgb(28,28,28), ForeColor=Color.FromArgb(0,210,60) };
+            c.Items.AddRange(items); c.Text=sel;
+            Controls.Add(c); return c;
+        }
+
+        // Checkbox with grey label
+        private CheckBox Chk(string text, bool val, int x, int y)
+        {
+            var c = new CheckBox { Text=text, Checked=val, Location=new Point(x,y),
+                AutoSize=true, ForeColor=Color.FromArgb(165,165,165) };
+            Controls.Add(c); return c;
+        }
+
+        // Single-row slider: [dim label 128px] [──trackbar──] [green value 54px]
+        // Returns the TrackBar; vLbl receives the value label reference.
+        private TrackBar SlRow(string name, int x, int y, int cw, int min, int max, int val, out Label vLbl)
+        {
+            const int LW=128, VW=54, G=6;
+            DLbl(name, x, y+6, LW);
+            var trk = new TrackBar { Location=new Point(x+LW+G,y), Size=new Size(cw-LW-VW-G*2,26),
+                Minimum=min, Maximum=max, Value=Clamp(val,min,max),
+                TickFrequency=Math.Max(1,(max-min)/10), SmallChange=1,
+                BackColor=Color.FromArgb(22,22,22), TickStyle=TickStyle.None };
+            Controls.Add(trk);
+            vLbl = new Label { Location=new Point(x+cw-VW,y+6), Size=new Size(VW,15),
+                ForeColor=Color.FromArgb(0,218,62), TextAlign=ContentAlignment.MiddleRight };
+            Controls.Add(vLbl);
+            return trk;
+        }
 
         private void Build()
         {
-            int y=14;
+            const int c1=14, cW1=400;   // left column
+            const int c2=428, cW2=418;  // right column
+            const int SL=42;            // slider step
+            const int CM=32;            // combo/button row step
 
-            // ── Farbprofile ───────────────────────────────────────────────────
-            Lbl("Farbprofil laden:", 14, y);
+            int y = 14;
+
+            // ── Colour profile strip (full width) ────────────────────────────
+            DLbl("Farbprofil:", c1, y+5);
             var profileNames = new List<string>();
             foreach (var p in profiles) profileNames.Add(p.Name);
-            cboProfiles = Combo(155, y-2, 180, profileNames.ToArray(), "");
-            var btnLoad = new Button { Text="Laden",  Location=new Point(343,y-1), Size=new Size(70,24), BackColor=Color.FromArgb(0,100,30), ForeColor=Color.White, FlatStyle=FlatStyle.Flat };
-            var btnSave = new Button { Text="Speichern als...", Location=new Point(421,y-1), Size=new Size(110,24), BackColor=Color.FromArgb(40,40,0), ForeColor=Color.White, FlatStyle=FlatStyle.Flat };
+            cboProfiles = Cbo(c1+88, y, 180, profileNames.ToArray(), "");
+            var btnLoad = new Button { Text="Laden", Location=new Point(c1+276,y), Size=new Size(72,24),
+                BackColor=Color.FromArgb(0,76,22), ForeColor=Color.White, FlatStyle=FlatStyle.Flat };
+            btnLoad.FlatAppearance.BorderColor = Color.FromArgb(0,110,32);
+            var btnSave = new Button { Text="Speichern als…", Location=new Point(c1+356,y), Size=new Size(128,24),
+                BackColor=Color.FromArgb(34,34,0), ForeColor=Color.White, FlatStyle=FlatStyle.Flat };
+            btnSave.FlatAppearance.BorderColor = Color.FromArgb(90,90,0);
             btnLoad.Click += delegate { LoadSelectedProfile(); };
             btnSave.Click += delegate { SaveCurrentAsProfile(); };
             Controls.Add(btnLoad); Controls.Add(btnSave);
-            y += 32; Sep(y); y += 10;
+            y += 34; HSep(y); y += 12;
 
-            // ── Farben ────────────────────────────────────────────────────────
-            Lbl("Regen-Zeichen:", 14, y); y += 20;
-            btnRainColor = ColBtn("Zeichen",     cur.RainColor,     14,  y);
-            btnHeadColor = ColBtn("Kopf (hell)", cur.HeadColor,     142, y);
-            btnRainColor.Click += delegate { Pick(ref cur.RainColor,     btnRainColor); };
-            btnHeadColor.Click += delegate { Pick(ref cur.HeadColor,     btnHeadColor); };
-            y += 34;
-            Lbl("Fallende Woerter:", 14, y); y += 20;
-            btnWordColor     = ColBtn("Woerter",     cur.WordColor,     14,  y);
-            btnWordHeadColor = ColBtn("Kopf (hell)", cur.WordHeadColor, 142, y);
-            btnWordColor.Click     += delegate { Pick(ref cur.WordColor,     btnWordColor); };
-            btnWordHeadColor.Click += delegate { Pick(ref cur.WordHeadColor, btnWordHeadColor); };
-            y += 34;
-            Lbl("Popup-Woerter:", 14, y); y += 20;
-            btnPopupColor = ColBtn("Popup-Farbe", cur.PopupColor, 14, y);
+            // Two independent y cursors — left and right columns
+            int yL = y, yR = y;
+
+            // ═══ LEFT COLUMN ═════════════════════════════════════════════════
+
+            // ── REGEN ─────────────────────────────────────────────────────────
+            Section("REGEN", c1, yL, cW1); yL += 26;
+            DLbl("Zeichen:", c1, yL+5); yL += 20;
+            btnRainColor = ColBtn("Zeichen",     cur.RainColor, c1,     yL);
+            btnHeadColor = ColBtn("Kopf (hell)", cur.HeadColor, c1+136, yL);
+            btnRainColor.Click += delegate { Pick(ref cur.RainColor, btnRainColor); };
+            btnHeadColor.Click += delegate { Pick(ref cur.HeadColor, btnHeadColor); };
+            yL += 32;
+
+            trkFont  = SlRow("Schriftgroesse", c1,yL,cW1, 8,36, cur.FontSize, out lblFont);
+            lblFont.Text = cur.FontSize+" px";
+            trkFont.ValueChanged += delegate { cur.FontSize=trkFont.Value; lblFont.Text=cur.FontSize+" px"; };
+            yL += SL;
+
+            trkSpeed = SlRow("Geschwindigkeit", c1,yL,cW1, 1,30, (int)(cur.SpeedFactor*10), out lblSpeed);
+            lblSpeed.Text = cur.SpeedFactor.ToString("F1")+"x";
+            trkSpeed.ValueChanged += delegate { cur.SpeedFactor=trkSpeed.Value/10f; lblSpeed.Text=cur.SpeedFactor.ToString("F1")+"x"; };
+            yL += SL;
+
+            trkFade  = SlRow("Spurlaenge", c1,yL,cW1, 2,60, cur.FadeAlpha, out lblFade);
+            lblFade.Text = cur.FadeAlpha.ToString();
+            trkFade.ValueChanged += delegate { cur.FadeAlpha=trkFade.Value; lblFade.Text=cur.FadeAlpha.ToString(); };
+            yL += SL;
+
+            DLbl("Richtung:", c1, yL+5, 72);
+            cboOrient   = Cbo(c1+76,  yL, 138, new string[]{"TopDown","BottomUp","LeftRight","RightLeft"}, cur.Orientation);
+            DLbl("Wortmodus:", c1+222, yL+5, 68);
+            cboWordMode = Cbo(c1+294, yL, 102, new string[]{"Rain","Popup","Both"}, cur.WordMode);
+            yL += CM;
+
+            yL += 10;
+
+            // ── POPUP-EFFEKTE ─────────────────────────────────────────────────
+            Section("POPUP-EFFEKTE", c1, yL, cW1); yL += 26;
+            DLbl("Farbe:", c1, yL+5, 46);
+            btnPopupColor = ColBtn("Popup-Farbe", cur.PopupColor, c1+50, yL);
             btnPopupColor.Click += delegate { Pick(ref cur.PopupColor, btnPopupColor); };
-            y += 36; Sep(y); y += 10;
+            yL += 32;
 
-            // ── Regen ─────────────────────────────────────────────────────────
-            lblFont  = Lbl("Schriftgroesse Regen:  "+cur.FontSize+" px",14,y); y+=18;
-            trkFont  = Trk(14,y,370,8,36,cur.FontSize);
-            trkFont.ValueChanged  += delegate{cur.FontSize=trkFont.Value;lblFont.Text="Schriftgroesse Regen:  "+cur.FontSize+" px";};
-            y+=42;
-            lblSpeed = Lbl("Geschwindigkeit:  "+cur.SpeedFactor.ToString("F1")+"x",14,y); y+=18;
-            trkSpeed = Trk(14,y,370,1,30,(int)(cur.SpeedFactor*10));
-            trkSpeed.ValueChanged += delegate{cur.SpeedFactor=trkSpeed.Value/10f;lblSpeed.Text="Geschwindigkeit:  "+cur.SpeedFactor.ToString("F1")+"x";};
-            y+=42;
-            lblFade  = Lbl("Spur-Laenge (niedrig = laenger):  "+cur.FadeAlpha,14,y); y+=18;
-            trkFade  = Trk(14,y,370,2,60,cur.FadeAlpha);
-            trkFade.ValueChanged  += delegate{cur.FadeAlpha=trkFade.Value;lblFade.Text="Spur-Laenge (niedrig = laenger):  "+cur.FadeAlpha;};
-            y+=42; Sep(y); y+=10;
-
-            // ── Orientierung + Wortmodus ──────────────────────────────────────
-            Lbl("Regen-Richtung:",14,y);
-            cboOrient=Combo(120,y-2,140,new string[]{"TopDown","BottomUp","LeftRight","RightLeft"},cur.Orientation);
-            Lbl("Wortmodus:",274,y);
-            cboWordMode=Combo(360,y-2,130,new string[]{"Rain","Popup","Both"},cur.WordMode);
-            y+=32;
-            Lbl("Wort-Richtung:",14,y);
-            cboWordOrient=Combo(120,y-2,180,new string[]{"Same","TopDown","BottomUp","LeftRight","RightLeft"},
-                string.IsNullOrEmpty(cur.WordOrientation)?"Same":cur.WordOrientation);
-            y+=32; Sep(y); y+=10;
-
-            // ── Fallende Woerter ──────────────────────────────────────────────
-            Lbl("── Fallende Woerter ───────────────────────", 14, y); y+=22;
-            Lbl("Wort-Stil:", 14, y);
-            cboWordStyle = Combo(100, y-2, 180, new string[]{"Scroll","Fade","Build"},
-                string.IsNullOrEmpty(cur.WordStyle) ? "Scroll" : cur.WordStyle);
-            y += 32;
-
-            // ── Schriftart-Auswahl + Vorschau ─────────────────────────────────
-            Lbl("Schriftart:", 14, y);
-            cboWordFontName = new ComboBox { Location=new Point(100, y-2), Size=new Size(260, 24),
-                DropDownStyle=ComboBoxStyle.DropDownList,
-                BackColor=Color.FromArgb(30,30,30), ForeColor=Color.FromArgb(0,200,55) };
-            using (var ifc = new System.Drawing.Text.InstalledFontCollection())
-            {
-                var fnames = new System.Collections.Generic.SortedSet<string>();
-                foreach (FontFamily ff in ifc.Families) fnames.Add(ff.Name);
-                foreach (string fn in fnames) cboWordFontName.Items.Add(fn);
-            }
-            int selFontIdx = cboWordFontName.Items.IndexOf(cur.WordFontName);
-            cboWordFontName.SelectedIndex = selFontIdx >= 0 ? selFontIdx : 0;
-            Controls.Add(cboWordFontName);
-
-            picFontPreview = new PictureBox { Location=new Point(370, y-3), Size=new Size(156, 30),
-                BackColor=Color.Black, BorderStyle=BorderStyle.FixedSingle };
-            Controls.Add(picFontPreview);
-            UpdateFontPreview();
-            cboWordFontName.SelectedIndexChanged += delegate { UpdateFontPreview(); };
-            y += 38;
-
-            lblWFont  = Lbl("Schriftgroesse:  "+cur.WordFontSize+" px",14,y); y+=18;
-            trkWordFont=Trk(14,y,370,8,36,cur.WordFontSize);
-            trkWordFont.ValueChanged+=delegate{cur.WordFontSize=trkWordFont.Value;lblWFont.Text="Schriftgroesse:  "+cur.WordFontSize+" px";};
-            y+=42;
-            lblWCount=Lbl("Gleichzeitige Woerter:  "+cur.WordCount,14,y); y+=18;
-            trkWordCount=Trk(14,y,370,1,30,cur.WordCount);
-            trkWordCount.ValueChanged+=delegate{cur.WordCount=trkWordCount.Value;lblWCount.Text="Gleichzeitige Woerter:  "+cur.WordCount;};
-            y+=42;
-            lblWordSpeed=Lbl("Wort-Geschwindigkeit:  "+cur.WordSpeedFactor.ToString("F1")+"x",14,y); y+=18;
-            trkWordSpeed=Trk(14,y,370,1,30,(int)(cur.WordSpeedFactor*10));
-            trkWordSpeed.ValueChanged+=delegate{cur.WordSpeedFactor=trkWordSpeed.Value/10f;lblWordSpeed.Text="Wort-Geschwindigkeit:  "+cur.WordSpeedFactor.ToString("F1")+"x";};
-            y+=42; Sep(y); y+=10;
-
-            // ── Popup Effekte ─────────────────────────────────────────────────
-            Lbl("── Popup-Effekte (aktive Stile) ───────────", 14, y); y+=22;
             bool hasFade  = cur.PopupEffects.Contains("Fade");
             bool hasFlash = cur.PopupEffects.Contains("Flash");
             bool hasGlitch= cur.PopupEffects.Contains("Glitch");
             bool hasScan  = cur.PopupEffects.Contains("Scan");
             bool hasZoom  = cur.PopupEffects.Contains("Zoom");
-            chkFade  = Chk("Fade",  hasFade,  14,  y);
-            chkFlash = Chk("Flash", hasFlash, 100, y);
-            chkGlitch= Chk("Glitch",hasGlitch,190, y);
-            chkScan  = Chk("Scan",  hasScan,  280, y);
-            chkZoom  = Chk("Zoom",  hasZoom,  360, y);
-            y+=30;
-            lblPFont=Lbl("Schriftgroesse Popups:  "+cur.PopupFontSize+" px",14,y); y+=18;
-            trkPopupFont=Trk(14,y,370,10,72,cur.PopupFontSize);
-            trkPopupFont.ValueChanged+=delegate{cur.PopupFontSize=trkPopupFont.Value;lblPFont.Text="Schriftgroesse Popups:  "+cur.PopupFontSize+" px";};
-            y+=42;
-            lblPCount=Lbl("Gleichzeitige Popups:  "+cur.PopupCount,14,y); y+=18;
-            trkPopupCount=Trk(14,y,370,1,16,cur.PopupCount);
-            trkPopupCount.ValueChanged+=delegate{cur.PopupCount=trkPopupCount.Value;lblPCount.Text="Gleichzeitige Popups:  "+cur.PopupCount;};
-            y+=42; Sep(y); y+=10;
+            chkFade   = Chk("Fade",   hasFade,   c1,     yL);
+            chkFlash  = Chk("Flash",  hasFlash,  c1+68,  yL);
+            chkGlitch = Chk("Glitch", hasGlitch, c1+144, yL);
+            chkScan   = Chk("Scan",   hasScan,   c1+222, yL);
+            chkZoom   = Chk("Zoom",   hasZoom,   c1+296, yL);
+            yL += 28;
 
-            // ── Extras ────────────────────────────────────────────────────────
-            chkScanlines=Chk("CRT-Scanlines",       cur.ShowScanlines, 14,  y);
-            chkWatermark=Chk("Wasserzeichen",        cur.ShowWatermark, 160, y);
-            chkVeeam100 =Chk("Veeam 100 Namen",     cur.ShowVeeam100,  300, y);
-            y+=30;
-            Lbl("Wasserzeichen-Text:",14,y);
-            txtWatermark=new TextBox{Location=new Point(160,y),Size=new Size(200,22),Text=cur.WatermarkText,
-                BackColor=Color.FromArgb(28,28,28),ForeColor=Color.FromArgb(0,200,55),BorderStyle=BorderStyle.FixedSingle};
-            Controls.Add(txtWatermark);
-            Lbl("Untertitel:",372,y);
-            txtWatermarkSub=new TextBox{Location=new Point(440,y),Size=new Size(86,22),Text=cur.WatermarkSubText,
-                BackColor=Color.FromArgb(28,28,28),ForeColor=Color.FromArgb(0,200,55),BorderStyle=BorderStyle.FixedSingle};
-            Controls.Add(txtWatermarkSub);
-            y+=30; Sep(y); y+=10;
-            Lbl("Eigene Begriffe (kommagetrennt):",14,y); y+=20;
-            txtExtra=new TextBox{Location=new Point(14,y),Size=new Size(512,22),Text=cur.ExtraWords,
-                                 BackColor=Color.FromArgb(28,28,28),ForeColor=Color.FromArgb(0,200,55),BorderStyle=BorderStyle.FixedSingle};
-            Controls.Add(txtExtra);
-            y+=36; Sep(y); y+=14;
+            trkPopupFont  = SlRow("Schriftgroesse", c1,yL,cW1, 10,72, cur.PopupFontSize, out lblPFont);
+            lblPFont.Text  = cur.PopupFontSize+" px";
+            trkPopupFont.ValueChanged  += delegate { cur.PopupFontSize=trkPopupFont.Value;  lblPFont.Text=cur.PopupFontSize+" px"; };
+            yL += SL;
 
-            // ── Buttons ───────────────────────────────────────────────────────
-            int bx=ClientSize.Width-228;
-            var btnOK=new Button{Text="OK",Location=new Point(bx,y),Size=new Size(90,30),DialogResult=DialogResult.OK,
-                                  BackColor=Color.FromArgb(0,130,38),ForeColor=Color.White,FlatStyle=FlatStyle.Flat};
-            btnOK.FlatAppearance.BorderColor=Color.FromArgb(0,200,55);
-            btnOK.Click+=delegate
+            trkPopupCount = SlRow("Gleichzeitig", c1,yL,cW1, 1,20, cur.PopupCount, out lblPCount);
+            lblPCount.Text = cur.PopupCount.ToString();
+            trkPopupCount.ValueChanged += delegate { cur.PopupCount=trkPopupCount.Value; lblPCount.Text=cur.PopupCount.ToString(); };
+            yL += SL;
+
+            // ═══ RIGHT COLUMN ════════════════════════════════════════════════
+
+            // ── WOERTER ───────────────────────────────────────────────────────
+            Section("WÖRTER", c2, yR, cW2); yR += 26;
+            DLbl("Farben:", c2, yR+5); yR += 20;
+            btnWordColor     = ColBtn("Woerter",     cur.WordColor,     c2,     yR, 130);
+            btnWordHeadColor = ColBtn("Kopf (hell)",  cur.WordHeadColor, c2+136, yR, 130);
+            btnWordColor.Click     += delegate { Pick(ref cur.WordColor,     btnWordColor); };
+            btnWordHeadColor.Click += delegate { Pick(ref cur.WordHeadColor, btnWordHeadColor); };
+            yR += 32;
+
+            // Font picker row: [label] [combo] [preview textbox]
+            DLbl("Schriftart:", c2, yR+5, 80);
+            cboWordFontName = new ComboBox { Location=new Point(c2+84, yR), Size=new Size(200, 24),
+                DropDownStyle=ComboBoxStyle.DropDownList,
+                BackColor=Color.FromArgb(28,28,28), ForeColor=Color.FromArgb(0,210,60) };
+            using (var ifc = new System.Drawing.Text.InstalledFontCollection())
             {
-                cur.Orientation     =cboOrient.Text;
-                cur.WordOrientation =cboWordOrient.Text;
-                cur.WordMode        =cboWordMode.Text;
-                cur.WordStyle       =cboWordStyle.Text;
-                cur.ShowScanlines   =chkScanlines.Checked;
-                cur.ShowWatermark   =chkWatermark.Checked;
-                cur.ShowVeeam100    =chkVeeam100.Checked;
-                cur.WatermarkText   =txtWatermark.Text.Trim();
-                cur.WatermarkSubText=txtWatermarkSub.Text.Trim();
-                cur.ExtraWords      =txtExtra.Text.Trim();
+                var fns = new System.Collections.Generic.SortedSet<string>();
+                foreach (FontFamily ff in ifc.Families) fns.Add(ff.Name);
+                foreach (string fn in fns) cboWordFontName.Items.Add(fn);
+            }
+            int selIdx = cboWordFontName.Items.IndexOf(cur.WordFontName);
+            cboWordFontName.SelectedIndex = selIdx >= 0 ? selIdx : 0;
+            Controls.Add(cboWordFontName);
+
+            // Editable preview-text field (right of combo)
+            txtFontPreviewText = new TextBox { Location=new Point(c2+292, yR), Size=new Size(cW2-292-4, 24),
+                Text="VEEAM", BackColor=Color.FromArgb(28,28,28),
+                ForeColor=Color.FromArgb(0,210,60), BorderStyle=BorderStyle.FixedSingle };
+            Controls.Add(txtFontPreviewText);
+            yR += 30;
+
+            // Preview panel (full column width, taller)
+            picFontPreview = new PictureBox { Location=new Point(c2, yR), Size=new Size(cW2-4, 44),
+                BackColor=Color.Black, BorderStyle=BorderStyle.FixedSingle };
+            Controls.Add(picFontPreview);
+            UpdateFontPreview();
+            cboWordFontName.SelectedIndexChanged += delegate { UpdateFontPreview(); };
+            txtFontPreviewText.TextChanged       += delegate { UpdateFontPreview(); };
+            yR += 50;
+
+            // Style + direction on one row
+            DLbl("Stil:", c2, yR+5, 36);
+            cboWordStyle  = Cbo(c2+40,  yR, 130, new string[]{"Scroll","Fade","Build"},
+                string.IsNullOrEmpty(cur.WordStyle)?"Scroll":cur.WordStyle);
+            DLbl("Richtung:", c2+178, yR+5, 64);
+            cboWordOrient = Cbo(c2+246, yR, 168, new string[]{"Same","TopDown","BottomUp","LeftRight","RightLeft"},
+                string.IsNullOrEmpty(cur.WordOrientation)?"Same":cur.WordOrientation);
+            yR += CM;
+
+            trkWordFont  = SlRow("Schriftgroesse", c2,yR,cW2, 8,36, cur.WordFontSize, out lblWFont);
+            lblWFont.Text  = cur.WordFontSize+" px";
+            trkWordFont.ValueChanged  += delegate { cur.WordFontSize=trkWordFont.Value;   lblWFont.Text=cur.WordFontSize+" px"; };
+            yR += SL;
+
+            trkWordSpeed = SlRow("Geschwindigkeit", c2,yR,cW2, 1,30, (int)(cur.WordSpeedFactor*10), out lblWordSpeed);
+            lblWordSpeed.Text = cur.WordSpeedFactor.ToString("F1")+"x";
+            trkWordSpeed.ValueChanged += delegate { cur.WordSpeedFactor=trkWordSpeed.Value/10f; lblWordSpeed.Text=cur.WordSpeedFactor.ToString("F1")+"x"; };
+            yR += SL;
+
+            trkWordCount = SlRow("Gleichzeitig", c2,yR,cW2, 1,30, cur.WordCount, out lblWCount);
+            lblWCount.Text = cur.WordCount.ToString();
+            trkWordCount.ValueChanged += delegate { cur.WordCount=trkWordCount.Value; lblWCount.Text=cur.WordCount.ToString(); };
+            yR += SL;
+
+            yR += 10;
+
+            // ── ALLGEMEIN ─────────────────────────────────────────────────────
+            Section("ALLGEMEIN", c2, yR, cW2); yR += 26;
+            chkScanlines = Chk("CRT-Scanlines",  cur.ShowScanlines, c2,     yR);
+            chkWatermark = Chk("Wasserzeichen",   cur.ShowWatermark, c2+124, yR);
+            chkVeeam100  = Chk("Veeam 100 Namen", cur.ShowVeeam100,  c2+252, yR);
+            yR += 28;
+
+            DLbl("Wasserzeichen:", c2, yR+5, 92);
+            txtWatermark = new TextBox { Location=new Point(c2+96, yR), Size=new Size(174, 24),
+                Text=cur.WatermarkText, BackColor=Color.FromArgb(28,28,28),
+                ForeColor=Color.FromArgb(0,210,60), BorderStyle=BorderStyle.FixedSingle };
+            Controls.Add(txtWatermark);
+            DLbl("Untertitel:", c2+278, yR+5, 62);
+            txtWatermarkSub = new TextBox { Location=new Point(c2+344, yR), Size=new Size(cW2-344-4, 24),
+                Text=cur.WatermarkSubText, BackColor=Color.FromArgb(28,28,28),
+                ForeColor=Color.FromArgb(0,210,60), BorderStyle=BorderStyle.FixedSingle };
+            Controls.Add(txtWatermarkSub);
+            yR += 30;
+
+            DLbl("Eigene Begriffe (kommagetrennt):", c2, yR+5);
+            yR += 22;
+            txtExtra = new TextBox { Location=new Point(c2, yR), Size=new Size(cW2-4, 24),
+                Text=cur.ExtraWords, BackColor=Color.FromArgb(28,28,28),
+                ForeColor=Color.FromArgb(0,210,60), BorderStyle=BorderStyle.FixedSingle };
+            Controls.Add(txtExtra);
+            yR += 30;
+
+            // ── Bottom bar ────────────────────────────────────────────────────
+            int yBot = Math.Max(yL, yR) + 14;
+            HSep(yBot); yBot += 12;
+
+            int bRight = c2 + cW2;   // right edge of content = 846
+            var btnOK = new Button { Text="OK",
+                Location=new Point(bRight-232, yBot), Size=new Size(108,32),
+                DialogResult=DialogResult.OK,
+                BackColor=Color.FromArgb(0,118,34), ForeColor=Color.White, FlatStyle=FlatStyle.Flat };
+            btnOK.FlatAppearance.BorderColor = Color.FromArgb(0,200,55);
+            btnOK.Click += delegate
+            {
+                cur.Orientation     = cboOrient.Text;
+                cur.WordOrientation = cboWordOrient.Text;
+                cur.WordMode        = cboWordMode.Text;
+                cur.WordStyle       = cboWordStyle.Text;
+                cur.ShowScanlines   = chkScanlines.Checked;
+                cur.ShowWatermark   = chkWatermark.Checked;
+                cur.ShowVeeam100    = chkVeeam100.Checked;
+                cur.WatermarkText   = txtWatermark.Text.Trim();
+                cur.WatermarkSubText= txtWatermarkSub.Text.Trim();
+                cur.ExtraWords      = txtExtra.Text.Trim();
                 if (cboWordFontName.SelectedItem != null) cur.WordFontName = cboWordFontName.SelectedItem.ToString();
-                // Build PopupEffects from checkboxes
-                var effects=new List<string>();
-                if(chkFade.Checked)   effects.Add("Fade");
-                if(chkFlash.Checked)  effects.Add("Flash");
-                if(chkGlitch.Checked) effects.Add("Glitch");
-                if(chkScan.Checked)   effects.Add("Scan");
-                if(chkZoom.Checked)   effects.Add("Zoom");
-                cur.PopupEffects=effects.Count>0?string.Join(",",effects.ToArray()):"Fade";
+                var effects = new List<string>();
+                if (chkFade.Checked)   effects.Add("Fade");
+                if (chkFlash.Checked)  effects.Add("Flash");
+                if (chkGlitch.Checked) effects.Add("Glitch");
+                if (chkScan.Checked)   effects.Add("Scan");
+                if (chkZoom.Checked)   effects.Add("Zoom");
+                cur.PopupEffects = effects.Count>0 ? string.Join(",", effects.ToArray()) : "Fade";
                 Result=cur; Result.Save();
             };
-            var btnCancel=new Button{Text="Abbrechen",Location=new Point(bx+98,y),Size=new Size(108,30),DialogResult=DialogResult.Cancel,
-                                      BackColor=Color.FromArgb(55,18,18),ForeColor=Color.White,FlatStyle=FlatStyle.Flat};
-            btnCancel.FlatAppearance.BorderColor=Color.FromArgb(140,40,40);
+            var btnCancel = new Button { Text="Abbrechen",
+                Location=new Point(bRight-118, yBot), Size=new Size(118,32),
+                DialogResult=DialogResult.Cancel,
+                BackColor=Color.FromArgb(50,15,15), ForeColor=Color.White, FlatStyle=FlatStyle.Flat };
+            btnCancel.FlatAppearance.BorderColor = Color.FromArgb(130,36,36);
             Controls.Add(btnOK); Controls.Add(btnCancel);
             AcceptButton=btnOK; CancelButton=btnCancel;
-            ClientSize=new Size(ClientSize.Width,y+50);
+            ClientSize = new Size(c2+cW2+14, yBot+48);
         }
 
         private void UpdateFontPreview()
         {
-            if (picFontPreview == null || cboWordFontName == null || cboWordFontName.SelectedItem == null) return;
-            string fname = cboWordFontName.SelectedItem.ToString();
-            int pw = picFontPreview.Width - 2, ph = picFontPreview.Height - 2;
+            if (picFontPreview==null || cboWordFontName==null || cboWordFontName.SelectedItem==null) return;
+            string fname  = cboWordFontName.SelectedItem.ToString();
+            string sample = (txtFontPreviewText!=null && txtFontPreviewText.Text.Trim().Length>0)
+                            ? txtFontPreviewText.Text.Trim() : "VEEAM";
+            int pw = picFontPreview.Width-2, ph = picFontPreview.Height-2;
             var bmp = new Bitmap(pw, ph);
             using (Graphics g = Graphics.FromImage(bmp))
             {
-                g.Clear(Color.Black);
+                g.Clear(Color.FromArgb(8,8,8));
                 g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
                 try
                 {
-                    using (Font f = new Font(fname, ph * 0.52f, FontStyle.Bold, GraphicsUnit.Pixel))
-                    using (SolidBrush b = new SolidBrush(Color.FromArgb(0, 200, 55)))
+                    // fit font to available height
+                    float fs = ph * 0.56f;
+                    using (Font f = new Font(fname, fs, FontStyle.Bold, GraphicsUnit.Pixel))
                     {
-                        SizeF sz = g.MeasureString("VEEAM", f);
-                        g.DrawString("VEEAM", f, b, (pw - sz.Width) / 2f, (ph - sz.Height) / 2f);
+                        SizeF sz = g.MeasureString(sample, f);
+                        // scale down if wider than panel
+                        if (sz.Width > pw-8)
+                        {
+                            fs = fs * (pw-8) / sz.Width;
+                            f.Dispose();
+                            using (Font f2 = new Font(fname, fs, FontStyle.Bold, GraphicsUnit.Pixel))
+                            using (SolidBrush b = new SolidBrush(Color.FromArgb(0,210,60)))
+                            {
+                                SizeF sz2 = g.MeasureString(sample, f2);
+                                g.DrawString(sample, f2, b, (pw-sz2.Width)/2f, (ph-sz2.Height)/2f);
+                                goto done;
+                            }
+                        }
+                        using (SolidBrush b = new SolidBrush(Color.FromArgb(0,210,60)))
+                            g.DrawString(sample, f, b, (pw-sz.Width)/2f, (ph-sz.Height)/2f);
                     }
+                    done:;
                 }
                 catch { }
             }
@@ -1211,7 +1347,6 @@ namespace VeeamMatrix
             SetBtn(btnWordHeadColor, cur.WordHeadColor);
             SetBtn(btnPopupColor,    cur.PopupColor);
         }
-        private static void SetBtn(Button b,Color c){b.BackColor=c;b.ForeColor=c.GetBrightness()>.45f?Color.Black:Color.White;}
 
         private void Pick(ref Color field, Button btn)
         {
