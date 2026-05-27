@@ -32,18 +32,23 @@ Right-click → **Configure** to open the settings dialog:
 | **Word color** | Color of the falling Veeam keyword streams |
 | **Word head color** | Color of the leading character in keyword streams |
 | **Popup color** | Color of the popup/blip word effects |
+| **Font** | System font used for keyword streams, popups and watermark — pick any installed font with live "VEEAM" preview |
 | **Font size – Rain** | Character size for the background rain (8–36 px) |
 | **Font size – Words** | Character size for the Veeam keyword streams (8–36 px) |
 | **Font size – Popup** | Character size for popup word effects (8–72 px) |
 | **Speed** | Animation speed (0.1× – 3.0×) |
+| **Word speed** | Separate speed multiplier for keyword streams (0.1× – 3.0×) |
 | **Trail length** | How long characters glow before fading (low = longer trail) |
 | **Direction** | TopDown / BottomUp / LeftRight / RightLeft |
+| **Word direction** | Independent direction for keyword streams (or Same as rain) |
+| **Word style** | Scroll (falling) / Fade (appear in place) / Build (character-by-character decode) |
 | **Word mode** | Rain (falling only) / Popup (blip only) / Both |
 | **Word count** | Number of simultaneous keyword streams (1–30) |
 | **Popup count** | Number of simultaneous popup blips (1–20) |
 | **Effects** | Individually enable/disable: Fade · Flash · Glitch · Scan · Zoom |
 | **Scanlines** | Subtle CRT scanline overlay |
-| **Watermark** | Faint VEEAM logo in the background |
+| **Watermark** | Faint logo in the background — text is fully customisable |
+| **Veeam 100 names** | Show Veeam Vanguard / Legend / MVP 2026 member names in the streams |
 | **Custom words** | Add your own terms (comma-separated) |
 
 Settings are saved to `%APPDATA%\VeeamMatrix\config.ini`.  
