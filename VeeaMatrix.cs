@@ -1148,6 +1148,8 @@ namespace VeeaMatrix
             cboOrient   = Cbo(c1+80,  yL, 138, new string[]{"TopDown","BottomUp","LeftRight","RightLeft"}, cur.Orientation);
             DLbl(T("Word Mode:","Wortmodus:"), c1+226, yL+5, 74);
             cboWordMode = Cbo(c1+304, yL, 102, new string[]{"Rain","Popup","Both"}, cur.WordMode);
+            cboOrient.SelectedIndexChanged   += delegate { cur.Orientation = cboOrient.Text; };
+            cboWordMode.SelectedIndexChanged += delegate { cur.WordMode    = cboWordMode.Text; };
             yL += CM;
             yL += 10;
 
@@ -1197,6 +1199,8 @@ namespace VeeaMatrix
             DLbl(T("Direction:","Richtung:"), c2+180, yR+5, 68);
             cboWordOrient = Cbo(c2+252, yR, 162, new string[]{"Same","TopDown","BottomUp","LeftRight","RightLeft"},
                 string.IsNullOrEmpty(cur.WordOrientation)?"Same":cur.WordOrientation);
+            cboWordStyle.SelectedIndexChanged  += delegate { cur.WordStyle       = cboWordStyle.Text; };
+            cboWordOrient.SelectedIndexChanged += delegate { cur.WordOrientation = cboWordOrient.Text; };
             yR += CM;
 
             trkWordFont = SlRow(T("Font Size","Schriftgröße"), c2,yR,cW2, 8,36, cur.WordFontSize, out lblWFont);
@@ -1239,6 +1243,12 @@ namespace VeeaMatrix
             chkGlitch = Chk("Glitch", hasGlitch, c2+144, yR);
             chkScan   = Chk("Scan",   hasScan,   c2+222, yR);
             chkZoom   = Chk("Zoom",   hasZoom,   c2+296, yR);
+            // Live-sync effect checkboxes → cur.PopupEffects
+            chkFade.CheckedChanged   += delegate { SyncPopupEffects(); };
+            chkFlash.CheckedChanged  += delegate { SyncPopupEffects(); };
+            chkGlitch.CheckedChanged += delegate { SyncPopupEffects(); };
+            chkScan.CheckedChanged   += delegate { SyncPopupEffects(); };
+            chkZoom.CheckedChanged   += delegate { SyncPopupEffects(); };
             yR += 28;
 
             trkPopupFont = SlRow(T("Font Size","Schriftgröße"), c2,yR,cW2, 10,72, cur.PopupFontSize, out lblPFont);
@@ -1263,6 +1273,10 @@ namespace VeeaMatrix
             chkScanlines = Chk("CRT Scanlines",   cur.ShowScanlines, c2,     yR);
             chkWatermark = Chk(T("Watermark","Wasserzeichen"), cur.ShowWatermark, c2+126, yR);
             chkVeeam100  = Chk(T("Veeam 100 Names","Veeam 100 Namen"), cur.ShowVeeam100, c2+256, yR);
+            // Live-sync general checkboxes → cur
+            chkScanlines.CheckedChanged += delegate { cur.ShowScanlines = chkScanlines.Checked; };
+            chkWatermark.CheckedChanged += delegate { cur.ShowWatermark = chkWatermark.Checked; };
+            chkVeeam100.CheckedChanged  += delegate { cur.ShowVeeam100  = chkVeeam100.Checked;  };
             yR += 28;
 
             // Watermark text – own row
@@ -1416,6 +1430,18 @@ namespace VeeaMatrix
 
         private void MarkDirty() { _previewDirty = true; }
 
+        // Keeps cur.PopupEffects in sync when effect checkboxes change
+        private void SyncPopupEffects()
+        {
+            var fx = new List<string>();
+            if (chkFade  !=null&&chkFade.Checked)   fx.Add("Fade");
+            if (chkFlash !=null&&chkFlash.Checked)  fx.Add("Flash");
+            if (chkGlitch!=null&&chkGlitch.Checked) fx.Add("Glitch");
+            if (chkScan  !=null&&chkScan.Checked)   fx.Add("Scan");
+            if (chkZoom  !=null&&chkZoom.Checked)   fx.Add("Zoom");
+            cur.PopupEffects = fx.Count > 0 ? string.Join(",", fx.ToArray()) : "Fade";
+        }
+
         private void RebuildPreview()
         {
             _previewDirty = false;
@@ -1438,15 +1464,18 @@ namespace VeeaMatrix
             if (txtWatermark    != null) s.WatermarkText    = txtWatermark.Text.Trim();
             if (txtWatermarkSub != null) s.WatermarkSubText = txtWatermarkSub.Text.Trim();
             if (txtExtra        != null) s.ExtraWords       = txtExtra.Text.Trim();
+            // Effects – always re-read from checkboxes (cur.PopupEffects also kept in sync by SyncPopupEffects)
             var fx = new List<string>();
             if (chkFade  !=null&&chkFade.Checked)   fx.Add("Fade");
             if (chkFlash !=null&&chkFlash.Checked)  fx.Add("Flash");
             if (chkGlitch!=null&&chkGlitch.Checked) fx.Add("Glitch");
             if (chkScan  !=null&&chkScan.Checked)   fx.Add("Scan");
             if (chkZoom  !=null&&chkZoom.Checked)   fx.Add("Zoom");
-            if (fx.Count > 0) s.PopupEffects = string.Join(",", fx.ToArray());
+            s.PopupEffects = fx.Count > 0 ? string.Join(",", fx.ToArray()) : "Fade";
+            // General flags – live-synced to cur, but read directly for safety
             if (chkScanlines != null) s.ShowScanlines = chkScanlines.Checked;
             if (chkWatermark != null) s.ShowWatermark = chkWatermark.Checked;
+            if (chkVeeam100  != null) s.ShowVeeam100  = chkVeeam100.Checked;
 
             if (_prevEngine != null) { _prevEngine.Dispose(); _prevEngine = null; }
             if (picPreview != null && picPreview.Width > 8 && picPreview.Height > 8)
