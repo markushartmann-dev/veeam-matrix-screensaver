@@ -42,7 +42,7 @@ Right-click → **Configure** to open the settings dialog:
 | **Trail length** | How long characters glow before fading (low = longer trail) |
 | **Direction** | TopDown / BottomUp / LeftRight / RightLeft |
 | **Word direction** | Independent direction for keyword streams (or Same as rain) |
-| **Word style** | Scroll (falling) / Fade (appear in place) / Build (character-by-character decode) |
+| **Word style** | Scroll (falling) / Fade (appear in place) / Build (character-by-character decode) / Scramble (noise resolves) / Blink (flicker hold) |
 | **Word mode** | Rain (falling only) / Popup (blip only) / Both |
 | **Word count** | Number of simultaneous keyword streams (1–30) |
 | **Popup count** | Number of simultaneous popup blips (1–20) |

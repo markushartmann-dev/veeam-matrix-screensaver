@@ -1,4 +1,4 @@
-// VeeaMatrix.cs  –  Windows Screensaver v1.11
+// VeeaMatrix.cs  –  Windows Screensaver v1.13
 // Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
@@ -404,10 +404,11 @@ namespace VeeaMatrix
 
         private class WDrop
         {
-            public char[]  Chars;
-            public float   X, Y, V;
-            public bool    Glow;
-            public int     Phase, Frame, AppearF, HoldF, FadeF;
+            public char[]   Chars;
+            public float[]  CharOffsets;  // per-char x-offsets (length = Chars.Length+1); null for vertical
+            public float    X, Y, V;
+            public bool     Glow;
+            public int      Phase, Frame, AppearF, HoldF, FadeF;
         }
 
         private enum PopupMode { Fade, Flash, Glitch, Scan, Zoom }
@@ -430,6 +431,7 @@ namespace VeeaMatrix
         private Bitmap      buf;
         private Graphics    bg;
         private Font        rainFont, wordFont, popupFont;
+        private StringFormat typFmt;
         private SolidBrush  fadeBrush, rainBrush, brightBrush, tmpBrush;
         private Bitmap      scanBmp;
 
@@ -494,6 +496,7 @@ namespace VeeaMatrix
             rainFont    = new Font("Courier New", Math.Max(6, s.FontSize     - 1), FontStyle.Bold, GraphicsUnit.Pixel);
             wordFont    = new Font(s.WordFontName, Math.Max(6, s.WordFontSize - 1), FontStyle.Bold, GraphicsUnit.Pixel);
             popupFont   = new Font(s.WordFontName, Math.Max(6, s.PopupFontSize- 1), FontStyle.Bold, GraphicsUnit.Pixel);
+            typFmt      = StringFormat.GenericTypographic;
             fadeBrush   = new SolidBrush(Color.FromArgb(Math.Max(2, Math.Min(60, s.FadeAlpha)), 0, 0, 0));
             rainBrush   = new SolidBrush(s.RainColor);
             brightBrush = new SolidBrush(s.HeadColor);
@@ -521,25 +524,60 @@ namespace VeeaMatrix
             BuildScanlines();
         }
 
+        // Per-char x-offsets using typographic metrics — fixes disproportionate "I" spacing
+        private float[] ComputeCharOffsets(char[] chars)
+        {
+            var offs = new float[chars.Length + 1];
+            offs[0] = 0f;
+            for (int j = 0; j < chars.Length; j++)
+            {
+                string ch = chars[j] == ' ' ? "M" : chars[j].ToString();
+                SizeF  sz = bg.MeasureString(ch, wordFont, PointF.Empty, typFmt);
+                offs[j + 1] = offs[j] + (chars[j] == ' ' ? sz.Width * 0.55f : sz.Width) + 2f;
+            }
+            return offs;
+        }
+
         private WDrop SpawnDrop(bool scatter)
         {
             string term  = allTerms[rng.Next(allTerms.Length)];
             char[] chars = term.ToCharArray();
             int    fs    = s.WordFontSize;
 
-            if (s.WordStyle == "Fade" || s.WordStyle == "Build")
+            if (s.WordStyle == "Fade" || s.WordStyle == "Build" || s.WordStyle == "Scramble" || s.WordStyle == "Blink")
             {
-                float  spd   = Math.Max(0.1f, s.WordSpeedFactor);
-                int    appF  = (int)Math.Round((s.WordStyle == "Build" ? Math.Max(20, chars.Length * 5) : 22) / spd);
-                int    holF  = (int)Math.Round((70 + rng.Next(50)) / spd);
-                int    fadF  = 30;
-                float  estW  = chars.Length * fs * 0.62f;
-                float  mgn   = fs * 2.5f;
-                float  sx    = mgn + (float)(rng.NextDouble() * Math.Max(1f, W - estW - mgn));
-                float  sy    = mgn + (float)(rng.NextDouble() * Math.Max(1f, H - fs * 3f - mgn));
-                var    wd    = new WDrop { Chars=chars, X=sx, Y=sy, V=0,
+                float  spd  = Math.Max(0.1f, s.WordSpeedFactor);
+                int    appF = 22, holF = 90, fadF = 30;
+                switch (s.WordStyle)
+                {
+                    case "Build":
+                        appF = (int)Math.Round(Math.Max(20, chars.Length * 5) / spd);
+                        holF = (int)Math.Round((70 + rng.Next(50)) / spd);
+                        break;
+                    case "Scramble":
+                        appF = (int)Math.Round(Math.Max(15, chars.Length * 4) / spd);
+                        holF = (int)Math.Round((60 + rng.Next(40)) / spd);
+                        fadF = 25;
+                        break;
+                    case "Blink":
+                        appF = 3;
+                        holF = (int)Math.Round((80 + rng.Next(40)) / spd);
+                        fadF = 20;
+                        break;
+                    default: // Fade
+                        appF = (int)Math.Round(22 / spd);
+                        holF = (int)Math.Round((70 + rng.Next(50)) / spd);
+                        break;
+                }
+                float[] offs = ComputeCharOffsets(chars);
+                float   estW = offs[chars.Length];
+                float   mgn  = fs * 2.5f;
+                float   sx   = mgn + (float)(rng.NextDouble() * Math.Max(1f, W - estW - mgn));
+                float   sy   = mgn + (float)(rng.NextDouble() * Math.Max(1f, H - fs * 3f - mgn));
+                var     wd   = new WDrop { Chars=chars, X=sx, Y=sy, V=0,
                                            Glow=rng.NextDouble()<s.GlowChance,
-                                           AppearF=appF, HoldF=holF, FadeF=fadF };
+                                           AppearF=appF, HoldF=holF, FadeF=fadF,
+                                           CharOffsets=offs };
                 if (scatter)
                 {
                     int tot = appF + holF + fadF;
@@ -551,14 +589,17 @@ namespace VeeaMatrix
                 return wd;
             }
 
-            float len = chars.Length * fs;
-            float v   = (float)((0.6 + rng.NextDouble() * 1.6) * s.WordSpeedFactor);
-            float x, y;
+            // Scroll mode — use measured widths for horizontal layout
+            float[] charOff = WordIsVertical ? null : ComputeCharOffsets(chars);
+            float   len     = WordIsVertical ? chars.Length * fs : charOff[chars.Length];
+            float   v       = (float)((0.6 + rng.NextDouble() * 1.6) * s.WordSpeedFactor);
+            float   x, y;
             if (WordIsVertical)
             { x=fs*.5f+(float)(rng.NextDouble()*Math.Max(1,W-fs)); y=scatter?(float)(rng.NextDouble()*(H+len)-len):(WordIsForward?-(len+5):H+5); }
             else
             { y=fs*.5f+(float)(rng.NextDouble()*Math.Max(1,H-fs)); x=scatter?(float)(rng.NextDouble()*(W+len)-len):(WordIsForward?-(len+5):W+5); }
-            return new WDrop { Chars=chars, X=x, Y=y, V=WordIsForward?v:-v, Glow=rng.NextDouble()<s.GlowChance };
+            return new WDrop { Chars=chars, X=x, Y=y, V=WordIsForward?v:-v,
+                               Glow=rng.NextDouble()<s.GlowChance, CharOffsets=charOff };
         }
 
         private WPopup SpawnPopup(bool scatter)
@@ -658,7 +699,8 @@ namespace VeeaMatrix
 
         private void DrawDrops()
         {
-            bool isStatic = (s.WordStyle == "Fade" || s.WordStyle == "Build");
+            bool isStatic = (s.WordStyle == "Fade" || s.WordStyle == "Build" ||
+                             s.WordStyle == "Scramble" || s.WordStyle == "Blink");
             int  fs       = s.WordFontSize;
 
             for (int i = wdrops.Count-1; i >= 0; i--)
@@ -671,22 +713,28 @@ namespace VeeaMatrix
                 }
                 else
                 {
-                    int n = w.Chars.Length;
+                    int n       = w.Chars.Length;
+                    int headIdx = WordIsForward ? 0 : n-1;  // head = leading char in movement direction
                     for (int j = 0; j < n; j++)
                     {
-                        float px=WordIsVertical?w.X:w.X+j*fs, py=WordIsVertical?w.Y+j*fs:w.Y;
+                        float px = WordIsVertical ? w.X
+                                                  : w.X + (w.CharOffsets != null ? w.CharOffsets[j] : j*(float)fs);
+                        float py = WordIsVertical ? w.Y + j*(float)fs : w.Y;
                         if (px<-fs||px>W+fs||py<-fs||py>H+fs) continue;
-                        float fade=n>1?(float)j/(n-1):0f;
-                        int   a   =Clamp((int)(255*(1f-fade*0.55f)));
+                        float fade = n>1 ? (float)Math.Abs(j - headIdx)/(n-1) : 0f;
+                        int   a    = Clamp((int)(255*(1f-fade*0.55f)));
                         Color col;
-                        if (j==0) col=s.WordHeadColor;
-                        else if (w.Glow) col=Color.FromArgb(a,Clamp(s.WordColor.R+80),Clamp(s.WordColor.G+20),Clamp(s.WordColor.B+40));
-                        else col=Color.FromArgb(a,Clamp((int)(s.WordColor.R*(1-fade*.5f))),Clamp((int)(s.WordColor.G*(1-fade*.3f)+30*(1-fade))),Clamp((int)(s.WordColor.B*(1-fade*.5f))));
-                        tmpBrush.Color=col;
-                        bg.DrawString(w.Chars[j].ToString(),wordFont,tmpBrush,px,py);
+                        if (j == headIdx) col = s.WordHeadColor;
+                        else if (w.Glow)  col = Color.FromArgb(a,Clamp(s.WordColor.R+80),Clamp(s.WordColor.G+20),Clamp(s.WordColor.B+40));
+                        else              col = Color.FromArgb(a,Clamp((int)(s.WordColor.R*(1-fade*.5f))),Clamp((int)(s.WordColor.G*(1-fade*.3f)+30*(1-fade))),Clamp((int)(s.WordColor.B*(1-fade*.5f))));
+                        tmpBrush.Color = col;
+                        bg.DrawString(w.Chars[j].ToString(), wordFont, tmpBrush, new PointF(px, py), typFmt);
                     }
                     if (WordIsVertical) w.Y+=w.V; else w.X+=w.V;
-                    bool gone=WordIsVertical?(WordIsForward?w.Y>H+5:w.Y+n*fs<-5):(WordIsForward?w.X>W+5:w.X+n*fs<-5);
+                    float totalLen = (w.CharOffsets != null) ? w.CharOffsets[n] : n*(float)fs;
+                    bool gone = WordIsVertical
+                        ? (WordIsForward ? w.Y > H+5 : w.Y + n*(float)fs < -5)
+                        : (WordIsForward ? w.X > W+5 : w.X + totalLen < -5);
                     if (gone) { wdrops.RemoveAt(i); wdrops.Add(SpawnDrop(false)); }
                 }
             }
@@ -699,45 +747,88 @@ namespace VeeaMatrix
             else if (w.Phase==1 && w.Frame>=w.HoldF)  { w.Phase=2; w.Frame=0; }
             else if (w.Phase==2 && w.Frame>=w.FadeF)   return false;
 
+            int fs = s.WordFontSize;
+
+            // ── Blink: instant appear, flicker during hold, fade out ──────────
+            if (s.WordStyle == "Blink")
+            {
+                float alpha;
+                if      (w.Phase == 0) alpha = (float)w.Frame / Math.Max(1, w.AppearF);
+                else if (w.Phase == 1) alpha = (w.Frame % 10 < 5) ? 1f : 0f;
+                else                   alpha = 1f - (float)w.Frame / Math.Max(1, w.FadeF);
+                int a = Clamp((int)(alpha * 255));
+                if (a < 3) return w.Phase < 2;
+                Color col = w.Glow
+                    ? Color.FromArgb(a, Clamp(s.WordColor.R+80), Clamp(s.WordColor.G+20), Clamp(s.WordColor.B+40))
+                    : Color.FromArgb(a, s.WordColor.R, s.WordColor.G, s.WordColor.B);
+                tmpBrush.Color = col;
+                bg.DrawString(new string(w.Chars), wordFont, tmpBrush, w.X, w.Y);
+                return true;
+            }
+
             float prog  = w.Phase==0 ? (float)w.Frame/Math.Max(1,w.AppearF)
                         : w.Phase==2 ? 1f-(float)w.Frame/Math.Max(1,w.FadeF)
                         : 1f;
-            int   alpha = Clamp((int)(prog*255));
-            if (alpha < 3) return w.Phase < 2;
+            int   alpha2 = Clamp((int)(prog*255));
+            if (alpha2 < 3) return w.Phase < 2;
 
-            int fs = s.WordFontSize;
+            // ── Scramble: all chars shown as noise, resolve left-to-right ─────
+            if (s.WordStyle == "Scramble")
+            {
+                int total        = w.Chars.Length;
+                int resolvedCount = w.Phase == 0
+                    ? Math.Min(total, w.Frame * total / Math.Max(1, w.AppearF) + 1)
+                    : total;
+                for (int j = 0; j < total; j++)
+                {
+                    char drawCh = (j >= resolvedCount)
+                        ? RAIN_CHARS[rng.Next(RAIN_CHARS.Length)]
+                        : w.Chars[j];
+                    if (drawCh == ' ') continue;
+                    Color col;
+                    if (j == resolvedCount-1 && w.Phase == 0)
+                        col = Color.FromArgb(alpha2, s.WordHeadColor.R, s.WordHeadColor.G, s.WordHeadColor.B);
+                    else if (w.Glow)
+                        col = Color.FromArgb(alpha2, Clamp(s.WordColor.R+80), Clamp(s.WordColor.G+20), Clamp(s.WordColor.B+40));
+                    else
+                        col = Color.FromArgb(alpha2, s.WordColor.R, s.WordColor.G, s.WordColor.B);
+                    tmpBrush.Color = col;
+                    float xOff = w.CharOffsets != null ? w.CharOffsets[j] : j * fs * 0.61f;
+                    bg.DrawString(drawCh.ToString(), wordFont, tmpBrush, new PointF(w.X + xOff, w.Y), typFmt);
+                }
+                return true;
+            }
 
+            // ── Build: chars decode one-by-one left to right ──────────────────
             if (s.WordStyle == "Build")
             {
                 int total   = w.Chars.Length;
                 int snapped = w.Phase==0
                     ? Math.Min(total, w.Frame * total / Math.Max(1, w.AppearF) + 1)
                     : total;
-
                 for (int j = 0; j < snapped; j++)
                 {
                     char drawCh = (j == snapped-1 && w.Phase==0)
                         ? ((w.Frame % 4 < 2) ? RAIN_CHARS[rng.Next(RAIN_CHARS.Length)] : w.Chars[j])
                         : w.Chars[j];
                     if (drawCh == ' ') continue;
-
                     Color col;
                     if (j == snapped-1 && w.Phase==0)
-                        col = Color.FromArgb(alpha, s.WordHeadColor.R, s.WordHeadColor.G, s.WordHeadColor.B);
+                        col = Color.FromArgb(alpha2, s.WordHeadColor.R, s.WordHeadColor.G, s.WordHeadColor.B);
                     else if (w.Glow)
-                        col = Color.FromArgb(alpha, Clamp(s.WordColor.R+80), Clamp(s.WordColor.G+20), Clamp(s.WordColor.B+40));
+                        col = Color.FromArgb(alpha2, Clamp(s.WordColor.R+80), Clamp(s.WordColor.G+20), Clamp(s.WordColor.B+40));
                     else
-                        col = Color.FromArgb(alpha, s.WordColor.R, s.WordColor.G, s.WordColor.B);
-
+                        col = Color.FromArgb(alpha2, s.WordColor.R, s.WordColor.G, s.WordColor.B);
                     tmpBrush.Color = col;
-                    bg.DrawString(drawCh.ToString(), wordFont, tmpBrush, w.X + j*fs*0.61f, w.Y);
+                    float xOff = w.CharOffsets != null ? w.CharOffsets[j] : j * fs * 0.61f;
+                    bg.DrawString(drawCh.ToString(), wordFont, tmpBrush, new PointF(w.X + xOff, w.Y), typFmt);
                 }
             }
-            else
+            else // Fade — draw full string at once
             {
                 Color col = w.Glow
-                    ? Color.FromArgb(alpha, Clamp(s.WordColor.R+80), Clamp(s.WordColor.G+20), Clamp(s.WordColor.B+40))
-                    : Color.FromArgb(alpha, s.WordColor.R, s.WordColor.G, s.WordColor.B);
+                    ? Color.FromArgb(alpha2, Clamp(s.WordColor.R+80), Clamp(s.WordColor.G+20), Clamp(s.WordColor.B+40))
+                    : Color.FromArgb(alpha2, s.WordColor.R, s.WordColor.G, s.WordColor.B);
                 tmpBrush.Color = col;
                 bg.DrawString(new string(w.Chars), wordFont, tmpBrush, w.X, w.Y);
             }
@@ -844,6 +935,7 @@ namespace VeeaMatrix
             if(rainFont   !=null){rainFont.Dispose();   rainFont   =null;}
             if(wordFont   !=null){wordFont.Dispose();   wordFont   =null;}
             if(popupFont  !=null){popupFont.Dispose();  popupFont  =null;}
+            if(typFmt     !=null){typFmt.Dispose();     typFmt     =null;}
             if(scanBmp    !=null){scanBmp.Dispose();    scanBmp    =null;}
         }
         public void Dispose(){DisposeAll();}
@@ -950,6 +1042,7 @@ namespace VeeaMatrix
         private Timer        _prevTimer;
         private PictureBox   picPreview;
         private bool         _previewDirty = true;
+        private ToolTip      _tip;
 
         public Settings Result { get; private set; }
 
@@ -976,6 +1069,7 @@ namespace VeeaMatrix
         {
             if (_prevTimer  != null) { _prevTimer.Stop(); _prevTimer.Dispose(); _prevTimer = null; }
             if (_prevEngine != null) { _prevEngine.Dispose(); _prevEngine = null; }
+            if (_tip        != null) { _tip.Dispose(); _tip = null; }
         }
 
         // Full UI rebuild (called on language toggle)
@@ -995,6 +1089,7 @@ namespace VeeaMatrix
             cboProfiles = cboWordFontName = null;
             picFontPreview = null; txtFontPreviewText = null; picPreview = null;
             _previewDirty = true;
+            if (_tip != null) { _tip.Dispose(); _tip = null; }
             Build();
         }
 
@@ -1194,10 +1289,10 @@ namespace VeeaMatrix
             yR += 50;
 
             DLbl(T("Style:","Stil:"), c2, yR+5, 44);
-            cboWordStyle  = Cbo(c2+48, yR, 124, new string[]{"Scroll","Fade","Build"},
+            cboWordStyle  = Cbo(c2+48, yR, 158, new string[]{"Scroll","Fade","Build","Scramble","Blink"},
                 string.IsNullOrEmpty(cur.WordStyle)?"Scroll":cur.WordStyle);
-            DLbl(T("Direction:","Richtung:"), c2+180, yR+5, 68);
-            cboWordOrient = Cbo(c2+252, yR, 162, new string[]{"Same","TopDown","BottomUp","LeftRight","RightLeft"},
+            DLbl(T("Direction:","Richtung:"), c2+214, yR+5, 68);
+            cboWordOrient = Cbo(c2+286, yR, 128, new string[]{"Same","TopDown","BottomUp","LeftRight","RightLeft"},
                 string.IsNullOrEmpty(cur.WordOrientation)?"Same":cur.WordOrientation);
             cboWordStyle.SelectedIndexChanged  += delegate { cur.WordStyle       = cboWordStyle.Text; };
             cboWordOrient.SelectedIndexChanged += delegate { cur.WordOrientation = cboWordOrient.Text; };
@@ -1381,6 +1476,46 @@ namespace VeeaMatrix
             btnCancel.FlatAppearance.BorderColor = Color.FromArgb(130,36,36);
             Controls.Add(btnOK); Controls.Add(btnCancel);
             AcceptButton=btnOK; CancelButton=btnCancel;
+
+            // ── Hover tooltips ────────────────────────────────────────────────
+            _tip = new ToolTip { AutoPopDelay=9000, InitialDelay=500, ReshowDelay=300, ShowAlways=true };
+            Action<Control,string,string> tip = (ctrl,en,de) => { if (ctrl!=null) _tip.SetToolTip(ctrl, T(en,de)); };
+            // Rain section
+            tip(btnRainColor,    "Color of the falling background characters",                                "Farbe der fallenden Hintergrund-Zeichen");
+            tip(btnHeadColor,    "Color of the bright leading character in each rain column",                 "Farbe des hellen Kopfzeichens im Regen");
+            tip(trkFont,         "Character size for the background rain (px)",                              "Zeichengröße des Hintergrundregens (px)");
+            tip(trkSpeed,        "Overall animation speed multiplier (1x = default)",                        "Animationsgeschwindigkeit (1x = Standard)");
+            tip(trkFade,         "Trail persistence — lower value = longer glowing trail",                   "Spurlänge — kleiner Wert = längere Leuchtspur");
+            tip(cboOrient,       "Direction the rain falls: TopDown / BottomUp / LeftRight / RightLeft",     "Regenrichtung: Von oben / unten / links / rechts");
+            tip(cboWordMode,     "Rain = keyword scrolls only · Popup = blips only · Both = mixed",          "Wortmodus: Regen / Popup / Beides");
+            // Words section
+            tip(btnWordColor,    "Color of the keyword stream characters",                                   "Farbe der Keyword-Stream-Zeichen");
+            tip(btnWordHeadColor,"Color of the leading (head) character in keyword streams",                 "Farbe des Kopfzeichens in Keyword-Streams");
+            tip(cboWordFontName, "Font used for keyword streams, popups and watermark",                      "Schriftart für Keyword-Streams, Popups und Wasserzeichen");
+            tip(txtFontPreviewText,"Edit the sample text shown in the font preview box",                     "Vorschautext für die Schriftart-Vorschau ändern");
+            tip(cboWordStyle,    "Scroll = moving stream · Fade = appear/disappear · Build = decode left-right · Scramble = noise resolves · Blink = flicker hold",
+                                 "Scroll = bewegter Stream · Fade = Ein/Ausblenden · Build = Zeichen-für-Zeichen · Scramble = Rauschen löst auf · Blink = Flackern");
+            tip(cboWordOrient,   "Direction for keyword streams (Same = follows rain direction)",            "Richtung der Keyword-Streams (Gleich = wie Regen)");
+            tip(trkWordFont,     "Character size for keyword streams (px)",                                  "Zeichengröße der Keyword-Streams (px)");
+            tip(trkWordSpeed,    "Speed multiplier for keyword streams",                                     "Geschwindigkeit der Keyword-Streams");
+            tip(trkWordCount,    "Number of simultaneous keyword streams on screen",                         "Anzahl gleichzeitiger Keyword-Streams");
+            // Popup section
+            tip(btnPopupColor,   "Color of popup word blips",                                               "Farbe der Popup-Wörter");
+            tip(chkFade,         "Popup fades in and out smoothly",                                         "Popup erscheint sanft ein/aus");
+            tip(chkFlash,        "Popup flashes in bright white, then fades",                               "Popup erscheint als heller weißer Blitz");
+            tip(chkGlitch,       "Popup decodes from random noise characters",                              "Popup entschlüsselt sich aus Zufallszeichen");
+            tip(chkScan,         "Popup types out left-to-right, then erases right-to-left",                "Popup tippt sich von links nach rechts ein");
+            tip(chkZoom,         "Popup zooms in from large to normal size",                                "Popup zoomt von groß auf normale Größe");
+            tip(trkPopupFont,    "Font size for popup word blips (px)",                                     "Schriftgröße der Popup-Wörter (px)");
+            tip(trkPopupCount,   "Number of simultaneous popup blips on screen",                            "Anzahl gleichzeitiger Popup-Wörter");
+            tip(trkPopupSpeed,   "Speed of popup appearance and disappearance (higher = faster)",           "Geschwindigkeit der Popup-Ein-/Ausblendung (höher = schneller)");
+            // General section
+            tip(chkScanlines,    "Adds a subtle CRT monitor scanline overlay",                              "Fügt einen dezenten CRT-Scanline-Effekt hinzu");
+            tip(chkWatermark,    "Shows faint watermark text centered in the background",                   "Zeigt Wasserzeichen-Text im Hintergrund");
+            tip(chkVeeam100,     "Include Veeam Vanguard / Legend / MVP 2026 member names in streams",      "Veeam Vanguard / Legend / MVP 2026 Namen in Streams einblenden");
+            tip(txtWatermark,    "Main watermark text shown in the background center",                      "Haupt-Wasserzeichentext in der Bildschirmmitte");
+            tip(txtWatermarkSub, "Subtitle line shown below the main watermark",                            "Untertitelzeile unterhalb des Wasserzeichens");
+            tip(txtExtra,        "Add your own terms, comma-separated  e.g. MYPRODUCT,FEATURE A",          "Eigene Begriffe kommagetrennt  z.B. MEIN PRODUKT,FEATURE A");
 
             ClientSize = new Size(fw, yBot+48);
             Text = T("VeeaMatrix  –  Settings", "VeeaMatrix  –  Einstellungen");
