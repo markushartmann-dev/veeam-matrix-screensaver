@@ -77,10 +77,10 @@ You can save your own profiles via **Save as…** in the config dialog.
 Requires Windows with .NET Framework 4.x (pre-installed on Windows 10/11).
 
 ```powershell
-.\Build-VeeamMatrix.ps1
+.\Build-VeeaMatrix.ps1
 ```
 
-This compiles `VeeamMatrix.cs` using the built-in `csc.exe` compiler — no Visual Studio or .NET SDK required. Output: `VeeaMatrix.scr`.
+This compiles `VeeaMatrix.cs` using the built-in `csc.exe` compiler — no Visual Studio or .NET SDK required. Output: `VeeaMatrix.scr`.
 
 ## Multi-Monitor
 

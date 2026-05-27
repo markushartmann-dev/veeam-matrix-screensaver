@@ -1,9 +1,9 @@
-# Build-VeeamMatrix.ps1
-# Compiles VeeamMatrix.cs -> VeeaMatrix.scr
+# Build-VeeaMatrix.ps1
+# Compiles VeeaMatrix.cs -> VeeaMatrix.scr
 # Then: copy VeeaMatrix.scr to C:\Windows\System32 (as Admin),
 #       or right-click > "Install"
 
-$src    = Join-Path $PSScriptRoot "VeeamMatrix.cs"
+$src    = Join-Path $PSScriptRoot "VeeaMatrix.cs"
 $out    = Join-Path $PSScriptRoot "VeeaMatrix.scr"
 $csc    = "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
 $refs   = "System.Windows.Forms.dll,System.Drawing.dll,System.dll,Microsoft.VisualBasic.dll"
@@ -13,7 +13,7 @@ if (-not (Test-Path $csc)) {
     exit 1
 }
 
-Write-Host "Kompiliere $src ..." -ForegroundColor Cyan
+Write-Host "Compiling $src ..." -ForegroundColor Cyan
 
 $result = & $csc `
     /target:winexe `
@@ -33,6 +33,6 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host "  3) Right-click -> 'Configure'   -> Settings dialog"
     Write-Host "  4) Right-click -> 'Test'         -> Fullscreen preview"
 } else {
-    Write-Host "FEHLER beim Kompilieren:" -ForegroundColor Red
+    Write-Host "ERROR compiling:" -ForegroundColor Red
     $result | Where-Object { $_ -match "error" } | ForEach-Object { Write-Host $_ -ForegroundColor Red }
 }

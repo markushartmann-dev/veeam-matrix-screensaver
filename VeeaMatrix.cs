@@ -1,5 +1,5 @@
-// VeeaMatrix.cs  –  Windows Screensaver v1.10
-// Build: Build-VeeamMatrix.ps1  (outputs VeeaMatrix.scr)
+// VeeaMatrix.cs  –  Windows Screensaver v1.11
+// Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
 using System.Drawing;
