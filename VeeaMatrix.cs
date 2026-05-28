@@ -1,4 +1,4 @@
-// VeeaMatrix.cs  –  Windows Screensaver v1.16
+// VeeaMatrix.cs  –  Windows Screensaver v1.17
 // Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
@@ -299,7 +299,7 @@ namespace VeeaMatrix
                 foreach (string part in s.PopupEffects.Split(','))
                 {
                     string t = part.Trim();
-                    if (t == "Fade" || t == "Glitch" || t == "Scan" || t == "Zoom") { migrated = t; break; }
+                    if (t == "Fade" || t == "Glitch" || t == "Scan" || t == "Zoom" || t == "Scramble") { migrated = t; break; }
                 }
                 s.PopupEffects = migrated;
             }
@@ -423,7 +423,7 @@ namespace VeeaMatrix
             public int      Phase, Frame, AppearF, HoldF, FadeF;
         }
 
-        private enum PopupMode { Fade, Glitch, Scan, Zoom }
+        private enum PopupMode { Fade, Glitch, Scan, Zoom, Scramble }
         private class WPopup
         {
             public char[] Word, Disp;
@@ -488,11 +488,12 @@ namespace VeeaMatrix
         {
             switch (name.ToLower())
             {
-                case "fade":   m = PopupMode.Fade;   return true;
-                case "glitch": m = PopupMode.Glitch; return true;
-                case "scan":   m = PopupMode.Scan;   return true;
-                case "zoom":   m = PopupMode.Zoom;   return true;
-                default:       m = PopupMode.Glitch; return false;
+                case "fade":    m = PopupMode.Fade;    return true;
+                case "glitch":  m = PopupMode.Glitch;  return true;
+                case "scan":    m = PopupMode.Scan;    return true;
+                case "zoom":    m = PopupMode.Zoom;    return true;
+                case "scramble":m = PopupMode.Scramble;return true;
+                default:        m = PopupMode.Glitch;  return false;
             }
         }
 
@@ -557,7 +558,7 @@ namespace VeeaMatrix
             char[] chars = term.ToCharArray();
             int    fs    = s.WordFontSize;
 
-            if (s.WordStyle == "Fade" || s.WordStyle == "Build" || s.WordStyle == "Scramble")
+            if (s.WordStyle == "Fade" || s.WordStyle == "Build" || s.WordStyle == "Scramble" || s.WordStyle == "Glitch")
             {
                 float  spd  = Math.Max(0.1f, s.WordSpeedFactor);
                 int    appF = 22, holF = 90, fadF = 30;
@@ -571,6 +572,11 @@ namespace VeeaMatrix
                         appF = (int)Math.Round(Math.Max(15, chars.Length * 4) / spd);
                         holF = (int)Math.Round((60 + rng.Next(40)) / spd);
                         fadF = 25;
+                        break;
+                    case "Glitch":
+                        appF = (int)Math.Round(Math.Max(25, chars.Length * 4) / spd);
+                        holF = (int)Math.Round((60 + rng.Next(40)) / spd);
+                        fadF = (int)Math.Round(Math.Max(25, chars.Length * 4) / spd);
                         break;
                     default: // Fade
                         appF = (int)Math.Round(22 / spd);
@@ -620,10 +626,11 @@ namespace VeeaMatrix
             int appearF, holdF, disappearF;
             switch (mode)
             {
-                case PopupMode.Glitch: appearF=55; holdF=90; disappearF=35; break;
-                case PopupMode.Scan:   appearF=word.Length*3; holdF=80; disappearF=28; break;
-                case PopupMode.Zoom:   appearF=18; holdF=90; disappearF=28; break;
-                default:               appearF=22; holdF=90; disappearF=32; break;
+                case PopupMode.Glitch:  appearF=55;               holdF=90; disappearF=35; break;
+                case PopupMode.Scan:    appearF=word.Length*3;    holdF=80; disappearF=28; break;
+                case PopupMode.Zoom:    appearF=18;               holdF=90; disappearF=28; break;
+                case PopupMode.Scramble:appearF=word.Length*4;    holdF=80; disappearF=word.Length*4; break;
+                default:                appearF=22;               holdF=90; disappearF=32; break;
             }
             // Apply popup speed factor (higher = faster = fewer frames)
             float pspd = Math.Max(0.1f, s.PopupSpeedFactor);
@@ -640,7 +647,7 @@ namespace VeeaMatrix
             if (scatter) cy = margin + (float)(rng.NextDouble() * Math.Max(1, H - 2f*margin));
 
             char[] disp = (char[])word.Clone();
-            if (mode == PopupMode.Glitch || mode == PopupMode.Scan)
+            if (mode == PopupMode.Glitch || mode == PopupMode.Scan || mode == PopupMode.Scramble)
                 for (int i=0;i<disp.Length;i++) disp[i]=word[i]==' '?' ':RAIN_CHARS[rng.Next(RAIN_CHARS.Length)];
 
             return new WPopup { Word=word, Disp=disp, CX=cx, CY=cy, FontSize=fs, Mode=mode,
@@ -707,7 +714,7 @@ namespace VeeaMatrix
         private void DrawDrops()
         {
             bool isStatic = (s.WordStyle == "Fade" || s.WordStyle == "Build" ||
-                             s.WordStyle == "Scramble");
+                             s.WordStyle == "Scramble" || s.WordStyle == "Glitch");
             int  fs       = s.WordFontSize;
 
             for (int i = wdrops.Count-1; i >= 0; i--)
@@ -822,6 +829,27 @@ namespace VeeaMatrix
                     bg.DrawString(drawCh.ToString(), wordFont, tmpBrush, new PointF(w.X + xOff, w.Y), typFmt);
                 }
             }
+            // ── Glitch: all chars visible with noise overlay that resolves over time ──
+            else if (s.WordStyle == "Glitch")
+            {
+                float glitchChance;
+                if      (w.Phase == 0) glitchChance = 1f - (float)w.Frame / Math.Max(1, w.AppearF);  // noisy → resolve
+                else if (w.Phase == 1) glitchChance = 0.04f;                                           // mostly correct, rare noise
+                else                   glitchChance = (float)w.Frame / Math.Max(1, w.FadeF);           // resolve → noisy again
+                for (int j = 0; j < w.Chars.Length; j++)
+                {
+                    if (w.Chars[j] == ' ') continue;
+                    char drawCh = (rng.NextDouble() < glitchChance)
+                        ? RAIN_CHARS[rng.Next(RAIN_CHARS.Length)]
+                        : w.Chars[j];
+                    Color col = w.Glow
+                        ? Color.FromArgb(alpha2, Clamp(s.WordColor.R+80), Clamp(s.WordColor.G+20), Clamp(s.WordColor.B+40))
+                        : Color.FromArgb(alpha2, s.WordColor.R, s.WordColor.G, s.WordColor.B);
+                    tmpBrush.Color = col;
+                    float xOff = w.CharOffsets != null ? w.CharOffsets[j] : j * fs * 0.61f;
+                    bg.DrawString(drawCh.ToString(), wordFont, tmpBrush, new PointF(w.X + xOff, w.Y), typFmt);
+                }
+            }
             else // Fade — draw full string at once
             {
                 Color col = w.Glow
@@ -846,10 +874,11 @@ namespace VeeaMatrix
                 float prog=p.Phase==0?(float)p.Frame/Math.Max(1,p.AppearF):p.Phase==2?1f-(float)p.Frame/Math.Max(1,p.DisappearF):1f;
                 switch(p.Mode)
                 {
-                    case PopupMode.Fade:   PaintPopup(p.Word,p.CX,p.CY,p.FontSize,prog,p.Glow); break;
-                    case PopupMode.Glitch: DoGlitch(p,prog); break;
-                    case PopupMode.Scan:   DoScan(p,prog);   break;
-                    case PopupMode.Zoom:   DoZoom(p,prog);   break;
+                    case PopupMode.Fade:    PaintPopup(p.Word,p.CX,p.CY,p.FontSize,prog,p.Glow); break;
+                    case PopupMode.Glitch:  DoGlitch(p,prog);   break;
+                    case PopupMode.Scan:    DoScan(p,prog);     break;
+                    case PopupMode.Zoom:    DoZoom(p,prog);     break;
+                    case PopupMode.Scramble:DoScramblePopup(p,prog); break;
                 }
             }
         }
@@ -895,6 +924,37 @@ namespace VeeaMatrix
             float scale=p.Phase==0?2f-prog:1f;
             float alpha=p.Phase==0?prog*prog:prog;
             PaintPopup(p.Word,p.CX,p.CY,(int)(p.FontSize*scale),alpha,p.Glow);
+        }
+
+        // Scramble popup: chars resolve L→R (appear) / R→L (disappear), rest show as noise
+        private void DoScramblePopup(WPopup p, float prog)
+        {
+            int len = p.Word.Length;
+            if (p.Phase == 0)
+            {
+                int rev = (int)(prog * len);
+                for (int j = 0; j < len; j++)
+                {
+                    if (p.Word[j] == ' ') { p.Disp[j] = ' '; continue; }
+                    p.Disp[j] = (j < rev) ? p.Word[j] : RAIN_CHARS[rng.Next(RAIN_CHARS.Length)];
+                }
+                PaintPopup(p.Disp, p.CX, p.CY, p.FontSize, 0.3f + prog * 0.7f, p.Glow);
+            }
+            else if (p.Phase == 1)
+            {
+                for (int j = 0; j < len; j++) p.Disp[j] = p.Word[j];
+                PaintPopup(p.Disp, p.CX, p.CY, p.FontSize, 1f, p.Glow);
+            }
+            else // phase 2: prog goes 1→0 — de-resolve R→L while fading
+            {
+                int rev = (int)(prog * len);   // len→0 as prog 1→0
+                for (int j = 0; j < len; j++)
+                {
+                    if (p.Word[j] == ' ') { p.Disp[j] = ' '; continue; }
+                    p.Disp[j] = (j < rev) ? p.Word[j] : RAIN_CHARS[rng.Next(RAIN_CHARS.Length)];
+                }
+                PaintPopup(p.Disp, p.CX, p.CY, p.FontSize, prog, p.Glow);
+            }
         }
 
         private void PaintPopup(char[] chars,float cx,float cy,int fontSize,float alpha,bool glow)
@@ -1023,7 +1083,9 @@ namespace VeeaMatrix
         private Button     btnRainColor, btnHeadColor, btnWordColor, btnWordHeadColor, btnPopupColor;
         private TrackBar   trkFade, trkFont, trkSpeed, trkWordCount, trkWordFont, trkPopupCount, trkPopupFont, trkWordSpeed, trkPopupSpeed;
         private Label      lblFade, lblFont, lblSpeed, lblWCount, lblWFont, lblPCount, lblPFont, lblWordSpeed, lblPopupSpeed;
-        private ComboBox   cboOrient, cboWordOrient, cboWordMode, cboWordStyle;
+        private ComboBox   cboOrient, cboWordOrient, cboWordMode;
+        private Button[]   btnWordStyles;  // single-select word style buttons [Scroll, Fade, Build, Scramble, Glitch]
+        private Label      _lblWordOrient; // reference for enable/disable alongside cboWordOrient
         private TextBox    txtWatermark, txtWatermarkSub, txtExtra;
         private Button[]   btnFxEffects;   // single-select popup effect buttons [Fade, Glitch, Scan, Zoom]
         private CheckBox   chkScanlines, chkWatermark, chkVeeam100;
@@ -1082,9 +1144,9 @@ namespace VeeaMatrix
             btnRainColor = btnHeadColor = btnWordColor = btnWordHeadColor = btnPopupColor = null;
             trkFade = trkFont = trkSpeed = trkWordCount = trkWordFont = trkPopupCount = trkPopupFont = trkWordSpeed = trkPopupSpeed = null;
             lblFade = lblFont = lblSpeed = lblWCount = lblWFont = lblPCount = lblPFont = lblWordSpeed = lblPopupSpeed = null;
-            cboOrient = cboWordOrient = cboWordMode = cboWordStyle = cboLanguage = null;
+            cboOrient = cboWordOrient = cboWordMode = cboLanguage = null;
             txtWatermark = txtWatermarkSub = txtExtra = null;
-            btnFxEffects = null;
+            btnFxEffects = null; btnWordStyles = null; _lblWordOrient = null;
             chkScanlines = chkWatermark = chkVeeam100 = null;
             cboProfiles = cboWordFontName = null;
             picFontPreview = null; txtFontPreviewText = null; picPreview = null;
@@ -1246,7 +1308,7 @@ namespace VeeaMatrix
             DLbl(T("Word Mode:","Wortmodus:"), c1+226, yL+5, 74);
             cboWordMode = Cbo(c1+304, yL, 102, new string[]{"Rain","Popup","Both"}, cur.WordMode);
             cboOrient.SelectedIndexChanged   += delegate { cur.Orientation = cboOrient.Text; };
-            cboWordMode.SelectedIndexChanged += delegate { cur.WordMode = cboWordMode.Text; SyncWordModeVisibility(); };
+            cboWordMode.SelectedIndexChanged += delegate { cur.WordMode = cboWordMode.Text; SyncWordModeVisibility(); SyncWordStyleDirection(); };
             yL += CM;
             yL += 10;
 
@@ -1291,15 +1353,37 @@ namespace VeeaMatrix
             txtFontPreviewText.TextChanged       += delegate { UpdateFontPreview(); };
             yR += 50;
 
-            _streamControls.Add(DLbl(T("Style:","Stil:"), c2, yR+5, 44));
-            cboWordStyle  = Cbo(c2+48, yR, 158, new string[]{"Scroll","Fade","Build","Scramble"},
-                string.IsNullOrEmpty(cur.WordStyle)?"Scroll":cur.WordStyle);
-            _streamControls.Add(cboWordStyle);
-            _streamControls.Add(DLbl(T("Direction:","Richtung:"), c2+214, yR+5, 68));
-            cboWordOrient = Cbo(c2+286, yR, 128, new string[]{"Same","TopDown","BottomUp","LeftRight","RightLeft"},
+            // ── Word Style single-select buttons ──────────────────────────────
+            _streamControls.Add(DLbl(T("Style:","Stil:"), c2, yR+5));
+            yR += 22;
+            string[] wsNames = new string[]{ "Scroll", "Fade", "Build", "Scramble", "Glitch" };
+            btnWordStyles = new Button[wsNames.Length];
+            const int WS_W = 79, WS_GAP = 4;
+            for (int wi = 0; wi < wsNames.Length; wi++)
+            {
+                string capturedWS = wsNames[wi];
+                var wsBtn = new Button {
+                    Text      = capturedWS,
+                    Location  = new Point(c2 + wi * (WS_W + WS_GAP), yR),
+                    Size      = new Size(WS_W, 26),
+                    FlatStyle = FlatStyle.Flat,
+                    Tag       = capturedWS
+                };
+                wsBtn.FlatAppearance.BorderSize = 1;
+                wsBtn.Click += delegate { SetWordStyle(capturedWS); MarkDirty(); };
+                Controls.Add(wsBtn);
+                btnWordStyles[wi] = wsBtn;
+                _streamControls.Add(wsBtn);
+            }
+            SetWordStyle(string.IsNullOrEmpty(cur.WordStyle) ? "Scroll" : cur.WordStyle);
+            yR += 32;
+
+            // ── Word Direction ────────────────────────────────────────────────
+            _lblWordOrient = DLbl(T("Direction:","Richtung:"), c2, yR+5, 68);
+            _streamControls.Add(_lblWordOrient);
+            cboWordOrient = Cbo(c2+72, yR, 200, new string[]{"Same","TopDown","BottomUp","LeftRight","RightLeft"},
                 string.IsNullOrEmpty(cur.WordOrientation)?"Same":cur.WordOrientation);
             _streamControls.Add(cboWordOrient);
-            cboWordStyle.SelectedIndexChanged  += delegate { cur.WordStyle       = cboWordStyle.Text; };
             cboWordOrient.SelectedIndexChanged += delegate { cur.WordOrientation = cboWordOrient.Text; };
             yR += CM;
 
@@ -1338,12 +1422,12 @@ namespace VeeaMatrix
             _popupControls.Add(btnPopupColor);
             yR += 32;
 
-            // Single-select effect buttons (Fade / Glitch / Scan / Zoom)
+            // Single-select effect buttons (Fade / Glitch / Scan / Zoom / Scramble)
             _popupControls.Add(DLbl(T("Effect:","Effekt:"), c2, yR+5));
             yR += 22;
-            string[] fxNames = new string[]{ "Fade", "Glitch", "Scan", "Zoom" };
+            string[] fxNames = new string[]{ "Fade", "Glitch", "Scan", "Zoom", "Scramble" };
             btnFxEffects = new Button[fxNames.Length];
-            const int FX_W = 100, FX_GAP = 6;
+            const int FX_W = 80, FX_GAP = 4;
             for (int fi = 0; fi < fxNames.Length; fi++)
             {
                 string capturedName = fxNames[fi];
@@ -1470,7 +1554,7 @@ namespace VeeaMatrix
                 cur.Orientation      = cboOrient.Text;
                 cur.WordOrientation  = cboWordOrient.Text;
                 cur.WordMode         = cboWordMode.Text;
-                cur.WordStyle        = cboWordStyle.Text;
+                // cur.WordStyle already synced by SetWordStyle()
                 cur.ShowScanlines    = chkScanlines.Checked;
                 cur.ShowWatermark    = chkWatermark.Checked;
                 cur.ShowVeeam100     = chkVeeam100.Checked;
@@ -1491,8 +1575,9 @@ namespace VeeaMatrix
             Controls.Add(btnOK); Controls.Add(btnCancel);
             AcceptButton=btnOK; CancelButton=btnCancel;
 
-            // ── Enable/disable sections based on initial WordMode ────────────
+            // ── Enable/disable sections based on initial WordMode + style ────
             SyncWordModeVisibility();
+            SyncWordStyleDirection();
 
             // ── Hover tooltips ────────────────────────────────────────────────
             _tip = new ToolTip { AutoPopDelay=9000, InitialDelay=500, ReshowDelay=300, ShowAlways=true };
@@ -1510,20 +1595,27 @@ namespace VeeaMatrix
             tip(btnWordHeadColor,"Color of the leading (head) character in keyword streams",                 "Farbe des Kopfzeichens in Keyword-Streams");
             tip(cboWordFontName, "Font used for keyword streams, popups and watermark",                      "Schriftart für Keyword-Streams, Popups und Wasserzeichen");
             tip(txtFontPreviewText,"Edit the sample text shown in the font preview box",                     "Vorschautext für die Schriftart-Vorschau ändern");
-            tip(cboWordStyle,    "Scroll = moving stream · Fade = appear/disappear · Build = decode left-right · Scramble = noise resolves",
-                                 "Scroll = bewegter Stream · Fade = Ein/Ausblenden · Build = Zeichen-für-Zeichen · Scramble = Rauschen löst auf");
-            tip(cboWordOrient,   "Direction for keyword streams (Same = follows rain direction)",            "Richtung der Keyword-Streams (Gleich = wie Regen)");
+            if (btnWordStyles != null && btnWordStyles.Length == 5)
+            {
+                tip(btnWordStyles[0], "Scroll — keyword scrolls across the screen",                         "Scroll — Keyword scrollt über den Bildschirm");
+                tip(btnWordStyles[1], "Fade — keyword fades in and out in place",                           "Fade — Keyword blendet an Ort und Stelle ein/aus");
+                tip(btnWordStyles[2], "Build — chars decode left-to-right (direction-aware)",               "Build — Zeichen werden von links nach rechts eingeblendet");
+                tip(btnWordStyles[3], "Scramble — noise resolves to the correct word sequentially",         "Scramble — Rauschen löst sich sequenziell auf");
+                tip(btnWordStyles[4], "Glitch — word appears through noise that gradually clears",          "Glitch — Wort erscheint durch Rauschen, das sich auflöst");
+            }
+            tip(cboWordOrient,   "Direction for keyword streams — only active for Scroll style",            "Richtung der Keyword-Streams — nur bei Scroll-Stil aktiv");
             tip(trkWordFont,     "Character size for keyword streams (px)",                                  "Zeichengröße der Keyword-Streams (px)");
             tip(trkWordSpeed,    "Speed multiplier for keyword streams",                                     "Geschwindigkeit der Keyword-Streams");
             tip(trkWordCount,    "Number of simultaneous keyword streams on screen",                         "Anzahl gleichzeitiger Keyword-Streams");
             // Popup section
             tip(btnPopupColor,   "Color of popup word blips",                                               "Farbe der Popup-Wörter");
-            if (btnFxEffects != null && btnFxEffects.Length == 4)
+            if (btnFxEffects != null && btnFxEffects.Length == 5)
             {
                 tip(btnFxEffects[0], "Fade — popup fades in and out smoothly",                             "Fade — Popup blendet sanft ein/aus");
-                tip(btnFxEffects[1], "Glitch — popup decodes from random noise characters",                "Glitch — Popup entschlüsselt sich aus Zufallszeichen");
-                tip(btnFxEffects[2], "Scan — popup types out left-to-right, then erases",                  "Scan — Popup tippt sich von links nach rechts ein");
+                tip(btnFxEffects[1], "Glitch — popup decodes from random noise, holds with rare glitch",   "Glitch — Popup löst sich aus Rauschen, hält mit seltenen Störungen");
+                tip(btnFxEffects[2], "Scan — popup types out left-to-right, then de-resolves",             "Scan — Popup tippt sich von links nach rechts ein und auf");
                 tip(btnFxEffects[3], "Zoom — popup zooms in from large to normal size",                    "Zoom — Popup zoomt von groß auf normale Größe");
+                tip(btnFxEffects[4], "Scramble — chars resolve left-to-right, then reverse on exit",       "Scramble — Zeichen lösen sich L→R auf und kehren beim Verschwinden um");
             }
             tip(trkPopupFont,    "Font size for popup word blips (px)",                                     "Schriftgröße der Popup-Wörter (px)");
             tip(trkPopupCount,   "Number of simultaneous popup blips on screen",                            "Anzahl gleichzeitiger Popup-Wörter");
@@ -1588,7 +1680,7 @@ namespace VeeaMatrix
         private void SetPopupEffect(string name)
         {
             if (btnFxEffects == null) return;
-            string[] valid = new string[]{ "Fade", "Glitch", "Scan", "Zoom" };
+            string[] valid = new string[]{ "Fade", "Glitch", "Scan", "Zoom", "Scramble" };
             bool found = false;
             foreach (string n in valid) if (n == name) { found = true; break; }
             if (!found) name = "Glitch";
@@ -1600,6 +1692,38 @@ namespace VeeaMatrix
                 b.ForeColor = active ? Color.White                     : Color.FromArgb(155,155,155);
                 b.FlatAppearance.BorderColor = active ? Color.FromArgb(0,185,55) : Color.FromArgb(55,55,55);
             }
+        }
+
+        // Single-select: highlight chosen word style button and update cur.WordStyle
+        private void SetWordStyle(string name)
+        {
+            if (btnWordStyles == null) return;
+            string[] valid = new string[]{ "Scroll", "Fade", "Build", "Scramble", "Glitch" };
+            bool found = false;
+            foreach (string n in valid) if (n == name) { found = true; break; }
+            if (!found) name = "Scroll";
+            cur.WordStyle = name;
+            foreach (Button b in btnWordStyles)
+            {
+                bool active = ((string)b.Tag == name);
+                b.BackColor = active ? Color.FromArgb(0,100,28)       : Color.FromArgb(28,28,28);
+                b.ForeColor = active ? Color.White                     : Color.FromArgb(155,155,155);
+                b.FlatAppearance.BorderColor = active ? Color.FromArgb(0,185,55) : Color.FromArgb(55,55,55);
+            }
+            SyncWordStyleDirection();
+        }
+
+        // Disable word Direction controls when style has no scrolling direction (static styles)
+        private void SyncWordStyleDirection()
+        {
+            bool isStatic = (cur.WordStyle == "Fade" || cur.WordStyle == "Build" ||
+                             cur.WordStyle == "Scramble" || cur.WordStyle == "Glitch");
+            if (isStatic)
+            {
+                if (cboWordOrient  != null) cboWordOrient.Enabled  = false;
+                if (_lblWordOrient != null) _lblWordOrient.Enabled = false;
+            }
+            // Enabling is handled by SyncWordModeVisibility — call it first for correct combined state
         }
 
         // Enable / disable controls depending on which layers are active
@@ -1619,7 +1743,7 @@ namespace VeeaMatrix
             if (cboOrient       != null) s.Orientation     = cboOrient.Text;
             if (cboWordOrient   != null) s.WordOrientation  = string.IsNullOrEmpty(cboWordOrient.Text) ? "Same" : cboWordOrient.Text;
             if (cboWordMode     != null) s.WordMode         = cboWordMode.Text;
-            if (cboWordStyle    != null) s.WordStyle        = cboWordStyle.Text;
+            s.WordStyle = cur.WordStyle;
             if (cboWordFontName != null && cboWordFontName.SelectedItem != null)
                 s.WordFontName = cboWordFontName.SelectedItem.ToString();
             if (trkFont         != null) s.FontSize         = trkFont.Value;
