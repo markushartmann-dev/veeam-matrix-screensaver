@@ -1,4 +1,4 @@
-// VeeaMatrix.cs  –  Windows Screensaver v1.19
+// VeeaMatrix.cs  –  Windows Screensaver v1.20
 // Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
@@ -1121,7 +1121,7 @@ namespace VeeaMatrix
             MaximizeBox = false; MinimizeBox = false;
             ShowInTaskbar = true;
             ClientSize  = new Size(860, 100);   // placeholder; Build() sets final size
-            BackColor   = Color.FromArgb(18, 18, 18);
+            BackColor   = Color.FromArgb(34, 36, 34);
             ForeColor   = Color.FromArgb(0, 200, 55);
             Font        = new Font("Segoe UI", 9f);
             Icon        = CreateAppIcon();
@@ -1223,7 +1223,7 @@ namespace VeeaMatrix
         private void Section(string title, int x, int y, int w)
         {
             var pnl = new Panel { Location=new Point(x,y), Size=new Size(w,20),
-                BackColor=Color.FromArgb(0,50,16) };
+                BackColor=Color.FromArgb(0,64,20) };
             Controls.Add(pnl);
             pnl.Controls.Add(new Label { Text=title, Location=new Point(8,2), AutoSize=true,
                 ForeColor=Color.FromArgb(0,220,65),
@@ -1231,12 +1231,12 @@ namespace VeeaMatrix
         }
 
         private void HSep(int y, int x=14, int w=832)
-        { Controls.Add(new Panel { Location=new Point(x,y), Size=new Size(w,1), BackColor=Color.FromArgb(0,52,16) }); }
+        { Controls.Add(new Panel { Location=new Point(x,y), Size=new Size(w,1), BackColor=Color.FromArgb(0,66,22) }); }
 
         private Label DLbl(string t, int x, int y, int w=-1)
         {
             var l = new Label { Text=t, Location=new Point(x,y), AutoSize=(w<0),
-                ForeColor=Color.FromArgb(155,155,155) };
+                ForeColor=Color.FromArgb(205,205,205) };
             if (w>0) { l.AutoSize=false; l.Size=new Size(w,15); }
             Controls.Add(l); return l;
         }
@@ -1254,7 +1254,7 @@ namespace VeeaMatrix
         {
             var c = new ComboBox { Location=new Point(x,y), Size=new Size(w,24),
                 DropDownStyle=ComboBoxStyle.DropDownList,
-                BackColor=Color.FromArgb(28,28,28), ForeColor=Color.FromArgb(0,210,60) };
+                BackColor=Color.FromArgb(44,46,44), ForeColor=Color.FromArgb(0,210,60) };
             c.Items.AddRange(items); c.Text=sel;
             Controls.Add(c); return c;
         }
@@ -1262,7 +1262,7 @@ namespace VeeaMatrix
         private CheckBox Chk(string text, bool val, int x, int y)
         {
             var c = new CheckBox { Text=text, Checked=val, Location=new Point(x,y),
-                AutoSize=true, ForeColor=Color.FromArgb(165,165,165) };
+                AutoSize=true, ForeColor=Color.FromArgb(210,210,210) };
             Controls.Add(c); return c;
         }
 
@@ -1273,7 +1273,7 @@ namespace VeeaMatrix
             var trk = new TrackBar { Location=new Point(x+LW+G,y), Size=new Size(cw-LW-VW-G*2,26),
                 Minimum=min, Maximum=max, Value=Clamp(val,min,max),
                 TickFrequency=Math.Max(1,(max-min)/10), SmallChange=1,
-                BackColor=Color.FromArgb(22,22,22), TickStyle=TickStyle.None };
+                BackColor=Color.FromArgb(34,36,34), TickStyle=TickStyle.None };
             Controls.Add(trk);
             vLbl = new Label { Location=new Point(x+cw-VW,y+6), Size=new Size(VW,15),
                 ForeColor=Color.FromArgb(0,218,62), TextAlign=ContentAlignment.MiddleRight };
@@ -1373,7 +1373,7 @@ namespace VeeaMatrix
             DLbl(T("Font:", "Schriftart:"), c2, yR+5, 80);
             cboWordFontName = new ComboBox { Location=new Point(c2+84, yR), Size=new Size(200, 24),
                 DropDownStyle=ComboBoxStyle.DropDownList,
-                BackColor=Color.FromArgb(28,28,28), ForeColor=Color.FromArgb(0,210,60) };
+                BackColor=Color.FromArgb(44,46,44), ForeColor=Color.FromArgb(0,210,60) };
             using (var ifc = new System.Drawing.Text.InstalledFontCollection())
             {
                 var fns = new System.Collections.Generic.SortedSet<string>();
@@ -1385,7 +1385,7 @@ namespace VeeaMatrix
             Controls.Add(cboWordFontName);
 
             txtFontPreviewText = new TextBox { Location=new Point(c2+292, yR), Size=new Size(cW2-292-4, 24),
-                Text="VEEAM", BackColor=Color.FromArgb(28,28,28),
+                Text="VEEAM", BackColor=Color.FromArgb(44,46,44),
                 ForeColor=Color.FromArgb(0,210,60), BorderStyle=BorderStyle.FixedSingle };
             Controls.Add(txtFontPreviewText);
             yR += 30;
@@ -1526,7 +1526,7 @@ namespace VeeaMatrix
             // Watermark text – own row
             DLbl(T("Watermark:", "Wasserzeichen:"), c2, yR+5, 96);
             txtWatermark = new TextBox { Location=new Point(c2+100, yR), Size=new Size(cW2-104, 24),
-                Text=cur.WatermarkText, BackColor=Color.FromArgb(28,28,28),
+                Text=cur.WatermarkText, BackColor=Color.FromArgb(44,46,44),
                 ForeColor=Color.FromArgb(0,210,60), BorderStyle=BorderStyle.FixedSingle };
             Controls.Add(txtWatermark);
             yR += 30;
@@ -1534,7 +1534,7 @@ namespace VeeaMatrix
             // Subtitle text – own row (wide!)
             DLbl(T("Subtitle:", "Untertitel:"), c2, yR+5, 62);
             txtWatermarkSub = new TextBox { Location=new Point(c2+66, yR), Size=new Size(cW2-70, 24),
-                Text=cur.WatermarkSubText, BackColor=Color.FromArgb(28,28,28),
+                Text=cur.WatermarkSubText, BackColor=Color.FromArgb(44,46,44),
                 ForeColor=Color.FromArgb(0,210,60), BorderStyle=BorderStyle.FixedSingle };
             Controls.Add(txtWatermarkSub);
             yR += 30;
@@ -1542,7 +1542,7 @@ namespace VeeaMatrix
             DLbl(T("Custom terms (comma-separated):","Eigene Begriffe (kommagetrennt):"), c2, yR+5);
             yR += 22;
             txtExtra = new TextBox { Location=new Point(c2, yR), Size=new Size(cW2-4, 24),
-                Text=cur.ExtraWords, BackColor=Color.FromArgb(28,28,28),
+                Text=cur.ExtraWords, BackColor=Color.FromArgb(44,46,44),
                 ForeColor=Color.FromArgb(0,210,60), BorderStyle=BorderStyle.FixedSingle };
             Controls.Add(txtExtra);
             yR += 30;
@@ -1551,7 +1551,7 @@ namespace VeeaMatrix
             int colH = Math.Max(yL, yR) - y;
             // Thin vertical divider between content and preview
             Controls.Add(new Panel { Location=new Point(858, y), Size=new Size(1, colH+14),
-                BackColor=Color.FromArgb(0,52,16) });
+                BackColor=Color.FromArgb(0,66,22) });
             Section(T("LIVE PREVIEW","LIVE-VORSCHAU"), c3, y, cW3);
             picPreview = new PictureBox {
                 Location   = new Point(c3, y + 26),
@@ -1630,32 +1630,17 @@ namespace VeeaMatrix
                 {
                     var bannerImg = Image.FromFile(bannerPath);
                     int bannerY = prevBottom + 8;
-                    int bannerH = Math.Max(80, finalH - bannerY - 8);
+                    int bannerH = Math.Max(120, finalH - bannerY - 8);
                     // Ensure the form is tall enough to show the banner
                     finalH = Math.Max(finalH, bannerY + bannerH + 8);
-                    Image capturedBanner = bannerImg;
+                    // Zoom mode: full image visible, letterboxed (black bars) — no cropping
                     var picBanner = new PictureBox {
                         Location    = new Point(c3, bannerY),
                         Size        = new Size(cW3, bannerH),
                         BackColor   = Color.Black,
-                        BorderStyle = BorderStyle.FixedSingle
-                    };
-                    // Fill-crop: zoom to fill the area, crop edges rather than letterbox
-                    picBanner.Paint += delegate(object bps, PaintEventArgs bpe)
-                    {
-                        if (capturedBanner == null || capturedBanner.Width == 0) return;
-                        var pb    = (PictureBox)bps;
-                        double srcAR = (double)capturedBanner.Width  / capturedBanner.Height;
-                        double dstAR = (double)pb.Width / pb.Height;
-                        int sx, sy, sw, sh;
-                        if (srcAR > dstAR)   // wider than dest — crop left & right
-                        { sh=capturedBanner.Height; sw=(int)(sh*dstAR); sx=(capturedBanner.Width-sw)/2; sy=0; }
-                        else                  // taller than dest — crop top & bottom
-                        { sw=capturedBanner.Width; sh=(int)(sw/dstAR); sx=0; sy=(capturedBanner.Height-sh)/2; }
-                        bpe.Graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
-                        bpe.Graphics.DrawImage(capturedBanner,
-                            new Rectangle(0, 0, pb.Width, pb.Height),
-                            new Rectangle(sx, sy, sw, sh), GraphicsUnit.Pixel);
+                        BorderStyle = BorderStyle.FixedSingle,
+                        Image       = bannerImg,
+                        SizeMode    = PictureBoxSizeMode.Zoom
                     };
                     Controls.Add(picBanner);
                 }
@@ -1775,7 +1760,7 @@ namespace VeeaMatrix
             foreach (Button b in btnFxEffects)
             {
                 bool active = ((string)b.Tag == name);
-                b.BackColor = active ? Color.FromArgb(0,100,28)       : Color.FromArgb(28,28,28);
+                b.BackColor = active ? Color.FromArgb(0,100,28)       : Color.FromArgb(44,46,44);
                 b.ForeColor = active ? Color.White                     : Color.FromArgb(155,155,155);
                 b.FlatAppearance.BorderColor = active ? Color.FromArgb(0,185,55) : Color.FromArgb(55,55,55);
             }
@@ -1793,24 +1778,24 @@ namespace VeeaMatrix
             foreach (Button b in btnWordStyles)
             {
                 bool active = ((string)b.Tag == name);
-                b.BackColor = active ? Color.FromArgb(0,100,28)       : Color.FromArgb(28,28,28);
+                b.BackColor = active ? Color.FromArgb(0,100,28)       : Color.FromArgb(44,46,44);
                 b.ForeColor = active ? Color.White                     : Color.FromArgb(155,155,155);
                 b.FlatAppearance.BorderColor = active ? Color.FromArgb(0,185,55) : Color.FromArgb(55,55,55);
             }
             SyncWordStyleDirection();
         }
 
-        // Disable word Direction controls when style has no scrolling direction (static styles)
+        // Direction is irrelevant only for Fade (static, fades in place — no scroll axis).
+        // Build / Scramble / Glitch are also position-based but their resolve order IS
+        // direction-aware, so they must have direction enabled.
         private void SyncWordStyleDirection()
         {
-            bool isStatic = (cur.WordStyle == "Fade" || cur.WordStyle == "Build" ||
-                             cur.WordStyle == "Scramble" || cur.WordStyle == "Glitch");
-            if (isStatic)
-            {
-                if (cboWordOrient  != null) cboWordOrient.Enabled  = false;
-                if (_lblWordOrient != null) _lblWordOrient.Enabled = false;
-            }
-            // Enabling is handled by SyncWordModeVisibility — call it first for correct combined state
+            bool isFade = (cur.WordStyle == "Fade");
+            string mode = cboWordMode != null ? cboWordMode.Text : cur.WordMode;
+            bool streamActive = (mode == "Rain" || mode == "Both");
+            bool dirEnabled   = !isFade && streamActive;
+            if (cboWordOrient  != null) cboWordOrient.Enabled  = dirEnabled;
+            if (_lblWordOrient != null) _lblWordOrient.Enabled = dirEnabled;
         }
 
         // Enable / disable controls depending on which layers are active
