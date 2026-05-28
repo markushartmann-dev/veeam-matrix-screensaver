@@ -1,4 +1,4 @@
-// VeeaMatrix.cs  –  Windows Screensaver v1.15
+// VeeaMatrix.cs  –  Windows Screensaver v1.16
 // Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
@@ -169,7 +169,7 @@ namespace VeeaMatrix
         public Color  WordHeadColor = Color.White;
         public float  GlowChance    = 0.22f;
         // Popup words
-        public string PopupEffects      = "Fade,Flash,Glitch,Scan,Zoom";
+        public string PopupEffects      = "Glitch";
         public int    PopupCount        = 5;
         public int    PopupFontSize     = 22;
         public Color  PopupColor        = Color.FromArgb(0, 255, 65);
@@ -272,7 +272,7 @@ namespace VeeaMatrix
                         case "WordHeadColor": s.WordHeadColor = FromHex(v); break;
                         case "GlowChance":    s.GlowChance    = float.Parse(v, ic); break;
                         case "PopupEffects":  s.PopupEffects  = v; break;
-                        case "PopupStyle":    s.PopupEffects  = v == "Mixed" ? "Fade,Flash,Glitch,Scan,Zoom" : v; break;
+                        case "PopupStyle":    s.PopupEffects  = v == "Mixed" ? "Glitch" : v; break;
                         case "PopupCount":    s.PopupCount    = int.Parse(v); break;
                         case "PopupFontSize": s.PopupFontSize = int.Parse(v); break;
                         case "PopupColor":        s.PopupColor       = FromHex(v); break;
@@ -290,6 +290,18 @@ namespace VeeaMatrix
                     }
                 }
                 catch { }
+            }
+            // v1.16 migrations
+            if (s.WordStyle == "Blink") s.WordStyle = "Scramble";
+            if (s.PopupEffects.Contains(",") || s.PopupEffects == "Flash")
+            {
+                string migrated = "Glitch";
+                foreach (string part in s.PopupEffects.Split(','))
+                {
+                    string t = part.Trim();
+                    if (t == "Fade" || t == "Glitch" || t == "Scan" || t == "Zoom") { migrated = t; break; }
+                }
+                s.PopupEffects = migrated;
             }
             return s;
         }
@@ -411,7 +423,7 @@ namespace VeeaMatrix
             public int      Phase, Frame, AppearF, HoldF, FadeF;
         }
 
-        private enum PopupMode { Fade, Flash, Glitch, Scan, Zoom }
+        private enum PopupMode { Fade, Glitch, Scan, Zoom }
         private class WPopup
         {
             public char[] Word, Disp;
@@ -477,11 +489,10 @@ namespace VeeaMatrix
             switch (name.ToLower())
             {
                 case "fade":   m = PopupMode.Fade;   return true;
-                case "flash":  m = PopupMode.Flash;  return true;
                 case "glitch": m = PopupMode.Glitch; return true;
                 case "scan":   m = PopupMode.Scan;   return true;
                 case "zoom":   m = PopupMode.Zoom;   return true;
-                default:       m = PopupMode.Fade;   return false;
+                default:       m = PopupMode.Glitch; return false;
             }
         }
 
@@ -546,7 +557,7 @@ namespace VeeaMatrix
             char[] chars = term.ToCharArray();
             int    fs    = s.WordFontSize;
 
-            if (s.WordStyle == "Fade" || s.WordStyle == "Build" || s.WordStyle == "Scramble" || s.WordStyle == "Blink")
+            if (s.WordStyle == "Fade" || s.WordStyle == "Build" || s.WordStyle == "Scramble")
             {
                 float  spd  = Math.Max(0.1f, s.WordSpeedFactor);
                 int    appF = 22, holF = 90, fadF = 30;
@@ -560,11 +571,6 @@ namespace VeeaMatrix
                         appF = (int)Math.Round(Math.Max(15, chars.Length * 4) / spd);
                         holF = (int)Math.Round((60 + rng.Next(40)) / spd);
                         fadF = 25;
-                        break;
-                    case "Blink":
-                        appF = 3;
-                        holF = (int)Math.Round((80 + rng.Next(40)) / spd);
-                        fadF = 20;
                         break;
                     default: // Fade
                         appF = (int)Math.Round(22 / spd);
@@ -614,7 +620,6 @@ namespace VeeaMatrix
             int appearF, holdF, disappearF;
             switch (mode)
             {
-                case PopupMode.Flash:  appearF=4;  holdF=18; disappearF=28; break;
                 case PopupMode.Glitch: appearF=55; holdF=90; disappearF=35; break;
                 case PopupMode.Scan:   appearF=word.Length*3; holdF=80; disappearF=28; break;
                 case PopupMode.Zoom:   appearF=18; holdF=90; disappearF=28; break;
@@ -702,7 +707,7 @@ namespace VeeaMatrix
         private void DrawDrops()
         {
             bool isStatic = (s.WordStyle == "Fade" || s.WordStyle == "Build" ||
-                             s.WordStyle == "Scramble" || s.WordStyle == "Blink");
+                             s.WordStyle == "Scramble");
             int  fs       = s.WordFontSize;
 
             for (int i = wdrops.Count-1; i >= 0; i--)
@@ -750,23 +755,6 @@ namespace VeeaMatrix
             else if (w.Phase==2 && w.Frame>=w.FadeF)   return false;
 
             int fs = s.WordFontSize;
-
-            // ── Blink: instant appear, flicker during hold, fade out ──────────
-            if (s.WordStyle == "Blink")
-            {
-                float alpha;
-                if      (w.Phase == 0) alpha = (float)w.Frame / Math.Max(1, w.AppearF);
-                else if (w.Phase == 1) alpha = (w.Frame % 10 < 5) ? 1f : 0f;
-                else                   alpha = 1f - (float)w.Frame / Math.Max(1, w.FadeF);
-                int a = Clamp((int)(alpha * 255));
-                if (a < 3) return w.Phase < 2;
-                Color col = w.Glow
-                    ? Color.FromArgb(a, Clamp(s.WordColor.R+80), Clamp(s.WordColor.G+20), Clamp(s.WordColor.B+40))
-                    : Color.FromArgb(a, s.WordColor.R, s.WordColor.G, s.WordColor.B);
-                tmpBrush.Color = col;
-                bg.DrawString(new string(w.Chars), wordFont, tmpBrush, w.X, w.Y);
-                return true;
-            }
 
             float prog  = w.Phase==0 ? (float)w.Frame/Math.Max(1,w.AppearF)
                         : w.Phase==2 ? 1f-(float)w.Frame/Math.Max(1,w.FadeF)
@@ -858,8 +846,7 @@ namespace VeeaMatrix
                 float prog=p.Phase==0?(float)p.Frame/Math.Max(1,p.AppearF):p.Phase==2?1f-(float)p.Frame/Math.Max(1,p.DisappearF):1f;
                 switch(p.Mode)
                 {
-                    case PopupMode.Fade:   PaintPopup(p.Word,p.CX,p.CY,p.FontSize,prog,p.Glow,false); break;
-                    case PopupMode.Flash:  PaintPopup(p.Word,p.CX,p.CY,p.FontSize,p.Phase==1?1f:prog,true,p.Phase==1); break;
+                    case PopupMode.Fade:   PaintPopup(p.Word,p.CX,p.CY,p.FontSize,prog,p.Glow); break;
                     case PopupMode.Glitch: DoGlitch(p,prog); break;
                     case PopupMode.Scan:   DoScan(p,prog);   break;
                     case PopupMode.Zoom:   DoZoom(p,prog);   break;
@@ -876,7 +863,7 @@ namespace VeeaMatrix
                 else if(p.Phase==1) p.Disp[j]=rng.NextDouble()<0.025?RAIN_CHARS[rng.Next(RAIN_CHARS.Length)]:p.Word[j];
                 else                p.Disp[j]=rng.NextDouble()<prog?p.Word[j]:RAIN_CHARS[rng.Next(RAIN_CHARS.Length)];
             }
-            PaintPopup(p.Disp,p.CX,p.CY,p.FontSize,p.Phase==0?prog*0.8f+0.2f:prog,p.Glow,false);
+            PaintPopup(p.Disp,p.CX,p.CY,p.FontSize,p.Phase==0?prog*0.8f+0.2f:prog,p.Glow);
         }
 
         private void DoScan(WPopup p, float prog)
@@ -891,15 +878,15 @@ namespace VeeaMatrix
                     else if(j==rev) p.Disp[j]=(p.Frame%5<3)?'_':' ';
                     else p.Disp[j]=' ';
                 }
-                PaintPopup(p.Disp,p.CX,p.CY,p.FontSize,1f,p.Glow,false);
+                PaintPopup(p.Disp,p.CX,p.CY,p.FontSize,1f,p.Glow);
             }
             else if(p.Phase==1)
-            { for(int j=0;j<len;j++) p.Disp[j]=p.Word[j]; PaintPopup(p.Disp,p.CX,p.CY,p.FontSize,1f,p.Glow,false); }
+            { for(int j=0;j<len;j++) p.Disp[j]=p.Word[j]; PaintPopup(p.Disp,p.CX,p.CY,p.FontSize,1f,p.Glow); }
             else
             {
                 int hide=Math.Min(len,(int)((1f-prog)*len));
                 for(int j=0;j<len;j++) p.Disp[j]=j>=hide?' ':p.Word[j];
-                PaintPopup(p.Disp,p.CX,p.CY,p.FontSize,prog,p.Glow,false);
+                PaintPopup(p.Disp,p.CX,p.CY,p.FontSize,prog,p.Glow);
             }
         }
 
@@ -907,10 +894,10 @@ namespace VeeaMatrix
         {
             float scale=p.Phase==0?2f-prog:1f;
             float alpha=p.Phase==0?prog*prog:prog;
-            PaintPopup(p.Word,p.CX,p.CY,(int)(p.FontSize*scale),alpha,p.Glow,false);
+            PaintPopup(p.Word,p.CX,p.CY,(int)(p.FontSize*scale),alpha,p.Glow);
         }
 
-        private void PaintPopup(char[] chars,float cx,float cy,int fontSize,float alpha,bool glow,bool flash)
+        private void PaintPopup(char[] chars,float cx,float cy,int fontSize,float alpha,bool glow)
         {
             if(alpha<=0.01f) return;
             int a=Clamp((int)(alpha*255));
@@ -922,8 +909,7 @@ namespace VeeaMatrix
                 string text=new string(chars);
                 SizeF  sz=bg.MeasureString(text,useFont);
                 Color  col;
-                if(flash) col=Color.FromArgb(a,255,255,255);
-                else if(glow) col=Color.FromArgb(a,Clamp(s.PopupColor.R+90),Clamp(s.PopupColor.G+20),Clamp(s.PopupColor.B+60));
+                if(glow) col=Color.FromArgb(a,Clamp(s.PopupColor.R+90),Clamp(s.PopupColor.G+20),Clamp(s.PopupColor.B+60));
                 else col=Color.FromArgb(a,s.PopupColor.R,s.PopupColor.G,s.PopupColor.B);
                 tmpBrush.Color=col;
                 bg.DrawString(text,useFont,tmpBrush,cx-sz.Width/2f,cy-sz.Height/2f);
@@ -1039,7 +1025,7 @@ namespace VeeaMatrix
         private Label      lblFade, lblFont, lblSpeed, lblWCount, lblWFont, lblPCount, lblPFont, lblWordSpeed, lblPopupSpeed;
         private ComboBox   cboOrient, cboWordOrient, cboWordMode, cboWordStyle;
         private TextBox    txtWatermark, txtWatermarkSub, txtExtra;
-        private CheckBox   chkFade, chkFlash, chkGlitch, chkScan, chkZoom;
+        private Button[]   btnFxEffects;   // single-select popup effect buttons [Fade, Glitch, Scan, Zoom]
         private CheckBox   chkScanlines, chkWatermark, chkVeeam100;
         private ComboBox   cboProfiles;
         private List<ColorProfile> profiles;
@@ -1098,7 +1084,7 @@ namespace VeeaMatrix
             lblFade = lblFont = lblSpeed = lblWCount = lblWFont = lblPCount = lblPFont = lblWordSpeed = lblPopupSpeed = null;
             cboOrient = cboWordOrient = cboWordMode = cboWordStyle = cboLanguage = null;
             txtWatermark = txtWatermarkSub = txtExtra = null;
-            chkFade = chkFlash = chkGlitch = chkScan = chkZoom = null;
+            btnFxEffects = null;
             chkScanlines = chkWatermark = chkVeeam100 = null;
             cboProfiles = cboWordFontName = null;
             picFontPreview = null; txtFontPreviewText = null; picPreview = null;
@@ -1306,7 +1292,7 @@ namespace VeeaMatrix
             yR += 50;
 
             _streamControls.Add(DLbl(T("Style:","Stil:"), c2, yR+5, 44));
-            cboWordStyle  = Cbo(c2+48, yR, 158, new string[]{"Scroll","Fade","Build","Scramble","Blink"},
+            cboWordStyle  = Cbo(c2+48, yR, 158, new string[]{"Scroll","Fade","Build","Scramble"},
                 string.IsNullOrEmpty(cur.WordStyle)?"Scroll":cur.WordStyle);
             _streamControls.Add(cboWordStyle);
             _streamControls.Add(DLbl(T("Direction:","Richtung:"), c2+214, yR+5, 68));
@@ -1352,25 +1338,30 @@ namespace VeeaMatrix
             _popupControls.Add(btnPopupColor);
             yR += 32;
 
-            bool hasFade  = cur.PopupEffects.Contains("Fade");
-            bool hasFlash = cur.PopupEffects.Contains("Flash");
-            bool hasGlitch= cur.PopupEffects.Contains("Glitch");
-            bool hasScan  = cur.PopupEffects.Contains("Scan");
-            bool hasZoom  = cur.PopupEffects.Contains("Zoom");
-            chkFade   = Chk("Fade",   hasFade,   c2,     yR);
-            chkFlash  = Chk("Flash",  hasFlash,  c2+68,  yR);
-            chkGlitch = Chk("Glitch", hasGlitch, c2+144, yR);
-            chkScan   = Chk("Scan",   hasScan,   c2+222, yR);
-            chkZoom   = Chk("Zoom",   hasZoom,   c2+296, yR);
-            // Live-sync effect checkboxes → cur.PopupEffects
-            chkFade.CheckedChanged   += delegate { SyncPopupEffects(); };
-            chkFlash.CheckedChanged  += delegate { SyncPopupEffects(); };
-            chkGlitch.CheckedChanged += delegate { SyncPopupEffects(); };
-            chkScan.CheckedChanged   += delegate { SyncPopupEffects(); };
-            chkZoom.CheckedChanged   += delegate { SyncPopupEffects(); };
-            _popupControls.Add(chkFade); _popupControls.Add(chkFlash); _popupControls.Add(chkGlitch);
-            _popupControls.Add(chkScan); _popupControls.Add(chkZoom);
-            yR += 28;
+            // Single-select effect buttons (Fade / Glitch / Scan / Zoom)
+            _popupControls.Add(DLbl(T("Effect:","Effekt:"), c2, yR+5));
+            yR += 22;
+            string[] fxNames = new string[]{ "Fade", "Glitch", "Scan", "Zoom" };
+            btnFxEffects = new Button[fxNames.Length];
+            const int FX_W = 100, FX_GAP = 6;
+            for (int fi = 0; fi < fxNames.Length; fi++)
+            {
+                string capturedName = fxNames[fi];
+                var fxBtn = new Button {
+                    Text      = capturedName,
+                    Location  = new Point(c2 + fi * (FX_W + FX_GAP), yR),
+                    Size      = new Size(FX_W, 26),
+                    FlatStyle = FlatStyle.Flat,
+                    Tag       = capturedName
+                };
+                fxBtn.FlatAppearance.BorderSize = 1;
+                fxBtn.Click += delegate { SetPopupEffect(capturedName); MarkDirty(); };
+                Controls.Add(fxBtn);
+                btnFxEffects[fi] = fxBtn;
+                _popupControls.Add(fxBtn);
+            }
+            SetPopupEffect(cur.PopupEffects);   // highlight the active button
+            yR += 32;
 
             trkPopupFont = SlRow(T("Font Size","Schriftgröße"), c2,yR,cW2, 10,72, cur.PopupFontSize, out lblPFont);
             lblPFont.Text = cur.PopupFontSize+" px";
@@ -1489,13 +1480,7 @@ namespace VeeaMatrix
                 cur.Language         = cboLanguage  != null ? cboLanguage.Text  : cur.Language;
                 if (trkPopupSpeed != null) cur.PopupSpeedFactor = trkPopupSpeed.Value / 10f;
                 if (cboWordFontName.SelectedItem != null) cur.WordFontName = cboWordFontName.SelectedItem.ToString();
-                var effects = new List<string>();
-                if (chkFade.Checked)   effects.Add("Fade");
-                if (chkFlash.Checked)  effects.Add("Flash");
-                if (chkGlitch.Checked) effects.Add("Glitch");
-                if (chkScan.Checked)   effects.Add("Scan");
-                if (chkZoom.Checked)   effects.Add("Zoom");
-                cur.PopupEffects = effects.Count>0 ? string.Join(",", effects.ToArray()) : "Fade";
+                // cur.PopupEffects already in sync via SetPopupEffect()
                 Result=cur; Result.Save();
             };
             var btnCancel = new Button { Text=T("Cancel","Abbrechen"),
@@ -1525,19 +1510,21 @@ namespace VeeaMatrix
             tip(btnWordHeadColor,"Color of the leading (head) character in keyword streams",                 "Farbe des Kopfzeichens in Keyword-Streams");
             tip(cboWordFontName, "Font used for keyword streams, popups and watermark",                      "Schriftart für Keyword-Streams, Popups und Wasserzeichen");
             tip(txtFontPreviewText,"Edit the sample text shown in the font preview box",                     "Vorschautext für die Schriftart-Vorschau ändern");
-            tip(cboWordStyle,    "Scroll = moving stream · Fade = appear/disappear · Build = decode left-right · Scramble = noise resolves · Blink = flicker hold",
-                                 "Scroll = bewegter Stream · Fade = Ein/Ausblenden · Build = Zeichen-für-Zeichen · Scramble = Rauschen löst auf · Blink = Flackern");
+            tip(cboWordStyle,    "Scroll = moving stream · Fade = appear/disappear · Build = decode left-right · Scramble = noise resolves",
+                                 "Scroll = bewegter Stream · Fade = Ein/Ausblenden · Build = Zeichen-für-Zeichen · Scramble = Rauschen löst auf");
             tip(cboWordOrient,   "Direction for keyword streams (Same = follows rain direction)",            "Richtung der Keyword-Streams (Gleich = wie Regen)");
             tip(trkWordFont,     "Character size for keyword streams (px)",                                  "Zeichengröße der Keyword-Streams (px)");
             tip(trkWordSpeed,    "Speed multiplier for keyword streams",                                     "Geschwindigkeit der Keyword-Streams");
             tip(trkWordCount,    "Number of simultaneous keyword streams on screen",                         "Anzahl gleichzeitiger Keyword-Streams");
             // Popup section
             tip(btnPopupColor,   "Color of popup word blips",                                               "Farbe der Popup-Wörter");
-            tip(chkFade,         "Popup fades in and out smoothly",                                         "Popup erscheint sanft ein/aus");
-            tip(chkFlash,        "Popup flashes in bright white, then fades",                               "Popup erscheint als heller weißer Blitz");
-            tip(chkGlitch,       "Popup decodes from random noise characters",                              "Popup entschlüsselt sich aus Zufallszeichen");
-            tip(chkScan,         "Popup types out left-to-right, then erases right-to-left",                "Popup tippt sich von links nach rechts ein");
-            tip(chkZoom,         "Popup zooms in from large to normal size",                                "Popup zoomt von groß auf normale Größe");
+            if (btnFxEffects != null && btnFxEffects.Length == 4)
+            {
+                tip(btnFxEffects[0], "Fade — popup fades in and out smoothly",                             "Fade — Popup blendet sanft ein/aus");
+                tip(btnFxEffects[1], "Glitch — popup decodes from random noise characters",                "Glitch — Popup entschlüsselt sich aus Zufallszeichen");
+                tip(btnFxEffects[2], "Scan — popup types out left-to-right, then erases",                  "Scan — Popup tippt sich von links nach rechts ein");
+                tip(btnFxEffects[3], "Zoom — popup zooms in from large to normal size",                    "Zoom — Popup zoomt von groß auf normale Größe");
+            }
             tip(trkPopupFont,    "Font size for popup word blips (px)",                                     "Schriftgröße der Popup-Wörter (px)");
             tip(trkPopupCount,   "Number of simultaneous popup blips on screen",                            "Anzahl gleichzeitiger Popup-Wörter");
             tip(trkPopupSpeed,   "Speed of popup appearance and disappearance (higher = faster)",           "Geschwindigkeit der Popup-Ein-/Ausblendung (höher = schneller)");
@@ -1597,16 +1584,22 @@ namespace VeeaMatrix
 
         private void MarkDirty() { _previewDirty = true; }
 
-        // Keeps cur.PopupEffects in sync when effect checkboxes change
-        private void SyncPopupEffects()
+        // Single-select: highlight chosen button and update cur.PopupEffects
+        private void SetPopupEffect(string name)
         {
-            var fx = new List<string>();
-            if (chkFade  !=null&&chkFade.Checked)   fx.Add("Fade");
-            if (chkFlash !=null&&chkFlash.Checked)  fx.Add("Flash");
-            if (chkGlitch!=null&&chkGlitch.Checked) fx.Add("Glitch");
-            if (chkScan  !=null&&chkScan.Checked)   fx.Add("Scan");
-            if (chkZoom  !=null&&chkZoom.Checked)   fx.Add("Zoom");
-            cur.PopupEffects = fx.Count > 0 ? string.Join(",", fx.ToArray()) : "Fade";
+            if (btnFxEffects == null) return;
+            string[] valid = new string[]{ "Fade", "Glitch", "Scan", "Zoom" };
+            bool found = false;
+            foreach (string n in valid) if (n == name) { found = true; break; }
+            if (!found) name = "Glitch";
+            cur.PopupEffects = name;
+            foreach (Button b in btnFxEffects)
+            {
+                bool active = ((string)b.Tag == name);
+                b.BackColor = active ? Color.FromArgb(0,100,28)       : Color.FromArgb(28,28,28);
+                b.ForeColor = active ? Color.White                     : Color.FromArgb(155,155,155);
+                b.FlatAppearance.BorderColor = active ? Color.FromArgb(0,185,55) : Color.FromArgb(55,55,55);
+            }
         }
 
         // Enable / disable controls depending on which layers are active
@@ -1641,14 +1634,8 @@ namespace VeeaMatrix
             if (txtWatermark    != null) s.WatermarkText    = txtWatermark.Text.Trim();
             if (txtWatermarkSub != null) s.WatermarkSubText = txtWatermarkSub.Text.Trim();
             if (txtExtra        != null) s.ExtraWords       = txtExtra.Text.Trim();
-            // Effects – always re-read from checkboxes (cur.PopupEffects also kept in sync by SyncPopupEffects)
-            var fx = new List<string>();
-            if (chkFade  !=null&&chkFade.Checked)   fx.Add("Fade");
-            if (chkFlash !=null&&chkFlash.Checked)  fx.Add("Flash");
-            if (chkGlitch!=null&&chkGlitch.Checked) fx.Add("Glitch");
-            if (chkScan  !=null&&chkScan.Checked)   fx.Add("Scan");
-            if (chkZoom  !=null&&chkZoom.Checked)   fx.Add("Zoom");
-            s.PopupEffects = fx.Count > 0 ? string.Join(",", fx.ToArray()) : "Fade";
+            // Effects – kept in sync by SetPopupEffect()
+            s.PopupEffects = cur.PopupEffects;
             // General flags – live-synced to cur, but read directly for safety
             if (chkScanlines != null) s.ShowScanlines = chkScanlines.Checked;
             if (chkWatermark != null) s.ShowWatermark = chkWatermark.Checked;
