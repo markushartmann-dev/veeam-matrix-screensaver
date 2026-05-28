@@ -1,4 +1,4 @@
-// VeeaMatrix.cs  –  Windows Screensaver v1.18
+// VeeaMatrix.cs  –  Windows Screensaver v1.19
 // Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
@@ -1564,6 +1564,7 @@ namespace VeeaMatrix
             {
                 if (_prevEngine != null) _prevEngine.Render(pe.Graphics);
             };
+            int prevBottom = y + 26 + PREV_H + 2;   // bottom edge of the live preview box
 
             // Wire all controls to mark preview dirty (exclude cboLanguage and txtFontPreviewText)
             foreach (Control ctrl in Controls)
@@ -1620,7 +1621,7 @@ namespace VeeaMatrix
             Controls.Add(btnOK); Controls.Add(btnCancel);
             AcceptButton=btnOK; CancelButton=btnCancel;
 
-            // ── Banner image (sidecar: VeeaMatrix-banner.jpg next to .scr) ───
+            // ── Banner image below Live Preview (fill-crop, uses the natural space) ──
             int finalH = yBot + 48;
             try
             {
@@ -1628,18 +1629,35 @@ namespace VeeaMatrix
                 if (bannerPath != null)
                 {
                     var bannerImg = Image.FromFile(bannerPath);
-                    int bannerW = bRight - c1 - 4;
-                    int bannerH = Math.Min(120, (int)((double)bannerW / bannerImg.Width * bannerImg.Height));
+                    int bannerY = prevBottom + 8;
+                    int bannerH = Math.Max(80, finalH - bannerY - 8);
+                    // Ensure the form is tall enough to show the banner
+                    finalH = Math.Max(finalH, bannerY + bannerH + 8);
+                    Image capturedBanner = bannerImg;
                     var picBanner = new PictureBox {
-                        Location    = new Point(c1, yBot + 44),
-                        Size        = new Size(bannerW, bannerH),
-                        SizeMode    = PictureBoxSizeMode.Zoom,
-                        Image       = bannerImg,
+                        Location    = new Point(c3, bannerY),
+                        Size        = new Size(cW3, bannerH),
                         BackColor   = Color.Black,
                         BorderStyle = BorderStyle.FixedSingle
                     };
+                    // Fill-crop: zoom to fill the area, crop edges rather than letterbox
+                    picBanner.Paint += delegate(object bps, PaintEventArgs bpe)
+                    {
+                        if (capturedBanner == null || capturedBanner.Width == 0) return;
+                        var pb    = (PictureBox)bps;
+                        double srcAR = (double)capturedBanner.Width  / capturedBanner.Height;
+                        double dstAR = (double)pb.Width / pb.Height;
+                        int sx, sy, sw, sh;
+                        if (srcAR > dstAR)   // wider than dest — crop left & right
+                        { sh=capturedBanner.Height; sw=(int)(sh*dstAR); sx=(capturedBanner.Width-sw)/2; sy=0; }
+                        else                  // taller than dest — crop top & bottom
+                        { sw=capturedBanner.Width; sh=(int)(sw/dstAR); sx=0; sy=(capturedBanner.Height-sh)/2; }
+                        bpe.Graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                        bpe.Graphics.DrawImage(capturedBanner,
+                            new Rectangle(0, 0, pb.Width, pb.Height),
+                            new Rectangle(sx, sy, sw, sh), GraphicsUnit.Pixel);
+                    };
                     Controls.Add(picBanner);
-                    finalH = yBot + 44 + bannerH + 12;
                 }
             }
             catch { }
