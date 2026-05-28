@@ -1,4 +1,4 @@
-// VeeaMatrix.cs  –  Windows Screensaver v1.17
+// VeeaMatrix.cs  –  Windows Screensaver v1.18
 // Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
@@ -1079,6 +1079,8 @@ namespace VeeaMatrix
     // =========================================================================
     class ConfigForm : Form
     {
+        [DllImport("user32.dll")] private static extern bool DestroyIcon(IntPtr hIcon);
+
         private Settings   cur;
         private Button     btnRainColor, btnHeadColor, btnWordColor, btnWordHeadColor, btnPopupColor;
         private TrackBar   trkFade, trkFont, trkSpeed, trkWordCount, trkWordFont, trkPopupCount, trkPopupFont, trkWordSpeed, trkPopupSpeed;
@@ -1117,14 +1119,57 @@ namespace VeeaMatrix
             cur = Clone(s);
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false; MinimizeBox = false;
+            ShowInTaskbar = true;
             ClientSize  = new Size(860, 100);   // placeholder; Build() sets final size
             BackColor   = Color.FromArgb(18, 18, 18);
             ForeColor   = Color.FromArgb(0, 200, 55);
             Font        = new Font("Segoe UI", 9f);
+            Icon        = CreateAppIcon();
             profiles    = ColorProfile.LoadAll();
             // Wire FormClosing once (not inside Build, so it survives RebuildUI)
             FormClosing += OnFormClosingHandler;
             Build();
+        }
+
+        // Programmatic 32×32 app icon: dark background with Veeam-green "V"
+        private Icon CreateAppIcon()
+        {
+            using (var bmp = new Bitmap(32, 32, System.Drawing.Imaging.PixelFormat.Format32bppArgb))
+            {
+                using (Graphics g = Graphics.FromImage(bmp))
+                {
+                    g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
+                    g.Clear(Color.FromArgb(12, 12, 12));
+                    // Outer glow ring
+                    using (SolidBrush glow = new SolidBrush(Color.FromArgb(30, 0, 179, 54)))
+                        g.FillEllipse(glow, 1, 1, 30, 30);
+                    // Bold "V" centered
+                    using (Font f = new Font("Arial", 21, FontStyle.Bold, GraphicsUnit.Pixel))
+                    using (SolidBrush b = new SolidBrush(Color.FromArgb(0, 200, 60)))
+                    {
+                        SizeF sz = g.MeasureString("V", f);
+                        g.DrawString("V", f, b, (32f - sz.Width) / 2f, (32f - sz.Height) / 2f + 1f);
+                    }
+                }
+                IntPtr hIco = bmp.GetHicon();
+                try   { return (Icon)Icon.FromHandle(hIco).Clone(); }
+                finally { DestroyIcon(hIco); }
+            }
+        }
+
+        // Find banner sidecar image: look next to the .scr and in %APPDATA%\VeeaMatrix
+        private static string FindBannerPath()
+        {
+            string[] names = new string[]{ "VeeaMatrix-banner.jpg", "VeeaMatrix-banner.png",
+                                           "VeeaMatrix-banner.jpeg", "banner.jpg" };
+            string exeDir = Path.GetDirectoryName(
+                System.Reflection.Assembly.GetExecutingAssembly().Location) ?? "";
+            string appDir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "VeeaMatrix");
+            foreach (string dir in new string[]{ exeDir, appDir })
+                foreach (string n in names)
+                { string p = Path.Combine(dir, n); if (File.Exists(p)) return p; }
+            return null;
         }
 
         private void OnFormClosingHandler(object sender, FormClosingEventArgs e)
@@ -1575,6 +1620,30 @@ namespace VeeaMatrix
             Controls.Add(btnOK); Controls.Add(btnCancel);
             AcceptButton=btnOK; CancelButton=btnCancel;
 
+            // ── Banner image (sidecar: VeeaMatrix-banner.jpg next to .scr) ───
+            int finalH = yBot + 48;
+            try
+            {
+                string bannerPath = FindBannerPath();
+                if (bannerPath != null)
+                {
+                    var bannerImg = Image.FromFile(bannerPath);
+                    int bannerW = bRight - c1 - 4;
+                    int bannerH = Math.Min(120, (int)((double)bannerW / bannerImg.Width * bannerImg.Height));
+                    var picBanner = new PictureBox {
+                        Location    = new Point(c1, yBot + 44),
+                        Size        = new Size(bannerW, bannerH),
+                        SizeMode    = PictureBoxSizeMode.Zoom,
+                        Image       = bannerImg,
+                        BackColor   = Color.Black,
+                        BorderStyle = BorderStyle.FixedSingle
+                    };
+                    Controls.Add(picBanner);
+                    finalH = yBot + 44 + bannerH + 12;
+                }
+            }
+            catch { }
+
             // ── Enable/disable sections based on initial WordMode + style ────
             SyncWordModeVisibility();
             SyncWordStyleDirection();
@@ -1628,7 +1697,7 @@ namespace VeeaMatrix
             tip(txtWatermarkSub, "Subtitle line shown below the main watermark",                            "Untertitelzeile unterhalb des Wasserzeichens");
             tip(txtExtra,        "Add your own terms, comma-separated  e.g. MYPRODUCT,FEATURE A",          "Eigene Begriffe kommagetrennt  z.B. MEIN PRODUKT,FEATURE A");
 
-            ClientSize = new Size(fw, yBot+48);
+            ClientSize = new Size(fw, finalH);
             Text = T("VeeaMatrix  –  Settings", "VeeaMatrix  –  Einstellungen");
         }
 
