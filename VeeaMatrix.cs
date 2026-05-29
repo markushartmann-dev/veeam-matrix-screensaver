@@ -1,4 +1,4 @@
-// VeeaMatrix.cs  –  Windows Screensaver v1.23
+// VeeaMatrix.cs  –  Windows Screensaver v1.24
 // Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
@@ -57,6 +57,15 @@ namespace VeeaMatrix
                 WordColor     = Color.FromArgb(255, 140,   0),
                 WordHeadColor = Color.FromArgb(255, 240, 180),
                 PopupColor    = Color.FromArgb(255, 200,  50),
+            },
+            new ColorProfile
+            {
+                Name          = "Neon Tokyo",
+                RainColor     = Color.FromArgb(  0, 210, 255),  // electric cyan
+                HeadColor     = Color.FromArgb(255, 255, 255),
+                WordColor     = Color.FromArgb(255,   0, 120),  // neon magenta
+                WordHeadColor = Color.FromArgb(255, 230,   0),  // electric yellow
+                PopupColor    = Color.FromArgb(  0, 210, 255),
             },
         };
 
@@ -699,14 +708,17 @@ namespace VeeaMatrix
                 {
                     string wmText = string.IsNullOrWhiteSpace(s.WatermarkText) ? "VEEAM" : s.WatermarkText.ToUpper();
                     string wmSub  = s.WatermarkSubText ?? "";
+                    FontStyle wmFs = FontStyle.Regular;
+                    if (s.WordFontBold)   wmFs |= FontStyle.Bold;
+                    if (s.WordFontItalic) wmFs |= FontStyle.Italic;
                     int lsz = Math.Max(24,(int)(W*0.08));
-                    using (Font lf = new Font(s.WordFontName, lsz, FontStyle.Bold, GraphicsUnit.Pixel))
+                    using (Font lf = new Font(s.WordFontName, lsz, wmFs, GraphicsUnit.Pixel))
                     using (SolidBrush lb = new SolidBrush(Color.FromArgb(10, s.RainColor)))
                     { SizeF ls=g.MeasureString(wmText,lf); g.DrawString(wmText,lf,lb,(W-ls.Width)/2f,(H-ls.Height)/2f); }
                     if (wmSub.Length > 0)
                     {
                         int ssz = Math.Max(7,(int)(W*0.015));
-                        using (Font sf = new Font(s.WordFontName, ssz, FontStyle.Regular, GraphicsUnit.Pixel))
+                        using (Font sf = new Font(s.WordFontName, ssz, wmFs, GraphicsUnit.Pixel))
                         using (SolidBrush sb = new SolidBrush(Color.FromArgb(7, s.RainColor)))
                         { SizeF ss=g.MeasureString(wmSub,sf); g.DrawString(wmSub,sf,sb,(W-ss.Width)/2f,H/2f+(int)(W*0.045f)); }
                     }
@@ -1365,12 +1377,12 @@ namespace VeeaMatrix
             _btnInaBdr= _dark ? Color.FromArgb(55,55,55)    : Color.FromArgb(148,158,148);
 
             // ── Layout constants ─────────────────────────────────────────────
-            const int c1   = 14,  cW1  = 400;   // left column
-            const int c2   = 428, cW2  = 418;   // middle column
-            const int PREV_W = 960, PREV_H = 540; // 16:9 live preview
-            const int c3   = c2 + cW2 + 14;     // = 860  preview column x
-            const int cW3  = PREV_W + 2;         // = 962  preview column width
-            const int fw   = c3 + cW3 + 14;      // = 1836 total form width
+            const int c1   = 14,  cW1  = 480;   // left column  — wider for banner (+80 px)
+            const int c2   = 508, cW2  = 418;   // middle column — same width, shifted right
+            const int PREV_W = 880, PREV_H = 495; // 16:9 live preview  (880×9/16 = 495)
+            const int c3   = c2 + cW2 + 14;     // = 940  preview column x
+            const int cW3  = PREV_W + 2;         // = 882  preview column width
+            const int fw   = c3 + cW3 + 14;      // = 1836 total form width (unchanged)
             const int SL   = 46;                 // slider row step
             const int CM   = 32;                 // combo row step
 
