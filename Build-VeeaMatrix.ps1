@@ -13,18 +13,38 @@ if (-not (Test-Path $csc)) {
     exit 1
 }
 
-Write-Host "Compiling $src ..." -ForegroundColor Cyan
+# Optionally embed a banner image as a compiled resource
+$bannerNames = @("VeeaMatrix-banner.jpg","VeeaMatrix-banner.png","VeeaMatrix-banner.jpeg","banner.jpg")
+$bannerFile  = $null
+foreach ($name in $bannerNames) {
+    $p = Join-Path $PSScriptRoot $name
+    if (Test-Path $p) { $bannerFile = $p; break }
+}
 
-$result = & $csc `
-    /target:winexe `
-    /out:"$out" `
-    /r:$refs `
-    /optimize+ `
-    /nologo `
-    "$src" 2>&1
+Write-Host "Compiling $src ..." -ForegroundColor Cyan
+if ($bannerFile) {
+    Write-Host "  Embedding banner: $(Split-Path $bannerFile -Leaf)" -ForegroundColor Cyan
+}
+
+$compileArgs = @(
+    "/target:winexe",
+    "/out:`"$out`"",
+    "/r:$refs",
+    "/optimize+",
+    "/nologo"
+)
+if ($bannerFile) {
+    $compileArgs += "/resource:`"$bannerFile`",VeeaMatrix.banner"
+}
+$compileArgs += "`"$src`""
+
+$result = & $csc @compileArgs 2>&1
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host "OK  ->  $out" -ForegroundColor Green
+    if ($bannerFile) {
+        Write-Host "    Banner embedded: $(Split-Path $bannerFile -Leaf)" -ForegroundColor Green
+    }
     Write-Host ""
     Write-Host "Next steps:" -ForegroundColor Yellow
     Write-Host "  1) Double-click VeeaMatrix.scr  -> runs immediately"
