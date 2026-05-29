@@ -1,4 +1,4 @@
-// VeeaMatrix.cs  –  Windows Screensaver v1.24
+// VeeaMatrix.cs  –  Windows Screensaver v1.25
 // Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
@@ -60,12 +60,12 @@ namespace VeeaMatrix
             },
             new ColorProfile
             {
-                Name          = "Neon Tokyo",
-                RainColor     = Color.FromArgb(  0, 210, 255),  // electric cyan
-                HeadColor     = Color.FromArgb(255, 255, 255),
-                WordColor     = Color.FromArgb(255,   0, 120),  // neon magenta
-                WordHeadColor = Color.FromArgb(255, 230,   0),  // electric yellow
-                PopupColor    = Color.FromArgb(  0, 210, 255),
+                Name          = "Deep Space",
+                RainColor     = Color.FromArgb(160,  32, 240),  // vivid violet
+                HeadColor     = Color.FromArgb(230, 200, 255),  // pale lavender
+                WordColor     = Color.FromArgb(255, 200,  50),  // gold
+                WordHeadColor = Color.FromArgb(255, 255, 255),  // white
+                PopupColor    = Color.FromArgb(180,  80, 255),  // bright violet
             },
         };
 
