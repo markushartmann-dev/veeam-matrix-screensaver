@@ -1,4 +1,4 @@
-// VeeaMatrix.cs  –  Windows Screensaver v1.20
+// VeeaMatrix.cs  –  Windows Screensaver v1.21
 // Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
@@ -39,15 +39,7 @@ namespace VeeaMatrix
                 WordHeadColor = Color.FromArgb(255, 215,   0),
                 PopupColor    = Color.FromArgb(255, 105, 180),
             },
-            new ColorProfile
-            {
-                Name          = "Matrix Classic",
-                RainColor     = Color.FromArgb(0,   255,  65),
-                HeadColor     = Color.FromArgb(255, 255, 255),
-                WordColor     = Color.FromArgb(0,   255,  65),
-                WordHeadColor = Color.FromArgb(255, 255, 255),
-                PopupColor    = Color.FromArgb(0,   255,  65),
-            },
+
             new ColorProfile
             {
                 Name          = "Cyberpunk",
@@ -180,6 +172,7 @@ namespace VeeaMatrix
         public string WordStyle        = "Scroll";
         public float  WordSpeedFactor  = 1.0f;
         public bool   ShowVeeam100     = false;
+        public bool   UseBuiltinTerms  = true;
         // Watermark
         public string WatermarkText    = "VEEAM";
         public string WatermarkSubText = "DATA PROTECTION  *  CYBER RESILIENCE  *  ALWAYS-ON";
@@ -236,6 +229,7 @@ namespace VeeaMatrix
             sb.AppendLine("WordStyle="        + WordStyle);
             sb.AppendLine("WordSpeedFactor="  + WordSpeedFactor.ToString("F2", System.Globalization.CultureInfo.InvariantCulture));
             sb.AppendLine("ShowVeeam100="     + ShowVeeam100);
+            sb.AppendLine("UseBuiltinTerms="  + UseBuiltinTerms);
             sb.AppendLine("WatermarkText="    + WatermarkText);
             sb.AppendLine("WatermarkSubText=" + WatermarkSubText);
             sb.AppendLine("ExtraWords="       + ExtraWords);
@@ -282,6 +276,7 @@ namespace VeeaMatrix
                         case "WordStyle":        s.WordStyle        = v; break;
                         case "WordSpeedFactor":  s.WordSpeedFactor  = float.Parse(v, ic); break;
                         case "ShowVeeam100":     s.ShowVeeam100     = bool.Parse(v); break;
+                        case "UseBuiltinTerms":  s.UseBuiltinTerms  = bool.Parse(v); break;
                         case "WatermarkText":    s.WatermarkText    = v; break;
                         case "WatermarkSubText": s.WatermarkSubText = v; break;
                         case "ExtraWords":       s.ExtraWords       = v; break;
@@ -326,7 +321,7 @@ namespace VeeaMatrix
     // =========================================================================
     class MatrixEngine : IDisposable
     {
-        private static readonly string[] TERMS = new string[]
+        internal static readonly string[] TERMS = new string[]
         {
             "VEEAM","VEEAM DATA PLATFORM","VEEAM DATA CLOUD",
             "BACKUP & REPLICATION","VBR","VBR 12.1","VEEAM ONE",
@@ -465,12 +460,29 @@ namespace VeeaMatrix
         public MatrixEngine(Settings settings, int w, int h)
         {
             s = settings; W = w; H = h;
-            var list = new List<string>(TERMS);
+            var list = new List<string>();
+            if (s.UseBuiltinTerms)
+            {
+                string termsFile = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                    "VeeaMatrix", "terms.txt");
+                if (File.Exists(termsFile))
+                {
+                    try
+                    {
+                        foreach (string ln in File.ReadAllLines(termsFile, Encoding.UTF8))
+                        { string t = ln.Trim(); if (t.Length > 0 && !t.StartsWith("#")) list.Add(t.ToUpper()); }
+                    }
+                    catch { list.AddRange(TERMS); }
+                }
+                else { list.AddRange(TERMS); }
+            }
             if (s.ShowVeeam100)
                 list.AddRange(VEEAM100_PEOPLE);
             if (!string.IsNullOrEmpty(s.ExtraWords))
                 foreach (string p in s.ExtraWords.Split(','))
                 { string t = p.Trim().ToUpper(); if (t.Length > 0) list.Add(t); }
+            if (list.Count == 0) list.Add("VEEAM");
             allTerms = list.ToArray();
 
             var modes = new List<PopupMode>();
@@ -1090,7 +1102,8 @@ namespace VeeaMatrix
         private Label      _lblWordOrient; // reference for enable/disable alongside cboWordOrient
         private TextBox    txtWatermark, txtWatermarkSub, txtExtra;
         private Button[]   btnFxEffects;   // single-select popup effect buttons [Fade, Glitch, Scan, Zoom]
-        private CheckBox   chkScanlines, chkWatermark, chkVeeam100;
+        private CheckBox   chkScanlines, chkWatermark, chkVeeam100, chkBuiltinTerms;
+        private bool       _syncingOrient;
         private ComboBox   cboProfiles;
         private List<ColorProfile> profiles;
         private ComboBox   cboWordFontName;
@@ -1192,7 +1205,7 @@ namespace VeeaMatrix
             cboOrient = cboWordOrient = cboWordMode = cboLanguage = null;
             txtWatermark = txtWatermarkSub = txtExtra = null;
             btnFxEffects = null; btnWordStyles = null; _lblWordOrient = null;
-            chkScanlines = chkWatermark = chkVeeam100 = null;
+            chkScanlines = chkWatermark = chkVeeam100 = chkBuiltinTerms = null;
             cboProfiles = cboWordFontName = null;
             picFontPreview = null; txtFontPreviewText = null; picPreview = null;
             _previewDirty = true;
@@ -1212,7 +1225,8 @@ namespace VeeaMatrix
                 WordStyle=s.WordStyle, WordSpeedFactor=s.WordSpeedFactor, ShowVeeam100=s.ShowVeeam100,
                 WatermarkText=s.WatermarkText, WatermarkSubText=s.WatermarkSubText, ExtraWords=s.ExtraWords,
                 WordFontName=s.WordFontName, Language=s.Language,
-                PopupSpeedFactor=s.PopupSpeedFactor };
+                PopupSpeedFactor=s.PopupSpeedFactor,
+                UseBuiltinTerms=s.UseBuiltinTerms };
         }
 
         // ── layout helpers ────────────────────────────────────────────────────
@@ -1287,11 +1301,11 @@ namespace VeeaMatrix
             _popupControls  = new List<Control>();
             // ── Layout constants ─────────────────────────────────────────────
             const int c1   = 14,  cW1  = 400;   // left column
-            const int c2   = 428, cW2  = 418;   // right column
-            const int PREV_W = 960, PREV_H = 540; // 16:9 live preview (double size)
-            const int c3   = c2 + cW2 + 14;     // = 860  preview column x
-            const int cW3  = PREV_W + 2;         // = 482  preview column width (incl. 1px border each side)
-            const int fw   = c3 + cW3 + 14;      // = 1356 total form width
+            const int c2   = 418, cW2  = 418;   // right column  (10px gap closed vs v1.20)
+            const int PREV_W = 700, PREV_H = 394; // 16:9 live preview  (fw ~15% less than v1.20)
+            const int c3   = c2 + cW2 + 14;     // = 850  preview column x
+            const int cW3  = PREV_W + 2;         // = 702  preview column width
+            const int fw   = c3 + cW3 + 14;      // = 1566 total form width
             const int SL   = 46;                 // slider row step
             const int CM   = 32;                 // combo row step
 
@@ -1429,7 +1443,7 @@ namespace VeeaMatrix
             cboWordOrient = Cbo(c2+72, yR, 200, new string[]{"Same","TopDown","BottomUp","LeftRight","RightLeft"},
                 string.IsNullOrEmpty(cur.WordOrientation)?"Same":cur.WordOrientation);
             _streamControls.Add(cboWordOrient);
-            cboWordOrient.SelectedIndexChanged += delegate { cur.WordOrientation = cboWordOrient.Text; };
+            cboWordOrient.SelectedIndexChanged += delegate { if (!_syncingOrient && cboWordOrient.SelectedIndex >= 0) cur.WordOrientation = cboWordOrient.Text; };
             yR += CM;
 
             trkWordFont = SlRow(T("Font Size","Schriftgröße"), c2,yR,cW2, 8,36, cur.WordFontSize, out lblWFont);
@@ -1523,6 +1537,16 @@ namespace VeeaMatrix
             chkVeeam100.CheckedChanged  += delegate { cur.ShowVeeam100  = chkVeeam100.Checked;  };
             yR += 28;
 
+            chkBuiltinTerms = Chk(T("Built-in terms","Eingebaut. Begriffe"), cur.UseBuiltinTerms, c2, yR);
+            chkBuiltinTerms.CheckedChanged += delegate { cur.UseBuiltinTerms = chkBuiltinTerms.Checked; };
+            var btnCatalog = new Button {
+                Text=T("Catalog…","Katalog…"), Location=new Point(c2+178, yR-1), Size=new Size(86,26),
+                FlatStyle=FlatStyle.Flat, BackColor=Color.FromArgb(0,55,18), ForeColor=Color.White };
+            btnCatalog.FlatAppearance.BorderColor = Color.FromArgb(0,100,32);
+            btnCatalog.Click += delegate { ShowTermsCatalog(); };
+            Controls.Add(btnCatalog);
+            yR += 28;
+
             // Watermark text – own row
             DLbl(T("Watermark:", "Wasserzeichen:"), c2, yR+5, 96);
             txtWatermark = new TextBox { Location=new Point(c2+100, yR), Size=new Size(cW2-104, 24),
@@ -1550,7 +1574,7 @@ namespace VeeaMatrix
             // ── PREVIEW COLUMN (16:9 fixed) ───────────────────────────────────
             int colH = Math.Max(yL, yR) - y;
             // Thin vertical divider between content and preview
-            Controls.Add(new Panel { Location=new Point(858, y), Size=new Size(1, colH+14),
+            Controls.Add(new Panel { Location=new Point(c3-2, y), Size=new Size(1, colH+14),
                 BackColor=Color.FromArgb(0,66,22) });
             Section(T("LIVE PREVIEW","LIVE-VORSCHAU"), c3, y, cW3);
             picPreview = new PictureBox {
@@ -1564,7 +1588,6 @@ namespace VeeaMatrix
             {
                 if (_prevEngine != null) _prevEngine.Render(pe.Graphics);
             };
-            int prevBottom = y + 26 + PREV_H + 2;   // bottom edge of the live preview box
 
             // Wire all controls to mark preview dirty (exclude cboLanguage and txtFontPreviewText)
             foreach (Control ctrl in Controls)
@@ -1604,6 +1627,7 @@ namespace VeeaMatrix
                 cur.ShowScanlines    = chkScanlines.Checked;
                 cur.ShowWatermark    = chkWatermark.Checked;
                 cur.ShowVeeam100     = chkVeeam100.Checked;
+                if (chkBuiltinTerms != null) cur.UseBuiltinTerms = chkBuiltinTerms.Checked;
                 cur.WatermarkText    = txtWatermark.Text.Trim();
                 cur.WatermarkSubText = txtWatermarkSub.Text.Trim();
                 cur.ExtraWords       = txtExtra.Text.Trim();
@@ -1621,28 +1645,44 @@ namespace VeeaMatrix
             Controls.Add(btnOK); Controls.Add(btnCancel);
             AcceptButton=btnOK; CancelButton=btnCancel;
 
-            // ── Banner image below Live Preview (fill-crop, uses the natural space) ──
+            // ── Banner image — bottom-left, below RAIN section (fill-crop, minimal black bars) ──
             int finalH = yBot + 48;
             try
             {
                 string bannerPath = FindBannerPath();
                 if (bannerPath != null)
                 {
-                    var bannerImg = Image.FromFile(bannerPath);
-                    int bannerY = prevBottom + 8;
-                    int bannerH = Math.Max(120, finalH - bannerY - 8);
-                    // Ensure the form is tall enough to show the banner
-                    finalH = Math.Max(finalH, bannerY + bannerH + 8);
-                    // Zoom mode: full image visible, letterboxed (black bars) — no cropping
-                    var picBanner = new PictureBox {
-                        Location    = new Point(c3, bannerY),
-                        Size        = new Size(cW3, bannerH),
-                        BackColor   = Color.Black,
-                        BorderStyle = BorderStyle.FixedSingle,
-                        Image       = bannerImg,
-                        SizeMode    = PictureBoxSizeMode.Zoom
-                    };
-                    Controls.Add(picBanner);
+                    var bannerImg  = Image.FromFile(bannerPath);
+                    int bannerY    = yL + 8;
+                    int bannerH    = yBot - bannerY - 8;   // fills left column gap
+                    if (bannerH > 50)
+                    {
+                        Image capturedBanner = bannerImg;
+                        var picBanner = new PictureBox {
+                            Location    = new Point(c1, bannerY),
+                            Size        = new Size(cW1, bannerH),
+                            BackColor   = Color.Black,
+                            BorderStyle = BorderStyle.FixedSingle
+                        };
+                        // Fill-crop: scale to fill the box, crop edges to minimize black bars
+                        picBanner.Paint += delegate(object bps, PaintEventArgs bpe)
+                        {
+                            if (capturedBanner == null || capturedBanner.Width == 0) return;
+                            var    pb    = (PictureBox)bps;
+                            double srcAR = (double)capturedBanner.Width  / capturedBanner.Height;
+                            double dstAR = (double)pb.Width / pb.Height;
+                            int sx, sy, sw, sh;
+                            if (srcAR > dstAR)   // wider than dest — crop left & right
+                            { sh=capturedBanner.Height; sw=(int)(sh*dstAR); sx=(capturedBanner.Width-sw)/2; sy=0; }
+                            else                  // taller than dest — crop top & bottom
+                            { sw=capturedBanner.Width; sh=(int)(sw/dstAR); sx=0; sy=(capturedBanner.Height-sh)/2; }
+                            bpe.Graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                            bpe.Graphics.DrawImage(capturedBanner,
+                                new Rectangle(0, 0, pb.Width, pb.Height),
+                                new Rectangle(sx, sy, sw, sh), GraphicsUnit.Pixel);
+                        };
+                        Controls.Add(picBanner);
+                    }
                 }
             }
             catch { }
@@ -1675,7 +1715,7 @@ namespace VeeaMatrix
                 tip(btnWordStyles[3], "Scramble — noise resolves to the correct word sequentially",         "Scramble — Rauschen löst sich sequenziell auf");
                 tip(btnWordStyles[4], "Glitch — word appears through noise that gradually clears",          "Glitch — Wort erscheint durch Rauschen, das sich auflöst");
             }
-            tip(cboWordOrient,   "Direction for keyword streams — only active for Scroll style",            "Richtung der Keyword-Streams — nur bei Scroll-Stil aktiv");
+            tip(cboWordOrient,   "Scroll: all 4 directions · Build/Scramble/Glitch: LeftRight or RightLeft only · Fade: disabled",  "Scroll: alle 4 Richtungen · Build/Scramble/Glitch: nur Links↔Rechts · Fade: deaktiviert");
             tip(trkWordFont,     "Character size for keyword streams (px)",                                  "Zeichengröße der Keyword-Streams (px)");
             tip(trkWordSpeed,    "Speed multiplier for keyword streams",                                     "Geschwindigkeit der Keyword-Streams");
             tip(trkWordCount,    "Number of simultaneous keyword streams on screen",                         "Anzahl gleichzeitiger Keyword-Streams");
@@ -1786,8 +1826,10 @@ namespace VeeaMatrix
         }
 
         // Direction is irrelevant only for Fade (static, fades in place — no scroll axis).
-        // Build / Scramble / Glitch are also position-based but their resolve order IS
-        // direction-aware, so they must have direction enabled.
+        // Direction rules:
+        //   Fade               → disabled entirely (static, fades in place — no axis)
+        //   Build/Scramble/Glitch → enabled, horizontal only (Same / LeftRight / RightLeft)
+        //   Scroll             → enabled, all five options
         private void SyncWordStyleDirection()
         {
             bool isFade = (cur.WordStyle == "Fade");
@@ -1796,6 +1838,31 @@ namespace VeeaMatrix
             bool dirEnabled   = !isFade && streamActive;
             if (cboWordOrient  != null) cboWordOrient.Enabled  = dirEnabled;
             if (_lblWordOrient != null) _lblWordOrient.Enabled = dirEnabled;
+
+            // Rebuild orientation options when style switches between horizontal-only and all-directions
+            if (cboWordOrient != null && streamActive && !isFade)
+            {
+                bool hOnly = (cur.WordStyle == "Build" || cur.WordStyle == "Scramble" || cur.WordStyle == "Glitch");
+                string[] allOrients = new string[]{ "Same", "TopDown", "BottomUp", "LeftRight", "RightLeft" };
+                string[] hOrients   = new string[]{ "Same", "LeftRight", "RightLeft" };
+                string[] want = hOnly ? hOrients : allOrients;
+                bool needRebuild = (cboWordOrient.Items.Count != want.Length);
+                if (!needRebuild)
+                    for (int i = 0; i < want.Length; i++)
+                        if ((string)cboWordOrient.Items[i] != want[i]) { needRebuild = true; break; }
+                if (needRebuild)
+                {
+                    string prev = cboWordOrient.Text;
+                    _syncingOrient = true;
+                    cboWordOrient.Items.Clear();
+                    foreach (string o in want) cboWordOrient.Items.Add(o);
+                    _syncingOrient = false;
+                    bool kept = false;
+                    foreach (string o in want) if (o == prev) { cboWordOrient.Text = prev; kept = true; break; }
+                    if (!kept) cboWordOrient.Text = "LeftRight";
+                    if (cboWordOrient.SelectedIndex >= 0) cur.WordOrientation = cboWordOrient.Text;
+                }
+            }
         }
 
         // Enable / disable controls depending on which layers are active
@@ -1895,6 +1962,88 @@ namespace VeeaMatrix
         {
             using (ColorDialog dlg = new ColorDialog { Color=field, FullOpen=true })
                 if (dlg.ShowDialog(this)==DialogResult.OK) { field=dlg.Color; SetBtn(btn,dlg.Color); MarkDirty(); }
+        }
+
+        // Opens the term catalog editor — shows built-in or custom terms.txt one per line,
+        // saves to %APPDATA%\VeeaMatrix\terms.txt on OK.
+        private void ShowTermsCatalog()
+        {
+            string termsDir  = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "VeeaMatrix");
+            string termsFile = Path.Combine(termsDir, "terms.txt");
+            string initial;
+            bool hasCustom = File.Exists(termsFile);
+            if (hasCustom)
+            {
+                try   { initial = File.ReadAllText(termsFile, Encoding.UTF8); }
+                catch { initial = string.Join(Environment.NewLine, MatrixEngine.TERMS); }
+            }
+            else { initial = string.Join(Environment.NewLine, MatrixEngine.TERMS); }
+
+            var dlg = new Form {
+                Text = T("Term Catalog  –  one term per line", "Wort-Katalog  –  ein Begriff pro Zeile"),
+                Size = new Size(680, 640),
+                StartPosition = FormStartPosition.CenterParent,
+                FormBorderStyle = FormBorderStyle.FixedDialog,
+                MaximizeBox = false, MinimizeBox = false,
+                BackColor = Color.FromArgb(34, 36, 34),
+                ForeColor = Color.FromArgb(0, 200, 55)
+            };
+            var lblInfo = new Label {
+                Text = T("Edit the term list. Each line = one term. Lines starting with # are ignored.",
+                         "Begriffsliste bearbeiten. Jede Zeile = ein Begriff. Zeilen mit # werden ignoriert."),
+                Location = new Point(10, 8), Size = new Size(650, 18),
+                ForeColor = Color.FromArgb(160,160,160), Font = new Font("Segoe UI", 8.5f)
+            };
+            var txt = new TextBox {
+                Multiline = true, ScrollBars = ScrollBars.Vertical,
+                Location = new Point(10, 30), Size = new Size(648, 510),
+                Text = initial,
+                BackColor = Color.FromArgb(44, 46, 44),
+                ForeColor = Color.FromArgb(0, 210, 60),
+                Font = new Font("Courier New", 8.5f),
+                BorderStyle = BorderStyle.FixedSingle,
+                WordWrap = false
+            };
+            var btnReset = new Button {
+                Text = T("Reset to defaults","Auf Standard zurücksetzen"),
+                Location = new Point(10, 548), Size = new Size(186, 30),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(50, 35, 0), ForeColor = Color.White
+            };
+            btnReset.FlatAppearance.BorderColor = Color.FromArgb(140, 90, 0);
+            btnReset.Click += delegate { txt.Text = string.Join(Environment.NewLine, MatrixEngine.TERMS); };
+
+            var btnOK = new Button {
+                Text = "OK", Location = new Point(482, 548), Size = new Size(80, 30),
+                DialogResult = DialogResult.OK, FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(0, 100, 28), ForeColor = Color.White
+            };
+            btnOK.FlatAppearance.BorderColor = Color.FromArgb(0, 185, 55);
+            var btnCancel = new Button {
+                Text = T("Cancel","Abbrechen"), Location = new Point(572, 548), Size = new Size(86, 30),
+                DialogResult = DialogResult.Cancel, FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(50, 15, 15), ForeColor = Color.White
+            };
+            btnCancel.FlatAppearance.BorderColor = Color.FromArgb(130, 36, 36);
+
+            dlg.Controls.Add(lblInfo); dlg.Controls.Add(txt);
+            dlg.Controls.Add(btnReset); dlg.Controls.Add(btnOK); dlg.Controls.Add(btnCancel);
+            dlg.AcceptButton = btnOK; dlg.CancelButton = btnCancel;
+
+            if (dlg.ShowDialog(this) == DialogResult.OK)
+            {
+                string content = txt.Text.Trim();
+                if (content.Length > 0)
+                {
+                    try { Directory.CreateDirectory(termsDir); File.WriteAllText(termsFile, content, Encoding.UTF8); }
+                    catch { }
+                }
+                else if (hasCustom)
+                {
+                    try { File.Delete(termsFile); } catch { }
+                }
+                MarkDirty();
+            }
         }
     }
 
