@@ -1,4 +1,4 @@
-// VeeaMatrix.cs  –  Windows Screensaver v1.22
+// VeeaMatrix.cs  –  Windows Screensaver v1.23
 // Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
@@ -178,6 +178,8 @@ namespace VeeaMatrix
         public string WatermarkSubText = "DATA PROTECTION  *  CYBER RESILIENCE  *  ALWAYS-ON";
         public string ExtraWords      = "";
         public string WordFontName    = "Segoe UI";
+        public bool   WordFontBold    = true;
+        public bool   WordFontItalic  = false;
         // UI
         public string Language        = "EN";
         public bool   DarkMode        = true;
@@ -235,6 +237,8 @@ namespace VeeaMatrix
             sb.AppendLine("WatermarkSubText=" + WatermarkSubText);
             sb.AppendLine("ExtraWords="       + ExtraWords);
             sb.AppendLine("WordFontName="     + WordFontName);
+            sb.AppendLine("WordFontBold="     + WordFontBold);
+            sb.AppendLine("WordFontItalic="   + WordFontItalic);
             sb.AppendLine("Language="         + Language);
             sb.AppendLine("DarkMode="         + DarkMode);
             File.WriteAllText(ConfigFile, sb.ToString(), Encoding.UTF8);
@@ -283,6 +287,8 @@ namespace VeeaMatrix
                         case "WatermarkSubText": s.WatermarkSubText = v; break;
                         case "ExtraWords":       s.ExtraWords       = v; break;
                         case "WordFontName":     s.WordFontName     = v; break;
+                        case "WordFontBold":     s.WordFontBold     = bool.Parse(v); break;
+                        case "WordFontItalic":   s.WordFontItalic   = bool.Parse(v); break;
                         case "Language":         s.Language         = v; break;
                         case "DarkMode":         s.DarkMode         = bool.Parse(v); break;
                     }
@@ -326,21 +332,24 @@ namespace VeeaMatrix
     {
         internal static readonly string[] TERMS = new string[]
         {
-            "VEEAM","VEEAM DATA PLATFORM","VEEAM DATA CLOUD",
-            "BACKUP & REPLICATION","VBR","VBR 12.1","VEEAM ONE",
+            "VEEAM","VEEAM DATA PLATFORM","VEEAM DATA CLOUD","VEEAM DATA CLOUD VAULT",
+            "BACKUP & REPLICATION","VBR","VBR V13","VEEAM ONE","VEEAM RECOVERY ORCHESTRATOR",
             "VEEAM AGENT","BACKUP FOR MICROSOFT 365","VBO365",
             "KASTEN BY VEEAM","COVEWARE BY VEEAM","VEEAM BACKUP FOR SALESFORCE",
             "INSTANT RECOVERY","INSTANT VM RECOVERY","SUREBACKUP","SURE REPLICA",
             "CONTINUOUS DATA PROTECTION","CDP",
+            "HIGH AVAILABILITY","HA",
             "HARDENED REPOSITORY","IMMUTABLE BACKUPS","IMMUTABILITY",
-            "AIR-GAPPED REPOSITORY","AIR GAP","ZERO TRUST",
+            "AIR-GAPPED REPOSITORY","AIR GAP","ZERO TRUST","ZERO-TRUST RESILIENCE",
             "CYBER VAULT","CYBER RESILIENCE","RANSOMWARE RECOVERY","RANSOMWARE PROTECTION",
             "MALWARE DETECTION","THREAT HUNTING",
+            "RECON SCANNER","AGENT COMMANDER","SECURITI AI","DSPM, DSP & AI TRISM",
             "SCALE-OUT BACKUP REPOSITORY","SOBR",
             "PERFORMANCE TIER","CAPACITY TIER","ARCHIVE TIER",
             "DEDUPLICATION","COMPRESSION","WAN ACCELERATION",
             "ENCRYPTION AT REST","ENCRYPTION IN FLIGHT",
             "CLOUD CONNECT","VCSP","MSP","VUL","VEEAM UNIVERSAL LICENSE",
+            "VDP PREMIUM","VDP ADVANCED","VDP ESSENTIALS",
             "VEEAM FOR AWS","VEEAM FOR AZURE","VEEAM FOR GCP",
             "AWS","MICROSOFT AZURE","GOOGLE CLOUD",
             "VMWARE VSPHERE","VMWARE VCF","MICROSOFT HYPER-V",
@@ -350,6 +359,7 @@ namespace VeeaMatrix
             "RPO","RTO","SLA","FAILOVER","FAILBACK","ZERO DATA LOSS","3-2-1 RULE","3-2-1-1-0",
             "GDPR","HIPAA","SOC 2","ISO 27001","DATA SOVEREIGNTY","ALWAYS-ON DATA",
             "DATA PROTECTION","DATA SECURITY","COMPLIANCE",
+            "VEEAM'S DATA COMMAND GRAPH",
             "AUTOMATED TESTING","HEALTH CHECK","CAPACITY PLANNING","99.9% UPTIME",
             "SNAPSHOT-BASED BACKUP","AGENT-BASED BACKUP","APPLICATION-AWARE BACKUP",
             "BARE METAL RESTORE","GRANULAR RECOVERY","INSTANT DISK RECOVERY",
@@ -521,9 +531,13 @@ namespace VeeaMatrix
             bg.SmoothingMode     = System.Drawing.Drawing2D.SmoothingMode.None;
             bg.Clear(Color.Black);
 
-            rainFont    = new Font("Courier New", Math.Max(6, s.FontSize     - 1), FontStyle.Bold, GraphicsUnit.Pixel);
-            wordFont    = new Font(s.WordFontName, Math.Max(6, s.WordFontSize - 1), FontStyle.Bold, GraphicsUnit.Pixel);
-            popupFont   = new Font(s.WordFontName, Math.Max(6, s.PopupFontSize- 1), FontStyle.Bold, GraphicsUnit.Pixel);
+            FontStyle wfs = FontStyle.Regular;
+            if (s.WordFontBold)   wfs |= FontStyle.Bold;
+            if (s.WordFontItalic) wfs |= FontStyle.Italic;
+            if (wfs == FontStyle.Regular) wfs = FontStyle.Regular; // keep Regular as fallback
+            rainFont  = new Font("Courier New", Math.Max(6, s.FontSize     - 1), FontStyle.Bold,  GraphicsUnit.Pixel);
+            wordFont  = new Font(s.WordFontName, Math.Max(6, s.WordFontSize - 1), wfs,             GraphicsUnit.Pixel);
+            popupFont = new Font(s.WordFontName, Math.Max(6, s.PopupFontSize- 1), wfs,             GraphicsUnit.Pixel);
             typFmt      = StringFormat.GenericTypographic;
             wordLineH   = wordFont.GetHeight(bg);
             fadeBrush   = new SolidBrush(Color.FromArgb(Math.Max(2, Math.Min(60, s.FadeAlpha)), 0, 0, 0));
@@ -1106,6 +1120,7 @@ namespace VeeaMatrix
         private TextBox    txtWatermark, txtWatermarkSub, txtExtra;
         private Button[]   btnFxEffects;   // single-select popup effect buttons [Fade, Glitch, Scan, Zoom]
         private CheckBox   chkScanlines, chkWatermark, chkVeeam100, chkBuiltinTerms;
+        private CheckBox   chkWordFontBold, chkWordFontItalic;
         private bool       _syncingOrient;
         // Theme colours — initialised at the top of Build() from cur.DarkMode
         private bool  _dark;
@@ -1234,6 +1249,7 @@ namespace VeeaMatrix
             txtWatermark = txtWatermarkSub = txtExtra = null;
             btnFxEffects = null; btnWordStyles = null; _lblWordOrient = null;
             chkScanlines = chkWatermark = chkVeeam100 = chkBuiltinTerms = null;
+            chkWordFontBold = chkWordFontItalic = null;
             cboProfiles = cboWordFontName = null;
             picFontPreview = null; txtFontPreviewText = null; picPreview = null;
             _previewDirty = true;
@@ -1252,7 +1268,8 @@ namespace VeeaMatrix
                 PopupColor=s.PopupColor, Orientation=s.Orientation, WordOrientation=s.WordOrientation,
                 WordStyle=s.WordStyle, WordSpeedFactor=s.WordSpeedFactor, ShowVeeam100=s.ShowVeeam100,
                 WatermarkText=s.WatermarkText, WatermarkSubText=s.WatermarkSubText, ExtraWords=s.ExtraWords,
-                WordFontName=s.WordFontName, Language=s.Language,
+                WordFontName=s.WordFontName, WordFontBold=s.WordFontBold, WordFontItalic=s.WordFontItalic,
+                Language=s.Language,
                 PopupSpeedFactor=s.PopupSpeedFactor,
                 UseBuiltinTerms=s.UseBuiltinTerms,
                 DarkMode=s.DarkMode };
@@ -1463,6 +1480,15 @@ namespace VeeaMatrix
                 ForeColor=_inputFg, BorderStyle=BorderStyle.FixedSingle };
             Controls.Add(txtFontPreviewText);
             yR += 30;
+
+            // Font style checkboxes
+            chkWordFontBold   = Chk(T("Bold","Fett"),       cur.WordFontBold,   c2,     yR);
+            chkWordFontItalic = Chk(T("Italic","Kursiv"),   cur.WordFontItalic, c2+68,  yR);
+            chkWordFontBold.CheckedChanged   += delegate { cur.WordFontBold   = chkWordFontBold.Checked;   UpdateFontPreview(); MarkDirty(); };
+            chkWordFontItalic.CheckedChanged += delegate { cur.WordFontItalic = chkWordFontItalic.Checked; UpdateFontPreview(); MarkDirty(); };
+            _streamControls.Add(chkWordFontBold);
+            _streamControls.Add(chkWordFontItalic);
+            yR += 26;
 
             picFontPreview = new PictureBox { Location=new Point(c2, yR), Size=new Size(cW2-4, 44),
                 BackColor=Color.Black, BorderStyle=BorderStyle.FixedSingle };
@@ -1694,6 +1720,8 @@ namespace VeeaMatrix
                 cur.Language         = cboLanguage  != null ? cboLanguage.Text  : cur.Language;
                 if (trkPopupSpeed != null) cur.PopupSpeedFactor = trkPopupSpeed.Value / 10f;
                 if (cboWordFontName.SelectedItem != null) cur.WordFontName = cboWordFontName.SelectedItem.ToString();
+                if (chkWordFontBold   != null) cur.WordFontBold   = chkWordFontBold.Checked;
+                if (chkWordFontItalic != null) cur.WordFontItalic = chkWordFontItalic.Checked;
                 // cur.PopupEffects already in sync via SetPopupEffect()
                 Result=cur; Result.Save();
             };
@@ -1764,8 +1792,10 @@ namespace VeeaMatrix
             // Words section
             tip(btnWordColor,    "Color of the keyword stream characters",                                   "Farbe der Keyword-Stream-Zeichen");
             tip(btnWordHeadColor,"Color of the leading (head) character in keyword streams",                 "Farbe des Kopfzeichens in Keyword-Streams");
-            tip(cboWordFontName, "Font used for keyword streams, popups and watermark",                      "Schriftart für Keyword-Streams, Popups und Wasserzeichen");
-            tip(txtFontPreviewText,"Edit the sample text shown in the font preview box",                     "Vorschautext für die Schriftart-Vorschau ändern");
+            tip(cboWordFontName,    "Font used for keyword streams, popups and watermark",                    "Schriftart für Keyword-Streams, Popups und Wasserzeichen");
+            tip(txtFontPreviewText, "Edit the sample text shown in the font preview box",                    "Vorschautext für die Schriftart-Vorschau ändern");
+            tip(chkWordFontBold,    "Render keyword streams and popups in bold weight",                      "Keyword-Streams und Popups fett darstellen");
+            tip(chkWordFontItalic,  "Render keyword streams and popups in italic",                           "Keyword-Streams und Popups kursiv darstellen");
             if (btnWordStyles != null && btnWordStyles.Length == 5)
             {
                 tip(btnWordStyles[0], "Scroll — keyword scrolls across the screen",                         "Scroll — Keyword scrollt über den Bildschirm");
@@ -1809,6 +1839,9 @@ namespace VeeaMatrix
             string fname  = cboWordFontName.SelectedItem.ToString();
             string sample = (txtFontPreviewText!=null && txtFontPreviewText.Text.Trim().Length>0)
                             ? txtFontPreviewText.Text.Trim() : "VEEAM";
+            FontStyle pfs = FontStyle.Regular;
+            if (chkWordFontBold   != null && chkWordFontBold.Checked)   pfs |= FontStyle.Bold;
+            if (chkWordFontItalic != null && chkWordFontItalic.Checked) pfs |= FontStyle.Italic;
             int pw = picFontPreview.Width-2, ph = picFontPreview.Height-2;
             var bmp = new Bitmap(pw, ph);
             using (Graphics g = Graphics.FromImage(bmp))
@@ -1818,14 +1851,14 @@ namespace VeeaMatrix
                 try
                 {
                     float fs = ph * 0.56f;
-                    using (Font f = new Font(fname, fs, FontStyle.Bold, GraphicsUnit.Pixel))
+                    using (Font f = new Font(fname, fs, pfs, GraphicsUnit.Pixel))
                     {
                         SizeF sz = g.MeasureString(sample, f);
                         if (sz.Width > pw-8)
                         {
                             fs = fs * (pw-8) / sz.Width;
                             f.Dispose();
-                            using (Font f2 = new Font(fname, fs, FontStyle.Bold, GraphicsUnit.Pixel))
+                            using (Font f2 = new Font(fname, fs, pfs, GraphicsUnit.Pixel))
                             using (SolidBrush b = new SolidBrush(Color.FromArgb(0,210,60)))
                             {
                                 SizeF sz2 = g.MeasureString(sample, f2);
@@ -1944,6 +1977,8 @@ namespace VeeaMatrix
             s.WordStyle = cur.WordStyle;
             if (cboWordFontName != null && cboWordFontName.SelectedItem != null)
                 s.WordFontName = cboWordFontName.SelectedItem.ToString();
+            if (chkWordFontBold   != null) s.WordFontBold   = chkWordFontBold.Checked;
+            if (chkWordFontItalic != null) s.WordFontItalic = chkWordFontItalic.Checked;
             if (trkFont         != null) s.FontSize         = trkFont.Value;
             if (trkSpeed        != null) s.SpeedFactor      = trkSpeed.Value / 10f;
             if (trkFade         != null) s.FadeAlpha        = trkFade.Value;
