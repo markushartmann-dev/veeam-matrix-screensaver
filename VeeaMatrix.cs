@@ -1,4 +1,4 @@
-﻿// VeeaMatrix.cs  –  Windows Screensaver v1.29
+﻿// VeeaMatrix.cs  –  Windows Screensaver v1.30
 // Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
@@ -166,36 +166,36 @@ namespace VeeaMatrix
         // Rain
         public Color  RainColor     = Color.FromArgb(0, 255, 65);
         public Color  HeadColor     = Color.White;
-        public int    FadeAlpha     = 12;
-        public int    FontSize      = 14;
-        public float  SpeedFactor   = 1.0f;
+        public int    FadeAlpha     = 16;
+        public int    FontSize      = 20;
+        public float  SpeedFactor   = 0.5f;
         public bool   ShowScanlines = true;
         public bool   ShowWatermark = true;
         // Falling words
         public string WordMode      = "Both";
-        public int    WordCount     = 10;
-        public int    WordFontSize  = 16;
+        public int    WordCount     = 3;
+        public int    WordFontSize  = 20;
         public Color  WordColor     = Color.FromArgb(0, 255, 65);
         public Color  WordHeadColor = Color.White;
         public float  GlowChance    = 0.22f;
         // Popup words
-        public string PopupEffects      = "Glitch";
-        public int    PopupCount        = 5;
-        public int    PopupFontSize     = 22;
+        public string PopupEffects      = "Scramble";
+        public int    PopupCount        = 3;
+        public int    PopupFontSize     = 20;
         public Color  PopupColor        = Color.FromArgb(0, 255, 65);
         public float  PopupSpeedFactor  = 1.0f;
         // General
         public string Orientation     = "TopDown";
-        public string WordOrientation  = "Same";
-        public string WordStyle        = "Scroll";
-        public float  WordSpeedFactor  = 1.0f;
-        public bool   ShowVeeam100     = false;
+        public string WordOrientation  = "LeftRight";
+        public string WordStyle        = "Build";
+        public float  WordSpeedFactor  = 0.5f;
+        public bool   ShowVeeam100     = true;
         public bool   UseBuiltinTerms  = true;
         // Watermark
         public string WatermarkText    = "VEEAM";
-        public string WatermarkSubText = "DATA PROTECTION  *  CYBER RESILIENCE  *  ALWAYS-ON";
+        public string WatermarkSubText = "DATA PROTECTION * CYBER RESILIENCE * ALWAYS-ON";
         public string ExtraWords      = "";
-        public string WordFontName    = "Segoe UI";
+        public string WordFontName    = "Verdana";
         public bool   WordFontBold    = true;
         public bool   WordFontItalic  = false;
         // UI
