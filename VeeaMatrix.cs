@@ -1,4 +1,4 @@
-﻿// VeeaMatrix.cs  –  Windows Screensaver v1.30
+﻿// VeeaMatrix.cs  –  Windows Screensaver v1.31
 // Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
@@ -1871,7 +1871,23 @@ namespace VeeaMatrix
                 DialogResult=DialogResult.Cancel,
                 BackColor=Color.FromArgb(50,15,15), ForeColor=Color.White, FlatStyle=FlatStyle.Flat };
             btnCancel.FlatAppearance.BorderColor = Color.FromArgb(130,36,36);
-            Controls.Add(btnOK); Controls.Add(btnCancel);
+
+            // Reset to Default — preserves UI prefs (Language, DarkMode), resets everything else
+            var btnReset = new Button { Text=T("Reset to Default","Standard wiederherstellen"),
+                Location=new Point(bRight-404, yBot), Size=new Size(166,32),
+                BackColor=Color.FromArgb(70,50,0), ForeColor=Color.White, FlatStyle=FlatStyle.Flat };
+            btnReset.FlatAppearance.BorderColor = Color.FromArgb(180,120,0);
+            btnReset.Click += delegate
+            {
+                string lang = cur.Language;
+                bool   dark = cur.DarkMode;
+                cur          = new Settings();
+                cur.Language = lang;
+                cur.DarkMode = dark;
+                RebuildUI();
+            };
+
+            Controls.Add(btnReset); Controls.Add(btnOK); Controls.Add(btnCancel);
             AcceptButton=btnOK; CancelButton=btnCancel;
 
             // ── Banner image — bottom-left, below RAIN section (fill-crop, minimal black bars) ──
