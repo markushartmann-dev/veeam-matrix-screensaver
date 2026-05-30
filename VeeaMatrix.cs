@@ -1,4 +1,4 @@
-﻿// VeeaMatrix.cs  –  Windows Screensaver v1.32
+﻿// VeeaMatrix.cs  –  Windows Screensaver v1.33
 // Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
@@ -193,7 +193,7 @@ namespace VeeaMatrix
         public bool   UseBuiltinTerms  = true;
         // Watermark
         public string WatermarkText    = "VEEAM";
-        public string WatermarkSubText = "DATA PROTECTION * CYBER RESILIENCE * ALWAYS-ON";
+        public string WatermarkSubText = "The Veeam-Themed Matrix Screensaver: | Nobody Asked For (But Everyone Needs)";
         public string ExtraWords      = "";
         public string WordFontName    = "Verdana";
         public bool   WordFontBold    = true;
@@ -786,7 +786,7 @@ namespace VeeaMatrix
                 if (s.ShowWatermark)
                 {
                     string wmText = string.IsNullOrWhiteSpace(s.WatermarkText) ? "VEEAM" : s.WatermarkText.ToUpper();
-                    string wmSub  = s.WatermarkSubText ?? "";
+                    string wmSub  = (s.WatermarkSubText ?? "").Replace(" | ", "\n").Replace("|", "\n");
                     FontStyle wmFs = FontStyle.Regular;
                     if (s.WordFontBold)   wmFs |= FontStyle.Bold;
                     if (s.WordFontItalic) wmFs |= FontStyle.Italic;
@@ -1489,14 +1489,14 @@ namespace VeeaMatrix
 
             // ── Theme setup ──────────────────────────────────────────────────
             _dark     = cur.DarkMode;
-            BackColor = _dark ? Color.FromArgb(34,36,34)    : Color.FromArgb(240,242,240);
-            ForeColor = _dark ? Color.FromArgb(0,200,55)    : Color.FromArgb(0,140,45);
+            BackColor = _dark ? Color.FromArgb(54,57,54)    : Color.FromArgb(240,242,240);
+            ForeColor = _dark ? Color.FromArgb(0,210,60)    : Color.FromArgb(0,140,45);
             _panelBg  = _dark ? Color.FromArgb(0,64,20)     : Color.FromArgb(0,148,46);
-            _sep      = _dark ? Color.FromArgb(0,66,22)     : Color.FromArgb(0,155,48);
-            _lbl      = _dark ? Color.FromArgb(205,205,205) : Color.FromArgb(35,35,35);
-            _chk      = _dark ? Color.FromArgb(210,210,210) : Color.FromArgb(35,35,35);
-            _inputBg  = _dark ? Color.FromArgb(44,46,44)    : Color.FromArgb(252,254,252);
-            _inputFg  = _dark ? Color.FromArgb(0,210,60)    : Color.FromArgb(0,128,38);
+            _sep      = _dark ? Color.FromArgb(0,80,28)     : Color.FromArgb(0,155,48);
+            _lbl      = _dark ? Color.FromArgb(218,222,218) : Color.FromArgb(35,35,35);
+            _chk      = _dark ? Color.FromArgb(222,226,222) : Color.FromArgb(35,35,35);
+            _inputBg  = _dark ? Color.FromArgb(68,72,68)    : Color.FromArgb(252,254,252);
+            _inputFg  = _dark ? Color.FromArgb(0,220,65)    : Color.FromArgb(0,128,38);
             _trkBg    = BackColor;
             _valFg    = _dark ? Color.FromArgb(0,218,62)    : Color.FromArgb(0,128,38);
             _secTxt   = _dark ? Color.FromArgb(0,220,65)    : Color.White;
@@ -1802,15 +1802,17 @@ namespace VeeaMatrix
             yR += 2;
             Section(T("BACKUP OPERATIONS","BACKUP-OPERATIONEN"), c2, yR, cW2); yR += 26;
             {
-                string eMsg = T(
-                    "For that you should use\nVeeam Backup & Replication!",
-                    "Dafuer solltest du besser\nVeeam Backup & Replication verwenden!");
                 string[] btnLabels = new string[] {
-                    T("Config Backup",        "Konfig.-Backup"),
-                    T("Immutable Backup",     "Immutable Backup"),
-                    "Backup > Cloud"
+                    T("Configuration Backup", "Konfigurations-Backup"),
+                    T("License",              "Lizenz")
                 };
-                int ebw = (cW2 - 16) / 3;
+                string[] btnMsgs = new string[] {
+                    T("For that you should use\nVeeam Backup & Replication!",
+                      "Dafuer solltest du besser\nVeeam Backup & Replication verwenden!"),
+                    T("You already have the Premium features.",
+                      "Du hast bereits die Premium-Features.")
+                };
+                int ebw = (cW2 - 8) / 2;
                 for (int ei = 0; ei < btnLabels.Length; ei++)
                 {
                     var eb = new Button {
@@ -1822,7 +1824,7 @@ namespace VeeaMatrix
                         FlatStyle = FlatStyle.Flat
                     };
                     eb.FlatAppearance.BorderColor = Color.FromArgb(0, 170, 55);
-                    string capturedMsg = eMsg;
+                    string capturedMsg = btnMsgs[ei];
                     eb.Click += delegate {
                         MessageBox.Show(capturedMsg, "VeeaMatrix",
                             MessageBoxButtons.OK, MessageBoxIcon.Information);
