@@ -1,4 +1,4 @@
-﻿// VeeaMatrix.cs  –  Windows Screensaver v1.33
+﻿// VeeaMatrix.cs  –  Windows Screensaver v1.34
 // Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
@@ -1782,13 +1782,23 @@ namespace VeeaMatrix
             Controls.Add(txtWatermark);
             yR += 30;
 
-            // Subtitle text – own row (wide!)
-            DLbl(T("Subtitle:", "Untertitel:"), c2, yR+5, 62);
-            txtWatermarkSub = new TextBox { Location=new Point(c2+66, yR), Size=new Size(cW2-70, 24),
-                Text=cur.WatermarkSubText, BackColor=_inputBg,
-                ForeColor=_inputFg, BorderStyle=BorderStyle.FixedSingle };
+            // Subtitle text – two-line multiline box; | acts as line-break in the watermark
+            DLbl(T("Subtitle:  ( | = line break in watermark)",
+                   "Untertitel:  ( | = Zeilenumbruch im Wasserzeichen)"), c2, yR+5);
+            yR += 22;
+            txtWatermarkSub = new TextBox {
+                Location    = new Point(c2, yR),
+                Size        = new Size(cW2-4, 42),
+                Text        = cur.WatermarkSubText,
+                BackColor   = _inputBg,
+                ForeColor   = _inputFg,
+                BorderStyle = BorderStyle.FixedSingle,
+                Multiline   = true,
+                WordWrap    = true,
+                ScrollBars  = ScrollBars.None
+            };
             Controls.Add(txtWatermarkSub);
-            yR += 30;
+            yR += 48;
 
             DLbl(T("Custom terms (comma-separated):","Eigene Begriffe (kommagetrennt):"), c2, yR+5);
             yR += 22;
