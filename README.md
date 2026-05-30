@@ -22,6 +22,11 @@ Single `.scr` file — no installer, no dependencies. .NET Framework 4.x ships w
 
    Or double-click to run it directly.
 
+> **⚠️ Windows SmartScreen warning?**
+> Because this file is not commercially code-signed, Windows Defender SmartScreen may block it on first run.
+> **Fix:** Right-click `VeeaMatrix.scr` → **Properties** → tick **Unblock** at the bottom → **OK** — then run normally.
+> Alternatively click **"Weitere Informationen"** (More info) in the SmartScreen dialog → **"Trotzdem ausführen"** (Run anyway).
+
 ---
 
 ## Features
