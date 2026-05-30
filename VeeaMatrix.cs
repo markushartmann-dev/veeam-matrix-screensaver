@@ -1,4 +1,4 @@
-﻿// VeeaMatrix.cs  –  Windows Screensaver v1.35
+﻿// VeeaMatrix.cs  –  Windows Screensaver v1.36
 // Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
@@ -660,7 +660,22 @@ namespace VeeaMatrix
             {
                 float cv = -(float)((0.5 + rng.NextDouble() * 1.0) * s.WordSpeedFactor);
                 float cx = W / 2f;
-                float cy = scatter ? (float)(rng.NextDouble() * H) : H + fs * 3f;
+                float cy;
+                if (scatter)
+                {
+                    // Initial scatter: spread evenly across screen height
+                    cy = (float)(rng.NextDouble() * H);
+                }
+                else
+                {
+                    // Queue behind all existing Crawl words — prevents any overlap
+                    cy = H + fs * 4f;
+                    foreach (WDrop d in wdrops)
+                    {
+                        float needed = d.Y + fs * 1.2f * 5f; // 5 × base char height gap
+                        if (needed > cy) cy = needed;
+                    }
+                }
                 return new WDrop { Chars=chars, X=cx, Y=cy, V=cv,
                                    Glow=rng.NextDouble()<s.GlowChance, CharOffsets=null };
             }
@@ -866,28 +881,37 @@ namespace VeeaMatrix
                 }
                 else if (s.WordStyle == "Crawl")
                 {
-                    // Perspective crawl: text scrolls up, font shrinks toward horizon
+                    // Perspective crawl: text scrolls up, font shrinks toward horizon.
+                    // Base scale is 1.2× the word font size (20% larger than other styles).
+                    const float CRAWL_SCALE = 1.20f;
                     float t          = Math.Max(0.0f, Math.Min(1.0f, w.Y / (float)H));
-                    float scaledSize = Math.Max(6f, fs * (0.18f + 0.82f * t));
+                    float scaledSize = Math.Max(6f, fs * CRAWL_SCALE * (0.18f + 0.82f * t));
+                    // Always Bold+Italic for the Star Wars crawl feel
                     FontStyle crawlFs = FontStyle.Bold | FontStyle.Italic;
-                    bool gone = w.Y < -(fs * 6f);
+                    bool gone = w.Y < -(fs * CRAWL_SCALE * 6f);
                     if (!gone)
                     {
                         try
                         {
                             using (Font crawlFont = new Font(s.WordFontName, scaledSize, crawlFs, GraphicsUnit.Pixel))
                             {
-                                string text = new string(w.Chars);
-                                SizeF  sz   = bg.MeasureString(text, crawlFont);
+                                string text  = new string(w.Chars);
+                                SizeF  sz    = bg.MeasureString(text, crawlFont);
                                 float  drawX = (W - sz.Width) / 2f;
                                 float  drawY = w.Y - sz.Height / 2f;
-                                float  fade  = Math.Min(1f, Math.Min(t * 4f, (H - w.Y + sz.Height) / Math.Max(1f, sz.Height * 2f)));
+                                float  fade  = Math.Min(1f, Math.Min(t * 4f,
+                                    (H - w.Y + sz.Height) / Math.Max(1f, sz.Height * 2f)));
                                 int    alpha = Clamp((int)(fade * 255));
                                 if (alpha > 4)
                                 {
+                                    // Blend WordColor (top/small) → WordHeadColor (bottom/large),
+                                    // matching the brightness gradient of other word styles
+                                    int cr = Clamp((int)(s.WordColor.R + (s.WordHeadColor.R - s.WordColor.R) * t));
+                                    int cg = Clamp((int)(s.WordColor.G + (s.WordHeadColor.G - s.WordColor.G) * t));
+                                    int cb = Clamp((int)(s.WordColor.B + (s.WordHeadColor.B - s.WordColor.B) * t));
                                     Color col = w.Glow
-                                        ? Color.FromArgb(alpha, Clamp(s.WordColor.R+80), Clamp(s.WordColor.G+20), Clamp(s.WordColor.B+40))
-                                        : Color.FromArgb(alpha, s.WordColor.R, s.WordColor.G, s.WordColor.B);
+                                        ? Color.FromArgb(alpha, Clamp(cr+60), Clamp(cg+20), Clamp(cb+40))
+                                        : Color.FromArgb(alpha, cr, cg, cb);
                                     tmpBrush.Color = col;
                                     bg.DrawString(text, crawlFont, tmpBrush, new PointF(drawX, drawY));
                                 }
