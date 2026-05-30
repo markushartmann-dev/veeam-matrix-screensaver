@@ -1,4 +1,4 @@
-﻿// VeeaMatrix.cs  –  Windows Screensaver v1.34
+﻿// VeeaMatrix.cs  –  Windows Screensaver v1.35
 // Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
@@ -75,6 +75,15 @@ namespace VeeaMatrix
                 WordColor     = Color.FromArgb(  0, 255, 200),  // bright mint
                 WordHeadColor = Color.FromArgb(180, 255, 255),  // icy blue-white
                 PopupColor    = Color.FromArgb( 80, 255, 220),  // neon mint
+            },
+            new ColorProfile
+            {
+                Name          = "Star Wars",
+                RainColor     = Color.FromArgb(255, 232,  31),  // classic crawl yellow
+                HeadColor     = Color.FromArgb(255, 255, 200),  // pale yellow-white
+                WordColor     = Color.FromArgb(255, 210,   0),  // gold
+                WordHeadColor = Color.FromArgb(255, 255, 255),  // white
+                PopupColor    = Color.FromArgb(255, 160,   0),  // amber
             },
         };
 
@@ -179,7 +188,7 @@ namespace VeeaMatrix
         public Color  WordHeadColor = Color.White;
         public float  GlowChance    = 0.22f;
         // Popup words
-        public string PopupEffects      = "Scramble";
+        public string PopupEffects      = "Glitch";
         public int    PopupCount        = 3;
         public int    PopupFontSize     = 20;
         public Color  PopupColor        = Color.FromArgb(0, 255, 65);
@@ -187,7 +196,7 @@ namespace VeeaMatrix
         // General
         public string Orientation     = "TopDown";
         public string WordOrientation  = "LeftRight";
-        public string WordStyle        = "Build";
+        public string WordStyle        = "Glitch";
         public float  WordSpeedFactor  = 0.5f;
         public bool   ShowVeeam100     = true;
         public bool   UseBuiltinTerms  = true;
@@ -646,6 +655,16 @@ namespace VeeaMatrix
             char[] chars = term.ToCharArray();
             int    fs    = s.WordFontSize;
 
+            // Crawl: perspective scroll upward, centered, font scales with Y
+            if (s.WordStyle == "Crawl")
+            {
+                float cv = -(float)((0.5 + rng.NextDouble() * 1.0) * s.WordSpeedFactor);
+                float cx = W / 2f;
+                float cy = scatter ? (float)(rng.NextDouble() * H) : H + fs * 3f;
+                return new WDrop { Chars=chars, X=cx, Y=cy, V=cv,
+                                   Glow=rng.NextDouble()<s.GlowChance, CharOffsets=null };
+            }
+
             if (s.WordStyle == "Fade" || s.WordStyle == "Build" || s.WordStyle == "Scramble" || s.WordStyle == "Glitch")
             {
                 float  spd  = Math.Max(0.1f, s.WordSpeedFactor);
@@ -844,6 +863,40 @@ namespace VeeaMatrix
                 if (isStatic)
                 {
                     if (!TickStaticDrop(w)) { wdrops.RemoveAt(i); if (allTerms.Length > 0) wdrops.Add(SpawnDrop(false)); }
+                }
+                else if (s.WordStyle == "Crawl")
+                {
+                    // Perspective crawl: text scrolls up, font shrinks toward horizon
+                    float t          = Math.Max(0.0f, Math.Min(1.0f, w.Y / (float)H));
+                    float scaledSize = Math.Max(6f, fs * (0.18f + 0.82f * t));
+                    FontStyle crawlFs = FontStyle.Bold | FontStyle.Italic;
+                    bool gone = w.Y < -(fs * 6f);
+                    if (!gone)
+                    {
+                        try
+                        {
+                            using (Font crawlFont = new Font(s.WordFontName, scaledSize, crawlFs, GraphicsUnit.Pixel))
+                            {
+                                string text = new string(w.Chars);
+                                SizeF  sz   = bg.MeasureString(text, crawlFont);
+                                float  drawX = (W - sz.Width) / 2f;
+                                float  drawY = w.Y - sz.Height / 2f;
+                                float  fade  = Math.Min(1f, Math.Min(t * 4f, (H - w.Y + sz.Height) / Math.Max(1f, sz.Height * 2f)));
+                                int    alpha = Clamp((int)(fade * 255));
+                                if (alpha > 4)
+                                {
+                                    Color col = w.Glow
+                                        ? Color.FromArgb(alpha, Clamp(s.WordColor.R+80), Clamp(s.WordColor.G+20), Clamp(s.WordColor.B+40))
+                                        : Color.FromArgb(alpha, s.WordColor.R, s.WordColor.G, s.WordColor.B);
+                                    tmpBrush.Color = col;
+                                    bg.DrawString(text, crawlFont, tmpBrush, new PointF(drawX, drawY));
+                                }
+                            }
+                        }
+                        catch { }
+                    }
+                    w.Y += w.V;
+                    if (gone) { wdrops.RemoveAt(i); if (allTerms.Length > 0) wdrops.Add(SpawnDrop(false)); }
                 }
                 else
                 {
@@ -1642,9 +1695,9 @@ namespace VeeaMatrix
             // ── Word Style single-select buttons ──────────────────────────────
             _streamControls.Add(DLbl(T("Style:","Stil:"), c2, yR+5));
             yR += 22;
-            string[] wsNames = new string[]{ "Scroll", "Fade", "Build", "Scramble", "Glitch" };
+            string[] wsNames = new string[]{ "Scroll", "Fade", "Build", "Scramble", "Glitch", "Crawl" };
             btnWordStyles = new Button[wsNames.Length];
-            const int WS_W = 79, WS_GAP = 4;
+            const int WS_W = 65, WS_GAP = 4;
             for (int wi = 0; wi < wsNames.Length; wi++)
             {
                 string capturedWS = wsNames[wi];
@@ -1691,16 +1744,19 @@ namespace VeeaMatrix
             _streamControls.Add(trkWordCount); _streamControls.Add(lblWCount);
             yR += SL;
 
-            // ── Popup sub-section (within WÖRTER) ────────────────────────────
-            yR += 6;
-            Controls.Add(new Panel { Location=new Point(c2, yR), Size=new Size(cW2, 1), BackColor=_sep });
-            yR += 6;
-            lblPopupHeader = new Label { Text=T("  POPUP WORDS  (Popup / Both)", "  POPUP-WÖRTER  (Popup / Beides)"),
-                Location=new Point(c2, yR), Size=new Size(cW2, 16), AutoSize=false,
-                ForeColor=_subHdr, Font=new Font("Segoe UI",8f,FontStyle.Bold) };
-            Controls.Add(lblPopupHeader);
-            _popupControls.Add(lblPopupHeader);
-            yR += 20;
+            // ── Popup sub-section — full section header ───────────────────────
+            yR += 10;
+            {
+                var popHdrPnl = new Panel { Location=new Point(c2, yR), Size=new Size(cW2, 20), BackColor=_panelBg };
+                popHdrPnl.Controls.Add(new Label {
+                    Text=T("POPUP WORDS  (Popup / Both)", "POPUP-WÖRTER  (Popup / Beides)"),
+                    Location=new Point(8,2), AutoSize=true,
+                    ForeColor=_secTxt, Font=new Font("Segoe UI",8.5f,FontStyle.Bold) });
+                Controls.Add(popHdrPnl);
+                lblPopupHeader = popHdrPnl.Controls[0] as Label;
+                _popupControls.Add(popHdrPnl);
+            }
+            yR += 26;
 
             _popupControls.Add(DLbl(T("Color:","Farbe:"), c2, yR+5, 50));
             btnPopupColor = ColBtn(T("Popup Color","Popup-Farbe"), cur.PopupColor, c2+54, yR, 148);
@@ -1942,7 +1998,7 @@ namespace VeeaMatrix
             {
                 var bannerImg = LoadBannerImage();
                 int bannerY   = yL + 8;
-                int bannerH   = yBot - bannerY - 8;   // fills left-column gap
+                int bannerH   = (int)((yBot - bannerY - 8) * 0.85f);  // 15% smaller than available gap
                 if (bannerImg != null && bannerH > 50)
                 {
                     Image capturedBanner = bannerImg;
@@ -1952,22 +2008,22 @@ namespace VeeaMatrix
                         BackColor   = Color.Black,
                         BorderStyle = BorderStyle.FixedSingle
                     };
-                    // Fill-crop: scale to fill the box, crop edges to minimize black bars
+                    // Contain (letterbox): fit entire image, preserve aspect ratio, black bars if needed
                     picBanner.Paint += delegate(object bps, PaintEventArgs bpe)
                     {
                         if (capturedBanner == null || capturedBanner.Width == 0) return;
                         var    pb    = (PictureBox)bps;
-                        double srcAR = (double)capturedBanner.Width  / capturedBanner.Height;
+                        double srcAR = (double)capturedBanner.Width / capturedBanner.Height;
                         double dstAR = (double)pb.Width / pb.Height;
-                        int sx, sy, sw, sh;
-                        if (srcAR > dstAR)   // wider than dest — crop left & right
-                        { sh=capturedBanner.Height; sw=(int)(sh*dstAR); sx=(capturedBanner.Width-sw)/2; sy=0; }
-                        else                  // taller than dest — crop top & bottom
-                        { sw=capturedBanner.Width; sh=(int)(sw/dstAR); sx=0; sy=(capturedBanner.Height-sh)/2; }
+                        int dw, dh, dx, dy;
+                        if (srcAR > dstAR)   // image wider — fit width, bars top/bottom
+                        { dw=pb.Width; dh=(int)(pb.Width/srcAR); dx=0; dy=(pb.Height-dh)/2; }
+                        else                  // image taller — fit height, bars left/right
+                        { dh=pb.Height; dw=(int)(pb.Height*srcAR); dy=0; dx=(pb.Width-dw)/2; }
                         bpe.Graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
                         bpe.Graphics.DrawImage(capturedBanner,
-                            new Rectangle(0, 0, pb.Width, pb.Height),
-                            new Rectangle(sx, sy, sw, sh), GraphicsUnit.Pixel);
+                            new Rectangle(dx, dy, dw, dh),
+                            new Rectangle(0, 0, capturedBanner.Width, capturedBanner.Height), GraphicsUnit.Pixel);
                     };
                     Controls.Add(picBanner);
                 }
@@ -2016,13 +2072,14 @@ namespace VeeaMatrix
             tip(txtFontPreviewText, "Edit the sample text shown in the font preview box",                    "Vorschautext für die Schriftart-Vorschau ändern");
             tip(chkWordFontBold,    "Render keyword streams and popups in bold weight",                      "Keyword-Streams und Popups fett darstellen");
             tip(chkWordFontItalic,  "Render keyword streams and popups in italic",                           "Keyword-Streams und Popups kursiv darstellen");
-            if (btnWordStyles != null && btnWordStyles.Length == 5)
+            if (btnWordStyles != null && btnWordStyles.Length == 6)
             {
                 tip(btnWordStyles[0], "Scroll — keyword scrolls across the screen",                         "Scroll — Keyword scrollt über den Bildschirm");
                 tip(btnWordStyles[1], "Fade — keyword fades in and out in place",                           "Fade — Keyword blendet an Ort und Stelle ein/aus");
-                tip(btnWordStyles[2], "Build — chars decode left-to-right (direction-aware)",               "Build — Zeichen werden von links nach rechts eingeblendet");
+                tip(btnWordStyles[2], "Build — chars decode left-to-right",                                 "Build — Zeichen werden von links nach rechts eingeblendet");
                 tip(btnWordStyles[3], "Scramble — noise resolves to the correct word sequentially",         "Scramble — Rauschen löst sich sequenziell auf");
                 tip(btnWordStyles[4], "Glitch — word appears through noise that gradually clears",          "Glitch — Wort erscheint durch Rauschen, das sich auflöst");
+                tip(btnWordStyles[5], "Crawl — Star Wars-style perspective scroll upward from the bottom",  "Crawl — Star-Wars-Schriftzug-Stil von unten nach oben mit Perspektive");
             }
             tip(cboWordOrient,   "Scroll: all 4 directions · Build/Scramble/Glitch: LeftRight or RightLeft only · Fade: disabled",  "Scroll: alle 4 Richtungen · Build/Scramble/Glitch: nur Links↔Rechts · Fade: deaktiviert");
             tip(trkWordFont,     "Character size for keyword streams (px)",                                  "Zeichengröße der Keyword-Streams (px)");
@@ -2122,10 +2179,10 @@ namespace VeeaMatrix
         private void SetWordStyle(string name)
         {
             if (btnWordStyles == null) return;
-            string[] valid = new string[]{ "Scroll", "Fade", "Build", "Scramble", "Glitch" };
+            string[] valid = new string[]{ "Scroll", "Fade", "Build", "Scramble", "Glitch", "Crawl" };
             bool found = false;
             foreach (string n in valid) if (n == name) { found = true; break; }
-            if (!found) name = "Scroll";
+            if (!found) name = "Glitch";
             cur.WordStyle = name;
             foreach (Button b in btnWordStyles)
             {
@@ -2137,24 +2194,24 @@ namespace VeeaMatrix
             SyncWordStyleDirection();
         }
 
-        // Direction is irrelevant only for Fade (static, fades in place — no scroll axis).
         // Direction rules:
-        //   Fade               → disabled entirely (static, fades in place — no axis)
-        //   Build/Scramble/Glitch → enabled, horizontal only (Same / LeftRight / RightLeft)
-        //   Scroll             → enabled, all five options
+        //   Fade/Glitch/Scramble/Crawl → direction hidden (not applicable)
+        //   Build                       → horizontal only (LeftRight/RightLeft)
+        //   Scroll                      → all five options
         private void SyncWordStyleDirection()
         {
-            bool isFade = (cur.WordStyle == "Fade");
+            bool isFade  = (cur.WordStyle == "Fade");
+            bool hideDir = (cur.WordStyle == "Glitch" || cur.WordStyle == "Scramble" ||
+                            cur.WordStyle == "Crawl"  || cur.WordStyle == "Fade");
             string mode = cboWordMode != null ? cboWordMode.Text : cur.WordMode;
             bool streamActive = (mode == "Rain" || mode == "Both");
-            bool dirEnabled   = !isFade && streamActive;
-            if (cboWordOrient  != null) cboWordOrient.Enabled  = dirEnabled;
-            if (_lblWordOrient != null) _lblWordOrient.Enabled = dirEnabled;
+            if (cboWordOrient  != null) { cboWordOrient.Visible  = !hideDir; cboWordOrient.Enabled  = !hideDir && streamActive; }
+            if (_lblWordOrient != null) { _lblWordOrient.Visible = !hideDir; _lblWordOrient.Enabled = !hideDir && streamActive; }
 
             // Rebuild orientation options when style switches between horizontal-only and all-directions
             if (cboWordOrient != null && streamActive && !isFade)
             {
-                bool hOnly = (cur.WordStyle == "Build" || cur.WordStyle == "Scramble" || cur.WordStyle == "Glitch");
+                bool hOnly = (cur.WordStyle == "Build");
                 string[] allOrients = new string[]{ "Same", "TopDown", "BottomUp", "LeftRight", "RightLeft" };
                 string[] hOrients   = new string[]{ "Same", "LeftRight", "RightLeft" };
                 string[] want = hOnly ? hOrients : allOrients;
