@@ -1808,7 +1808,7 @@ namespace VeeaMatrix
                 string[] btnLabels = new string[] {
                     T("Config Backup",        "Konfig.-Backup"),
                     T("Immutable Backup",     "Immutable Backup"),
-                    T("Backup Copy to Cloud", "Backup-Kopie in Cloud")
+                    "Backup > Cloud"
                 };
                 int ebw = (cW2 - 16) / 3;
                 for (int ei = 0; ei < btnLabels.Length; ei++)
