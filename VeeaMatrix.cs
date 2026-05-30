@@ -1,4 +1,4 @@
-﻿// VeeaMatrix.cs  –  Windows Screensaver v1.28
+﻿// VeeaMatrix.cs  –  Windows Screensaver v1.29
 // Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
@@ -600,6 +600,46 @@ namespace VeeaMatrix
             return offs;
         }
 
+        // ── Collision-avoidance helpers ──────────────────────────────────────────
+
+        // Current on-screen bounding box of a word drop
+        private RectangleF DropBounds(WDrop w)
+        {
+            float wid, hgt;
+            if (w.CharOffsets != null)           // static mode or horizontal scroll
+            { wid = w.CharOffsets[w.Chars.Length]; hgt = wordLineH; }
+            else if (WordIsVertical)              // vertical scroll: chars stacked
+            { wid = s.WordFontSize * 1.5f; hgt = w.Chars.Length * wordLineH; }
+            else                                  // horizontal scroll, no charOffsets
+            { wid = w.Chars.Length * s.WordFontSize * 0.65f; hgt = wordLineH; }
+            return new RectangleF(w.X, w.Y, wid, hgt);
+        }
+
+        // Bounding box of a popup (centered on CX/CY)
+        private RectangleF PopupBounds(WPopup p)
+        {
+            float wid = p.Word.Length * p.FontSize * 0.70f;
+            float hgt = p.FontSize * 1.5f;
+            return new RectangleF(p.CX - wid * 0.5f, p.CY - hgt * 0.5f, wid, hgt);
+        }
+
+        // True if r (expanded by pad) overlaps any currently visible word.
+        // Static styles: checks drops + popups.  Scroll styles: popups only (drops move).
+        private bool CollidesWithActive(RectangleF r, float pad)
+        {
+            RectangleF pr = RectangleF.Inflate(r, pad, pad);
+            bool isStatic = (s.WordStyle == "Fade"  || s.WordStyle == "Build" ||
+                             s.WordStyle == "Scramble" || s.WordStyle == "Glitch");
+            if (isStatic)
+                foreach (WDrop d in wdrops)
+                    if (DropBounds(d).IntersectsWith(pr)) return true;
+            foreach (WPopup p in popups)
+                if (PopupBounds(p).IntersectsWith(pr)) return true;
+            return false;
+        }
+
+        // ─────────────────────────────────────────────────────────────────────────
+
         private WDrop SpawnDrop(bool scatter)
         {
             string term  = allTerms[rng.Next(allTerms.Length)];
@@ -636,6 +676,13 @@ namespace VeeaMatrix
                 float   mgn  = fs * 2.5f;
                 float   sx   = mgn + (float)(rng.NextDouble() * Math.Max(1f, W - estW - mgn));
                 float   sy   = mgn + (float)(rng.NextDouble() * Math.Max(1f, H - fs * 3f - mgn));
+                // Retry up to 20 positions to avoid overlapping existing words or popups
+                for (int attempt = 1; attempt < 20; attempt++)
+                {
+                    if (!CollidesWithActive(new RectangleF(sx, sy, estW, wordLineH), fs * 0.6f)) break;
+                    sx = mgn + (float)(rng.NextDouble() * Math.Max(1f, W - estW - mgn));
+                    sy = mgn + (float)(rng.NextDouble() * Math.Max(1f, H - fs * 3f - mgn));
+                }
                 var     wd   = new WDrop { Chars=chars, X=sx, Y=sy, V=0,
                                            Glow=rng.NextDouble()<s.GlowChance,
                                            AppearF=appF, HoldF=holF, FadeF=fadF,
@@ -660,6 +707,21 @@ namespace VeeaMatrix
             { x=fs*.5f+(float)(rng.NextDouble()*Math.Max(1,W-fs)); y=scatter?(float)(rng.NextDouble()*(H+len)-len):(WordIsForward?-(len+5):H+5); }
             else
             { y=fs*.5f+(float)(rng.NextDouble()*Math.Max(1,H-fs)); x=scatter?(float)(rng.NextDouble()*(W+len)-len):(WordIsForward?-(len+5):W+5); }
+            // Lane check: avoid placing a new scroll drop in the same perpendicular lane
+            // as an existing one, which would cause them to overlap when they converge.
+            float laneMin = WordIsVertical ? fs * 2.2f : wordLineH * 1.8f;
+            for (int attempt = 1; attempt < 20; attempt++)
+            {
+                bool conflict = false;
+                foreach (WDrop d in wdrops)
+                    if ((WordIsVertical ? Math.Abs(d.X - x) : Math.Abs(d.Y - y)) < laneMin)
+                    { conflict = true; break; }
+                if (!conflict) break;
+                if (WordIsVertical)
+                    x = fs * 0.5f + (float)(rng.NextDouble() * Math.Max(1, W - fs));
+                else
+                    y = fs * 0.5f + (float)(rng.NextDouble() * Math.Max(1, H - fs));
+            }
             return new WDrop { Chars=chars, X=x, Y=y, V=WordIsForward?v:-v,
                                Glow=rng.NextDouble()<s.GlowChance, CharOffsets=charOff };
         }
@@ -693,6 +755,13 @@ namespace VeeaMatrix
             float cx   = margin + estW/2f + (float)(rng.NextDouble() * Math.Max(1, W - estW - 2f*margin));
             float cy   = margin + (float)(rng.NextDouble() * Math.Max(1, H - 2f*margin));
             if (scatter) cy = margin + (float)(rng.NextDouble() * Math.Max(1, H - 2f*margin));
+            // Retry up to 20 positions to avoid overlapping existing words or popups
+            for (int attempt = 1; attempt < 20; attempt++)
+            {
+                if (!CollidesWithActive(new RectangleF(cx - estW * 0.5f, cy - fs * 0.75f, estW, fs * 1.5f), fs * 0.8f)) break;
+                cx = margin + estW/2f + (float)(rng.NextDouble() * Math.Max(1, W - estW - 2f*margin));
+                cy = margin + (float)(rng.NextDouble() * Math.Max(1, H - 2f*margin));
+            }
 
             char[] disp = (char[])word.Clone();
             if (mode == PopupMode.Glitch || mode == PopupMode.Scan || mode == PopupMode.Scramble)
