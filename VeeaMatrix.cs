@@ -1,4 +1,4 @@
-﻿// VeeaMatrix.cs  –  Windows Screensaver v1.31
+﻿// VeeaMatrix.cs  –  Windows Screensaver v1.32
 // Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
@@ -1797,6 +1797,40 @@ namespace VeeaMatrix
                 ForeColor=_inputFg, BorderStyle=BorderStyle.FixedSingle };
             Controls.Add(txtExtra);
             yR += 30;
+
+            // ── BACKUP OPERATIONS (Easter-egg section) ────────────────────────
+            yR += 2;
+            Section(T("BACKUP OPERATIONS","BACKUP-OPERATIONEN"), c2, yR, cW2); yR += 26;
+            {
+                string eMsg = T(
+                    "For that you should use\nVeeam Backup & Replication!",
+                    "Dafuer solltest du besser\nVeeam Backup & Replication verwenden!");
+                string[] btnLabels = new string[] {
+                    T("Config Backup",        "Konfig.-Backup"),
+                    T("Immutable Backup",     "Immutable Backup"),
+                    T("Backup Copy to Cloud", "Backup-Kopie in Cloud")
+                };
+                int ebw = (cW2 - 16) / 3;
+                for (int ei = 0; ei < btnLabels.Length; ei++)
+                {
+                    var eb = new Button {
+                        Text      = btnLabels[ei],
+                        Location  = new Point(c2 + ei * (ebw + 8), yR),
+                        Size      = new Size(ebw, 28),
+                        BackColor = Color.FromArgb(0, 75, 22),
+                        ForeColor = Color.White,
+                        FlatStyle = FlatStyle.Flat
+                    };
+                    eb.FlatAppearance.BorderColor = Color.FromArgb(0, 170, 55);
+                    string capturedMsg = eMsg;
+                    eb.Click += delegate {
+                        MessageBox.Show(capturedMsg, "VeeaMatrix",
+                            MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    };
+                    Controls.Add(eb);
+                }
+                yR += 34;
+            }
 
             // ── PREVIEW COLUMN (16:9 fixed) ───────────────────────────────────
             int colH = Math.Max(yL, yR) - y;
