@@ -24,6 +24,14 @@ foreach ($name in $bannerNames) {
 Write-Host "Compiling $src ..." -ForegroundColor Cyan
 if ($bannerFile) {
     Write-Host "  Embedding banner: $(Split-Path $bannerFile -Leaf)" -ForegroundColor Cyan
+} else {
+    Write-Host ""
+    Write-Host "  *** NO BANNER IMAGE FOUND ***" -ForegroundColor Yellow
+    Write-Host "  The .scr will be built without an embedded banner image." -ForegroundColor Yellow
+    Write-Host "  To embed one, place a file named one of:" -ForegroundColor Yellow
+    Write-Host "    VeeaMatrix-banner.jpg  |  VeeaMatrix-banner.png  |  banner.jpg" -ForegroundColor Yellow
+    Write-Host "  in the same folder as this script, then re-run Build-VeeaMatrix.ps1." -ForegroundColor Yellow
+    Write-Host ""
 }
 
 $compileArgs = @(

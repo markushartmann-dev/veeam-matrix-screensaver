@@ -1,6 +1,6 @@
-# VeeaMatrix Screensaver
+# VeeaMatrix — The Veeam-Themed Matrix Screensaver
 
-A Matrix-style Windows screensaver featuring the **Veeam Data Platform** universe — product names, features, and technologies rain down the screen vertically, letter by letter.
+A fully-functional Windows screensaver (`.scr`) where the Matrix digital rain spells out Veeam product names, features, and buzzwords. `IMMUTABILITY`, `ZERO-TRUST RESILIENCE`, `VBR V13`, `VEEAM DATA CLOUD VAULT` — 60+ terms cascading down your screen in glowing green (or violet, or teal, or amber…).
 
 ![VeeaMatrix Screensaver](.github/preview.png)
 
@@ -8,7 +8,9 @@ A Matrix-style Windows screensaver featuring the **Veeam Data Platform** univers
 
 👉 **[Latest Release → VeeaMatrix.scr](../../releases/latest)**
 
-No installer required. .NET Framework 4.x is pre-installed on all Windows 10/11 systems.
+Single `.scr` file — no installer, no dependencies. .NET Framework 4.x ships with every Windows 10/11 system.
+
+---
 
 ## Installation
 
@@ -18,80 +20,134 @@ No installer required. .NET Framework 4.x is pre-installed on all Windows 10/11 
    - **Test** — runs fullscreen immediately
    - **Configure** — opens the settings dialog
 
-   Or double-click to run directly without installing.
+   Or double-click to run it directly.
 
-## Configuration
+---
 
-Right-click → **Configure** to open the settings dialog:
+## Features
 
-| Setting | Description |
+| Feature | Details |
 |---|---|
-| **Language** | UI language toggle — EN (default) or DE |
-| **Color Profile** | Load a built-in or saved color profile (Veeam, Hello Kitty, Matrix Classic, Cyberpunk, Amber CRT) |
-| **Rain color** | Color of the falling background characters |
-| **Head color** | Color of the leading (head) character |
-| **Word color** | Color of the falling Veeam keyword streams |
-| **Word head color** | Color of the leading character in keyword streams |
-| **Popup color** | Color of the popup/blip word effects |
-| **Font** | System font used for keyword streams, popups and watermark — pick any installed font with live "VEEAM" preview |
-| **Font size – Rain** | Character size for the background rain (8–36 px) |
-| **Font size – Words** | Character size for the Veeam keyword streams (8–36 px) |
-| **Font size – Popup** | Character size for popup word effects (10–72 px) |
-| **Speed** | Animation speed (0.1× – 3.0×) |
-| **Word speed** | Separate speed multiplier for keyword streams (0.1× – 3.0×) |
-| **Trail length** | How long characters glow before fading (low = longer trail) |
-| **Direction** | TopDown / BottomUp / LeftRight / RightLeft |
-| **Word direction** | Independent direction for keyword streams (or Same as rain) |
-| **Word style** | Scroll (falling) / Fade (appear in place) / Build (character-by-character decode) / Scramble (noise resolves) / Blink (flicker hold) |
-| **Word mode** | Rain (falling only) / Popup (blip only) / Both |
-| **Word count** | Number of simultaneous keyword streams (1–30) |
-| **Popup count** | Number of simultaneous popup blips (1–20) |
-| **Effects** | Individually enable/disable: Fade · Flash · Glitch · Scan · Zoom (grouped under WORDS) |
-| **Scanlines** | Subtle CRT scanline overlay |
-| **Watermark** | Faint logo in the background — text is fully customisable |
-| **Subtitle** | Second watermark line — wide, full-row text field |
-| **Veeam 100 names** | Show Veeam Vanguard / Legend / MVP 2026 member names in the streams |
-| **Custom words** | Add your own terms (comma-separated) |
+| **Matrix rain** | GDI+ double-buffered, per-column speed variation, glyph scramble |
+| **Veeam terms** | 60+ terms: products, features, buzzwords — proportionally sized |
+| **Popup modes** | Fade · Glitch · Scan · Zoom · Scramble — randomly selected |
+| **Color profiles** | 6 built-ins + unlimited custom profiles |
+| **Watermark** | Logo + subtitle, bottom-right, optional |
+| **Settings UI** | Three-column, 1836 px wide, live preview, Light/Dark mode toggle |
+| **Banner image** | Hardcoded into the `.scr` — always visible, no sidecar file needed |
+| **Multi-monitor** | One render surface per screen |
+| **Font control** | Rain / word / popup font — size, face, Bold, Italic |
+| **Veeam 100 Names** | Stream Vanguard / Legend / MVP 2026 member names |
+| **Custom terms** | Edit `%APPDATA%\VeeaMatrix\terms.txt` — one term per line |
+| **Zero install** | Single `.scr` — right-click → Install, or copy to `System32` |
 
-Settings are saved to `%APPDATA%\VeeaMatrix\config.ini`.  
-Color profiles are saved to `%APPDATA%\VeeaMatrix\profiles.ini`.
-
-> **Upgrading from v1.9?** Settings are migrated automatically from `%APPDATA%\VeeamMatrix`.
+---
 
 ## Color Profiles
 
-Five built-in profiles are included:
+Six built-in profiles — pick your mood:
 
-| Profile | Description |
+| Profile | Rain | Popups | Vibe |
+|---|---|---|---|
+| **Veeam** | Veeam green `#00B336` | Bright green | The official look |
+| **Hello Kitty** | Hot pink | Gold | Unhinged office energy |
+| **Cyberpunk** | Electric cyan | Hot magenta | Blade Runner |
+| **Amber CRT** | Warm amber | Orange-yellow | Retro terminal |
+| **Deep Space** | Vivid violet | Gold / bright violet | Galaxy brain |
+| **Aurora** | Emerald teal | Neon mint | Northern lights |
+
+Custom profiles are saved to `%APPDATA%\VeeaMatrix\profiles.ini`.
+
+---
+
+## Settings
+
+Right-click → **Configure**:
+
+| Setting | Description |
 |---|---|
-| **Veeam** | Official Veeam green (`#00B336`) with white heads |
-| **Hello Kitty** | Hot pink rain with gold heads |
-| **Matrix Classic** | Original movie green (`#00FF41`) |
-| **Cyberpunk** | Electric cyan with magenta heads |
-| **Amber CRT** | Retro amber terminal look |
+| **Language** | EN / DE toggle |
+| **Color profile** | Built-in or saved custom profile |
+| **Rain / Word / Popup colors** | Per-layer color control |
+| **Font** | Any installed font, with live preview |
+| **Font sizes** | Rain (8–36 px) · Words (8–36 px) · Popup (10–72 px) |
+| **Speed** | Global (0.1× – 3.0×) plus separate word and popup multipliers |
+| **Trail length** | How long characters glow before fading |
+| **Direction** | TopDown / BottomUp / LeftRight / RightLeft, independently for rain and words |
+| **Word style** | Scroll · Fade · Build · Scramble · Blink |
+| **Word mode** | Rain only · Popup only · Both |
+| **Word / Popup count** | 1–30 streams, 1–20 popups |
+| **Popup effects** | Enable/disable Fade · Glitch · Scan · Zoom · Scramble individually |
+| **Scanlines** | Subtle CRT overlay |
+| **Watermark** | Customisable logo text + subtitle line |
+| **Veeam 100 Names** | Toggle Vanguard / Legend / MVP names in streams |
+| **Built-in terms** | Toggle the default 60+ Veeam term catalog |
+| **Custom words** | Comma-separated extra terms |
 
-You can save your own profiles via **Save as…** in the config dialog.
+> When all Veeam sources (Built-in terms, Veeam 100 Names, Custom words) are disabled, the screen shows pure matrix rain — no Veeam content at all.
+
+Settings are saved to `%APPDATA%\VeeaMatrix\config.ini`.
+
+---
+
+## Term Catalog
+
+60+ Veeam-specific terms ship with the screensaver. A selection:
+
+```
+VEEAM DATA PLATFORM · VEEAM DATA CLOUD · VEEAM DATA CLOUD VAULT
+BACKUP & REPLICATION · VBR · VBR V13 · VEEAM ONE
+VEEAM RECOVERY ORCHESTRATOR · VEEAM SERVICE PROVIDER CONSOLE
+HARDENED REPOSITORY · IMMUTABLE BACKUPS · AIR-GAPPED REPOSITORY
+ZERO TRUST · ZERO-TRUST RESILIENCE · CYBER VAULT
+RANSOMWARE RECOVERY · MALWARE DETECTION · RECON SCANNER
+3-2-1-1-0 RULE · RPO · RTO · SLA
+```
+
+Customise: edit `%APPDATA%\VeeaMatrix\terms.txt` — one term per line.
+
+---
 
 ## Build from Source
 
-Requires Windows with .NET Framework 4.x (pre-installed on Windows 10/11).
+Requires Windows 10/11 (`.NET Framework 4.x` is pre-installed).
 
 ```powershell
 .\Build-VeeaMatrix.ps1
 ```
 
-This compiles `VeeaMatrix.cs` using the built-in `csc.exe` compiler — no Visual Studio or .NET SDK required. Output: `VeeaMatrix.scr`.
+Compiles `VeeaMatrix.cs` with the built-in `csc.exe` — no Visual Studio, no SDK. Output: `VeeaMatrix.scr`.
+
+To embed a custom banner image, place `VeeaMatrix-banner.jpg` next to the script before building. The banner is also hardcoded as a Base64 fallback in the source, so the distributed `.scr` always shows it.
+
+---
 
 ## Multi-Monitor
 
-The screensaver runs on **all connected monitors simultaneously**.
+Runs on **all connected monitors simultaneously**. The primary monitor drives the app lifecycle.
 
-## Featured Veeam Terms
+---
 
-The screensaver includes 100+ terms from the Veeam ecosystem:
+## Changelog
 
-> Backup & Replication · VBR · Veeam Data Cloud · Hardened Repository · Immutability · Air Gap · Zero Trust · Cyber Vault · SureBackup · CDP · SOBR · Kasten · Coveware · Ransomware Recovery · 3-2-1 Rule · RPO · RTO · VMware vSphere · Hyper-V · Nutanix AHV · Kubernetes · AWS · Azure · GCP · and many more…
+| Version | Highlights |
+|---|---|
+| **v1.28** | New **Aurora** color profile (emerald teal / neon mint northern-lights look) |
+| **v1.27** | Banner always visible — hardcoded Base64 fallback in source + embedded resource + sidecar file; GDI+ stream/GC bug fixed; settings UI shows placeholder when no banner found; build script warns if no banner image present |
+| **v1.26** | Content isolation: disabling all Veeam sources now produces pure matrix rain with zero Veeam terms |
+| **v1.25** | Expanded term catalog (VBR V13, HA, VDP tiers, RECON SCANNER, AI TRiSM, …); Bold/Italic flags applied to word streams, popups and watermark; **Deep Space** profile replaces earlier duplicate |
+| **v1.24** | Wider banner column, watermark font style control |
+| **v1.23** | Font Bold/Italic style option |
+| **v1.22** | Light/Dark theme toggle in settings, banner embedded in `.scr` via build script |
+| **v1.19** | Three-column settings UI with live preview (880×495), banner fill-crop |
+| **v1.16** | Multi-monitor support, five popup animation modes |
+
+---
 
 ## License
 
-MIT — free to use, modify and distribute.
+MIT — free to use, modify, and distribute.
+
+---
+
+*Built entirely through an AI-assisted development process (Claude by Anthropic) — no IDE, no StackOverflow, just a chat window and `csc.exe`.*
