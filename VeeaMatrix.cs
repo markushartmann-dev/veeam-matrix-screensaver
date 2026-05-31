@@ -1,4 +1,4 @@
-﻿// VeeaMatrix.cs  –  Windows Screensaver v1.38
+﻿// VeeaMatrix.cs  –  Windows Screensaver v1.39
 // Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
@@ -1599,14 +1599,13 @@ namespace VeeaMatrix
             _btnInaBdr= _dark ? Color.FromArgb(55,55,55)    : Color.FromArgb(148,158,148);
 
             // ── Layout constants ─────────────────────────────────────────────
-            const int c1   = 14,  cW1  = 480;   // left column  — wider for banner (+80 px)
-            const int c2   = 508, cW2  = 418;   // middle column — same width, shifted right
-            const int PREV_W = 880, PREV_H = 495; // 16:9 live preview  (880×9/16 = 495)
-            const int c3   = c2 + cW2 + 14;     // = 940  preview column x
-            const int cW3  = PREV_W + 2;         // = 882  preview column width
-            const int fw   = c3 + cW3 + 14;      // = 1836 total form width (unchanged)
-            const int SL   = 46;                 // slider row step
-            const int CM   = 32;                 // combo row step
+            const int c1    = 14,  cW1  = 490;       // left column: RAIN + WORDS + POPUP + Banner
+            const int c2    = c1 + cW1 + 14;          // = 518  right column x
+            const int PREV_W = 880, PREV_H = 495;     // 16:9 live preview
+            const int cW2   = PREV_W + 2;             // = 882  right column width
+            const int fw    = c2 + cW2 + 14;          // = 1414 total form width
+            const int SL    = 46;                     // slider row step
+            const int CM    = 32;                     // combo row step
 
             int y = 14;
 
@@ -1683,20 +1682,20 @@ namespace VeeaMatrix
             yL += 10;
 
             // ═══════════════════════════════════════════════════════════════════
-            // RIGHT COLUMN — WORDS  (includes popup section below)
+            // LEFT COLUMN — WORD STREAMS
             // ═══════════════════════════════════════════════════════════════════
-            Section(T("WORD STREAMS  (Rain / Both)", "WORT-STREAMS  (Regen / Beides)"), c2, yR, cW2); yR += 26;
-            _streamControls.Add(DLbl(T("Colors:", "Farben:"), c2, yR+5)); yR += 20;
-            btnWordColor     = ColBtn(T("Words","Wörter"),      cur.WordColor,     c2,     yR, 130);
-            btnWordHeadColor = ColBtn(T("Head (bright)","Kopf (hell)"), cur.WordHeadColor, c2+136, yR, 130);
+            Section(T("WORD STREAMS  (Rain / Both)", "WORT-STREAMS  (Regen / Beides)"), c1, yL, cW1); yL += 26;
+            _streamControls.Add(DLbl(T("Colors:", "Farben:"), c1, yL+5)); yL += 20;
+            btnWordColor     = ColBtn(T("Words","Wörter"),      cur.WordColor,     c1,     yL, 130);
+            btnWordHeadColor = ColBtn(T("Head (bright)","Kopf (hell)"), cur.WordHeadColor, c1+136, yL, 130);
             btnWordColor.Click     += delegate { Pick(ref cur.WordColor,     btnWordColor); };
             btnWordHeadColor.Click += delegate { Pick(ref cur.WordHeadColor, btnWordHeadColor); };
             _streamControls.Add(btnWordColor); _streamControls.Add(btnWordHeadColor);
-            yR += 32;
+            yL += 32;
 
             // Font picker row
-            DLbl(T("Font:", "Schriftart:"), c2, yR+5, 80);
-            cboWordFontName = new ComboBox { Location=new Point(c2+84, yR), Size=new Size(200, 24),
+            DLbl(T("Font:", "Schriftart:"), c1, yL+5, 80);
+            cboWordFontName = new ComboBox { Location=new Point(c1+84, yL), Size=new Size(200, 24),
                 DropDownStyle=ComboBoxStyle.DropDownList,
                 BackColor=_inputBg, ForeColor=_inputFg };
             using (var ifc = new System.Drawing.Text.InstalledFontCollection())
@@ -1709,32 +1708,32 @@ namespace VeeaMatrix
             cboWordFontName.SelectedIndex = selIdx >= 0 ? selIdx : 0;
             Controls.Add(cboWordFontName);
 
-            txtFontPreviewText = new TextBox { Location=new Point(c2+292, yR), Size=new Size(cW2-292-4, 24),
+            txtFontPreviewText = new TextBox { Location=new Point(c1+292, yL), Size=new Size(cW1-292-4, 24),
                 Text="VEEAM", BackColor=_inputBg,
                 ForeColor=_inputFg, BorderStyle=BorderStyle.FixedSingle };
             Controls.Add(txtFontPreviewText);
-            yR += 30;
+            yL += 30;
 
             // Font style checkboxes
-            chkWordFontBold   = Chk(T("Bold","Fett"),       cur.WordFontBold,   c2,     yR);
-            chkWordFontItalic = Chk(T("Italic","Kursiv"),   cur.WordFontItalic, c2+68,  yR);
+            chkWordFontBold   = Chk(T("Bold","Fett"),       cur.WordFontBold,   c1,     yL);
+            chkWordFontItalic = Chk(T("Italic","Kursiv"),   cur.WordFontItalic, c1+68,  yL);
             chkWordFontBold.CheckedChanged   += delegate { cur.WordFontBold   = chkWordFontBold.Checked;   UpdateFontPreview(); MarkDirty(); };
             chkWordFontItalic.CheckedChanged += delegate { cur.WordFontItalic = chkWordFontItalic.Checked; UpdateFontPreview(); MarkDirty(); };
             _streamControls.Add(chkWordFontBold);
             _streamControls.Add(chkWordFontItalic);
-            yR += 26;
+            yL += 26;
 
-            picFontPreview = new PictureBox { Location=new Point(c2, yR), Size=new Size(cW2-4, 44),
+            picFontPreview = new PictureBox { Location=new Point(c1, yL), Size=new Size(cW1-4, 44),
                 BackColor=Color.Black, BorderStyle=BorderStyle.FixedSingle };
             Controls.Add(picFontPreview);
             UpdateFontPreview();
             cboWordFontName.SelectedIndexChanged += delegate { UpdateFontPreview(); };
             txtFontPreviewText.TextChanged       += delegate { UpdateFontPreview(); };
-            yR += 50;
+            yL += 50;
 
             // ── Word Style single-select buttons ──────────────────────────────
-            _streamControls.Add(DLbl(T("Style:","Stil:"), c2, yR+5));
-            yR += 22;
+            _streamControls.Add(DLbl(T("Style:","Stil:"), c1, yL+5));
+            yL += 22;
             string[] wsNames = new string[]{ "Scroll", "Fade", "Build", "Scramble", "Glitch", "Crawl" };
             btnWordStyles = new Button[wsNames.Length];
             const int WS_W = 65, WS_GAP = 4;
@@ -1743,7 +1742,7 @@ namespace VeeaMatrix
                 string capturedWS = wsNames[wi];
                 var wsBtn = new Button {
                     Text      = capturedWS,
-                    Location  = new Point(c2 + wi * (WS_W + WS_GAP), yR),
+                    Location  = new Point(c1 + wi * (WS_W + WS_GAP), yL),
                     Size      = new Size(WS_W, 26),
                     FlatStyle = FlatStyle.Flat,
                     Tag       = capturedWS
@@ -1755,47 +1754,50 @@ namespace VeeaMatrix
                 _streamControls.Add(wsBtn);
             }
             SetWordStyle(string.IsNullOrEmpty(cur.WordStyle) ? "Scroll" : cur.WordStyle);
-            yR += 32;
+            yL += 32;
 
             // ── Crawl-only option: suppress background rain ───────────────────
             chkCrawlHideRain = Chk(T("Disable RAIN while Crawl active", "REGEN während Crawl ausblenden"),
-                                   cur.CrawlHideRain, c2, yR);
+                                   cur.CrawlHideRain, c1, yL);
             chkCrawlHideRain.CheckedChanged += delegate { cur.CrawlHideRain = chkCrawlHideRain.Checked; };
             _streamControls.Add(chkCrawlHideRain);
             Controls.Add(chkCrawlHideRain);
-            yR += 24;
+            yL += 24;
 
             // ── Word Direction ────────────────────────────────────────────────
-            _lblWordOrient = DLbl(T("Direction:","Richtung:"), c2, yR+5, 68);
+            _lblWordOrient = DLbl(T("Direction:","Richtung:"), c1, yL+5, 68);
             _streamControls.Add(_lblWordOrient);
-            cboWordOrient = Cbo(c2+72, yR, 200, new string[]{"Same","TopDown","BottomUp","LeftRight","RightLeft"},
+            cboWordOrient = Cbo(c1+72, yL, 200, new string[]{"Same","TopDown","BottomUp","LeftRight","RightLeft"},
                 string.IsNullOrEmpty(cur.WordOrientation)?"Same":cur.WordOrientation);
             _streamControls.Add(cboWordOrient);
             cboWordOrient.SelectedIndexChanged += delegate { if (!_syncingOrient && cboWordOrient.SelectedIndex >= 0) cur.WordOrientation = cboWordOrient.Text; };
-            yR += CM;
+            yL += CM;
 
-            trkWordFont = SlRow(T("Font Size","Schriftgröße"), c2,yR,cW2, 8,36, cur.WordFontSize, out lblWFont);
+            trkWordFont = SlRow(T("Font Size","Schriftgröße"), c1,yL,cW1, 8,36, cur.WordFontSize, out lblWFont);
             lblWFont.Text = cur.WordFontSize+" px";
             trkWordFont.ValueChanged += delegate { cur.WordFontSize=trkWordFont.Value; lblWFont.Text=cur.WordFontSize+" px"; };
             _streamControls.Add(trkWordFont); _streamControls.Add(lblWFont);
-            yR += SL;
+            yL += SL;
 
-            trkWordSpeed = SlRow(T("Speed","Geschwindigkeit"), c2,yR,cW2, 1,30, (int)(cur.WordSpeedFactor*10), out lblWordSpeed);
+            trkWordSpeed = SlRow(T("Speed","Geschwindigkeit"), c1,yL,cW1, 1,30, (int)(cur.WordSpeedFactor*10), out lblWordSpeed);
             lblWordSpeed.Text = cur.WordSpeedFactor.ToString("F1")+"x";
             trkWordSpeed.ValueChanged += delegate { cur.WordSpeedFactor=trkWordSpeed.Value/10f; lblWordSpeed.Text=cur.WordSpeedFactor.ToString("F1")+"x"; };
             _streamControls.Add(trkWordSpeed); _streamControls.Add(lblWordSpeed);
-            yR += SL;
+            yL += SL;
 
-            trkWordCount = SlRow(T("Simultaneous","Gleichzeitig"), c2,yR,cW2, 1,30, cur.WordCount, out lblWCount);
+            trkWordCount = SlRow(T("Simultaneous","Gleichzeitig"), c1,yL,cW1, 1,30, cur.WordCount, out lblWCount);
             lblWCount.Text = cur.WordCount.ToString();
             trkWordCount.ValueChanged += delegate { cur.WordCount=trkWordCount.Value; lblWCount.Text=cur.WordCount.ToString(); };
             _streamControls.Add(trkWordCount); _streamControls.Add(lblWCount);
-            yR += SL;
+            yL += SL;
 
-            // ── Popup sub-section — full section header ───────────────────────
-            yR += 10;
+            yL += 10;
+
+            // ═══════════════════════════════════════════════════════════════════
+            // LEFT COLUMN — POPUP WORDS
+            // ═══════════════════════════════════════════════════════════════════
             {
-                var popHdrPnl = new Panel { Location=new Point(c2, yR), Size=new Size(cW2, 20), BackColor=_panelBg };
+                var popHdrPnl = new Panel { Location=new Point(c1, yL), Size=new Size(cW1, 20), BackColor=_panelBg };
                 popHdrPnl.Controls.Add(new Label {
                     Text=T("POPUP WORDS  (Popup / Both)", "POPUP-WÖRTER  (Popup / Beides)"),
                     Location=new Point(8,2), AutoSize=true,
@@ -1804,17 +1806,17 @@ namespace VeeaMatrix
                 lblPopupHeader = popHdrPnl.Controls[0] as Label;
                 _popupControls.Add(popHdrPnl);
             }
-            yR += 26;
+            yL += 26;
 
-            _popupControls.Add(DLbl(T("Color:","Farbe:"), c2, yR+5, 50));
-            btnPopupColor = ColBtn(T("Popup Color","Popup-Farbe"), cur.PopupColor, c2+54, yR, 148);
+            _popupControls.Add(DLbl(T("Color:","Farbe:"), c1, yL+5, 50));
+            btnPopupColor = ColBtn(T("Popup Color","Popup-Farbe"), cur.PopupColor, c1+54, yL, 148);
             btnPopupColor.Click += delegate { Pick(ref cur.PopupColor, btnPopupColor); };
             _popupControls.Add(btnPopupColor);
-            yR += 32;
+            yL += 32;
 
             // Single-select effect buttons (Fade / Glitch / Scan / Zoom / Scramble)
-            _popupControls.Add(DLbl(T("Effect:","Effekt:"), c2, yR+5));
-            yR += 22;
+            _popupControls.Add(DLbl(T("Effect:","Effekt:"), c1, yL+5));
+            yL += 22;
             string[] fxNames = new string[]{ "Fade", "Glitch", "Scan", "Zoom", "Scramble" };
             btnFxEffects = new Button[fxNames.Length];
             const int FX_W = 80, FX_GAP = 4;
@@ -1823,7 +1825,7 @@ namespace VeeaMatrix
                 string capturedName = fxNames[fi];
                 var fxBtn = new Button {
                     Text      = capturedName,
-                    Location  = new Point(c2 + fi * (FX_W + FX_GAP), yR),
+                    Location  = new Point(c1 + fi * (FX_W + FX_GAP), yL),
                     Size      = new Size(FX_W, 26),
                     FlatStyle = FlatStyle.Flat,
                     Tag       = capturedName
@@ -1835,33 +1837,52 @@ namespace VeeaMatrix
                 _popupControls.Add(fxBtn);
             }
             SetPopupEffect(cur.PopupEffects);   // highlight the active button
-            yR += 32;
+            yL += 32;
 
-            trkPopupFont = SlRow(T("Font Size","Schriftgröße"), c2,yR,cW2, 10,72, cur.PopupFontSize, out lblPFont);
+            trkPopupFont = SlRow(T("Font Size","Schriftgröße"), c1,yL,cW1, 10,72, cur.PopupFontSize, out lblPFont);
             lblPFont.Text = cur.PopupFontSize+" px";
             trkPopupFont.ValueChanged += delegate { cur.PopupFontSize=trkPopupFont.Value; lblPFont.Text=cur.PopupFontSize+" px"; };
             _popupControls.Add(trkPopupFont); _popupControls.Add(lblPFont);
-            yR += SL;
+            yL += SL;
 
-            trkPopupCount = SlRow(T("Simultaneous","Gleichzeitig"), c2,yR,cW2, 1,20, cur.PopupCount, out lblPCount);
+            trkPopupCount = SlRow(T("Simultaneous","Gleichzeitig"), c1,yL,cW1, 1,20, cur.PopupCount, out lblPCount);
             lblPCount.Text = cur.PopupCount.ToString();
             trkPopupCount.ValueChanged += delegate { cur.PopupCount=trkPopupCount.Value; lblPCount.Text=cur.PopupCount.ToString(); };
             _popupControls.Add(trkPopupCount); _popupControls.Add(lblPCount);
-            yR += SL;
+            yL += SL;
 
-            trkPopupSpeed = SlRow(T("Popup Speed","Popup-Geschwindigkeit"), c2,yR,cW2, 1,30, (int)(cur.PopupSpeedFactor*10), out lblPopupSpeed);
+            trkPopupSpeed = SlRow(T("Popup Speed","Popup-Geschwindigkeit"), c1,yL,cW1, 1,30, (int)(cur.PopupSpeedFactor*10), out lblPopupSpeed);
             lblPopupSpeed.Text = cur.PopupSpeedFactor.ToString("F1")+"x";
             trkPopupSpeed.ValueChanged += delegate { cur.PopupSpeedFactor=trkPopupSpeed.Value/10f; lblPopupSpeed.Text=cur.PopupSpeedFactor.ToString("F1")+"x"; };
             _popupControls.Add(trkPopupSpeed); _popupControls.Add(lblPopupSpeed);
-            yR += SL;
+            yL += SL;
 
-            yR += 10;
+            yL += 10;
+
+            // ═══════════════════════════════════════════════════════════════════
+            // RIGHT COLUMN — LIVE PREVIEW
+            // ═══════════════════════════════════════════════════════════════════
+            Section(T("LIVE PREVIEW","LIVE-VORSCHAU"), c2, yR, cW2); yR += 26;
+            picPreview = new PictureBox {
+                Location    = new Point(c2, yR),
+                Size        = new Size(PREV_W + 2, PREV_H + 2),   // +2 for FixedSingle border
+                BackColor   = Color.FromArgb(4, 4, 4),
+                BorderStyle = BorderStyle.FixedSingle
+            };
+            Controls.Add(picPreview);
+            picPreview.Paint += delegate(object ps, PaintEventArgs pe)
+            {
+                if (_prevEngine != null) _prevEngine.Render(pe.Graphics);
+            };
+            yR += PREV_H + 2 + 8;
+
+            HSep(yR, c2, cW2); yR += 12;
 
             // ── GENERAL ───────────────────────────────────────────────────────
             Section(T("GENERAL","ALLGEMEIN"), c2, yR, cW2); yR += 26;
             chkScanlines = Chk("CRT Scanlines",   cur.ShowScanlines, c2,     yR);
-            chkWatermark = Chk(T("Watermark","Wasserzeichen"), cur.ShowWatermark, c2+126, yR);
-            chkVeeam100  = Chk(T("Veeam 100 Names","Veeam 100 Namen"), cur.ShowVeeam100, c2+256, yR);
+            chkWatermark = Chk(T("Watermark","Wasserzeichen"), cur.ShowWatermark, c2+130, yR);
+            chkVeeam100  = Chk(T("Veeam 100 Names","Veeam 100 Namen"), cur.ShowVeeam100, c2+260, yR);
             // Live-sync general checkboxes → cur
             chkScanlines.CheckedChanged += delegate { cur.ShowScanlines = chkScanlines.Checked; };
             chkWatermark.CheckedChanged += delegate { cur.ShowWatermark = chkWatermark.Checked; };
@@ -1871,12 +1892,12 @@ namespace VeeaMatrix
             chkBuiltinTerms = Chk(T("Built-in terms","Eingebaut. Begriffe"), cur.UseBuiltinTerms, c2, yR);
             chkBuiltinTerms.CheckedChanged += delegate { cur.UseBuiltinTerms = chkBuiltinTerms.Checked; };
             var btnCatalog = new Button {
-                Text=T("Catalog…","Katalog…"), Location=new Point(c2+178, yR-1), Size=new Size(86,26),
+                Text=T("Catalog…","Katalog…"), Location=new Point(c2+190, yR-1), Size=new Size(86,26),
                 FlatStyle=FlatStyle.Flat, BackColor=Color.FromArgb(0,55,18), ForeColor=Color.White };
             btnCatalog.FlatAppearance.BorderColor = Color.FromArgb(0,100,32);
             btnCatalog.Click += delegate { ShowTermsCatalog(); };
             Controls.Add(btnCatalog);
-            yR += 28;
+            yR += 30;
 
             // Watermark text – own row
             DLbl(T("Watermark:", "Wasserzeichen:"), c2, yR+5, 96);
@@ -1912,8 +1933,9 @@ namespace VeeaMatrix
             Controls.Add(txtExtra);
             yR += 30;
 
+            HSep(yR, c2, cW2); yR += 12;
+
             // ── BACKUP OPERATIONS (Easter-egg section) ────────────────────────
-            yR += 2;
             Section(T("BACKUP OPERATIONS","BACKUP-OPERATIONEN"), c2, yR, cW2); yR += 26;
             {
                 string[] btnLabels = new string[] {
@@ -1948,23 +1970,10 @@ namespace VeeaMatrix
                 yR += 34;
             }
 
-            // ── PREVIEW COLUMN (16:9 fixed) ───────────────────────────────────
+            // ── Thin vertical divider between left column and right column ────
             int colH = Math.Max(yL, yR) - y;
-            // Thin vertical divider between content and preview
-            Controls.Add(new Panel { Location=new Point(c3-2, y), Size=new Size(1, colH+14),
+            Controls.Add(new Panel { Location=new Point(c2-2, y), Size=new Size(1, colH+14),
                 BackColor=_sep });
-            Section(T("LIVE PREVIEW","LIVE-VORSCHAU"), c3, y, cW3);
-            picPreview = new PictureBox {
-                Location   = new Point(c3, y + 26),
-                Size       = new Size(PREV_W + 2, PREV_H + 2),   // +2 for FixedSingle border
-                BackColor  = Color.FromArgb(4, 4, 4),
-                BorderStyle = BorderStyle.FixedSingle
-            };
-            Controls.Add(picPreview);
-            picPreview.Paint += delegate(object ps, PaintEventArgs pe)
-            {
-                if (_prevEngine != null) _prevEngine.Render(pe.Graphics);
-            };
 
             // Wire all controls to mark preview dirty (exclude cboLanguage and txtFontPreviewText)
             foreach (Control ctrl in Controls)
@@ -2041,13 +2050,13 @@ namespace VeeaMatrix
             Controls.Add(btnReset); Controls.Add(btnOK); Controls.Add(btnCancel);
             AcceptButton=btnOK; CancelButton=btnCancel;
 
-            // ── Banner image — bottom-left, below RAIN section (fill-crop, minimal black bars) ──
+            // ── Banner image — bottom-left, below POPUP WORDS section ──────────
             int finalH = yBot + 48;
             try
             {
                 var bannerImg = LoadBannerImage();
                 int bannerY   = yL + 8;
-                int bannerH   = (int)((yBot - bannerY - 8) * 0.72f);  // compact — room for cinematic bars
+                int bannerH   = (int)((yBot - bannerY - 8) * 0.85f);
                 if (bannerImg != null && bannerH > 50)
                 {
                     Image capturedBanner = bannerImg;
@@ -2057,8 +2066,7 @@ namespace VeeaMatrix
                         BackColor   = Color.Black,
                         BorderStyle = BorderStyle.FixedSingle
                     };
-                    // Fit-to-width: show FULL image (no cropping), black bars top/bottom = cinematic feel.
-                    // BackColor=Black on the PictureBox provides the bars automatically.
+                    // Fit-to-width: show FULL image (no cropping), black bars top/bottom.
                     picBanner.Paint += delegate(object bps, PaintEventArgs bpe)
                     {
                         if (capturedBanner == null || capturedBanner.Width == 0) return;
