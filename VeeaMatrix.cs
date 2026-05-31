@@ -1,4 +1,4 @@
-﻿// VeeaMatrix.cs  –  Windows Screensaver v1.36
+﻿// VeeaMatrix.cs  –  Windows Screensaver v1.37
 // Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
@@ -198,6 +198,7 @@ namespace VeeaMatrix
         public string WordOrientation  = "LeftRight";
         public string WordStyle        = "Glitch";
         public float  WordSpeedFactor  = 0.5f;
+        public bool   CrawlHideRain    = false;   // suppress background rain while Crawl is active
         public bool   ShowVeeam100     = true;
         public bool   UseBuiltinTerms  = true;
         // Watermark
@@ -258,6 +259,7 @@ namespace VeeaMatrix
             sb.AppendLine("WordOrientation="  + WordOrientation);
             sb.AppendLine("WordStyle="        + WordStyle);
             sb.AppendLine("WordSpeedFactor="  + WordSpeedFactor.ToString("F2", System.Globalization.CultureInfo.InvariantCulture));
+            sb.AppendLine("CrawlHideRain="    + CrawlHideRain);
             sb.AppendLine("ShowVeeam100="     + ShowVeeam100);
             sb.AppendLine("UseBuiltinTerms="  + UseBuiltinTerms);
             sb.AppendLine("WatermarkText="    + WatermarkText);
@@ -308,6 +310,7 @@ namespace VeeaMatrix
                         case "WordOrientation":  s.WordOrientation  = v; break;
                         case "WordStyle":        s.WordStyle        = v; break;
                         case "WordSpeedFactor":  s.WordSpeedFactor  = float.Parse(v, ic); break;
+                        case "CrawlHideRain":    s.CrawlHideRain    = bool.Parse(v); break;
                         case "ShowVeeam100":     s.ShowVeeam100     = bool.Parse(v); break;
                         case "UseBuiltinTerms":  s.UseBuiltinTerms  = bool.Parse(v); break;
                         case "WatermarkText":    s.WatermarkText    = v; break;
@@ -658,7 +661,7 @@ namespace VeeaMatrix
             // Crawl: perspective scroll upward, centered, font scales with Y
             if (s.WordStyle == "Crawl")
             {
-                float cv = -(float)((0.5 + rng.NextDouble() * 1.0) * s.WordSpeedFactor);
+                float cv = -(float)(0.8 * s.WordSpeedFactor);  // fixed speed — prevents overtaking
                 float cx = W / 2f;
                 float cy;
                 if (scatter)
@@ -842,7 +845,8 @@ namespace VeeaMatrix
         public void Tick()
         {
             bg.FillRectangle(fadeBrush,0,0,W,H);
-            DrawRain();
+            bool suppressRain = (s.WordStyle == "Crawl" && s.CrawlHideRain);
+            if (!suppressRain) DrawRain();
             if (s.WordMode=="Rain"||s.WordMode=="Both") DrawDrops();
             if (s.WordMode=="Popup"||s.WordMode=="Both") DrawPopups();
             if (scanBmp!=null) bg.DrawImage(scanBmp,0,0);
@@ -1289,6 +1293,7 @@ namespace VeeaMatrix
         private Button[]   btnFxEffects;   // single-select popup effect buttons [Fade, Glitch, Scan, Zoom]
         private CheckBox   chkScanlines, chkWatermark, chkVeeam100, chkBuiltinTerms;
         private CheckBox   chkWordFontBold, chkWordFontItalic;
+        private CheckBox   chkCrawlHideRain;
         private bool       _syncingOrient;
         // Theme colours — initialised at the top of Build() from cur.DarkMode
         private bool  _dark;
@@ -1468,6 +1473,7 @@ namespace VeeaMatrix
             btnFxEffects = null; btnWordStyles = null; _lblWordOrient = null;
             chkScanlines = chkWatermark = chkVeeam100 = chkBuiltinTerms = null;
             chkWordFontBold = chkWordFontItalic = null;
+            chkCrawlHideRain = null;
             cboProfiles = cboWordFontName = null;
             picFontPreview = null; txtFontPreviewText = null; picPreview = null;
             _previewDirty = true;
@@ -1741,6 +1747,14 @@ namespace VeeaMatrix
             SetWordStyle(string.IsNullOrEmpty(cur.WordStyle) ? "Scroll" : cur.WordStyle);
             yR += 32;
 
+            // ── Crawl-only option: suppress background rain ───────────────────
+            chkCrawlHideRain = Chk(T("Disable RAIN while Crawl active", "REGEN während Crawl ausblenden"),
+                                   cur.CrawlHideRain, c2, yR);
+            chkCrawlHideRain.CheckedChanged += delegate { cur.CrawlHideRain = chkCrawlHideRain.Checked; };
+            _streamControls.Add(chkCrawlHideRain);
+            Controls.Add(chkCrawlHideRain);
+            yR += 24;
+
             // ── Word Direction ────────────────────────────────────────────────
             _lblWordOrient = DLbl(T("Direction:","Richtung:"), c2, yR+5, 68);
             _streamControls.Add(_lblWordOrient);
@@ -1989,6 +2003,7 @@ namespace VeeaMatrix
                 if (cboWordFontName.SelectedItem != null) cur.WordFontName = cboWordFontName.SelectedItem.ToString();
                 if (chkWordFontBold   != null) cur.WordFontBold   = chkWordFontBold.Checked;
                 if (chkWordFontItalic != null) cur.WordFontItalic = chkWordFontItalic.Checked;
+                if (chkCrawlHideRain != null)  cur.CrawlHideRain  = chkCrawlHideRain.Checked;
                 // cur.PopupEffects already in sync via SetPopupEffect()
                 Result=cur; Result.Save();
             };
@@ -2032,22 +2047,30 @@ namespace VeeaMatrix
                         BackColor   = Color.Black,
                         BorderStyle = BorderStyle.FixedSingle
                     };
-                    // Contain (letterbox): fit entire image, preserve aspect ratio, black bars if needed
+                    // Fill-crop + cinematic bars: fill width (crop top/bottom a little),
+                    // then draw thin black bars (9% each) for the widescreen cinema look.
                     picBanner.Paint += delegate(object bps, PaintEventArgs bpe)
                     {
                         if (capturedBanner == null || capturedBanner.Width == 0) return;
                         var    pb    = (PictureBox)bps;
-                        double srcAR = (double)capturedBanner.Width / capturedBanner.Height;
+                        double srcAR = (double)capturedBanner.Width  / capturedBanner.Height;
                         double dstAR = (double)pb.Width / pb.Height;
-                        int dw, dh, dx, dy;
-                        if (srcAR > dstAR)   // image wider — fit width, bars top/bottom
-                        { dw=pb.Width; dh=(int)(pb.Width/srcAR); dx=0; dy=(pb.Height-dh)/2; }
-                        else                  // image taller — fit height, bars left/right
-                        { dh=pb.Height; dw=(int)(pb.Height*srcAR); dy=0; dx=(pb.Width-dw)/2; }
+                        int sx, sy, sw, sh;
+                        if (srcAR > dstAR)   // image wider than box — crop left & right
+                        { sh=capturedBanner.Height; sw=(int)(sh*dstAR); sx=(capturedBanner.Width-sw)/2; sy=0; }
+                        else                  // image taller than box — crop top & bottom
+                        { sw=capturedBanner.Width; sh=(int)(sw/dstAR); sx=0; sy=(capturedBanner.Height-sh)/2; }
                         bpe.Graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
                         bpe.Graphics.DrawImage(capturedBanner,
-                            new Rectangle(dx, dy, dw, dh),
-                            new Rectangle(0, 0, capturedBanner.Width, capturedBanner.Height), GraphicsUnit.Pixel);
+                            new Rectangle(0, 0, pb.Width, pb.Height),
+                            new Rectangle(sx, sy, sw, sh), GraphicsUnit.Pixel);
+                        // Cinematic letterbox bars — 9% of height each (≈ 2.35:1 feel)
+                        int barH = Math.Max(4, pb.Height * 9 / 100);
+                        using (var black = new SolidBrush(Color.Black))
+                        {
+                            bpe.Graphics.FillRectangle(black, 0, 0,              pb.Width, barH);
+                            bpe.Graphics.FillRectangle(black, 0, pb.Height-barH, pb.Width, barH);
+                        }
                     };
                     Controls.Add(picBanner);
                 }
@@ -2229,8 +2252,10 @@ namespace VeeaMatrix
                             cur.WordStyle == "Crawl"  || cur.WordStyle == "Fade");
             string mode = cboWordMode != null ? cboWordMode.Text : cur.WordMode;
             bool streamActive = (mode == "Rain" || mode == "Both");
-            if (cboWordOrient  != null) { cboWordOrient.Visible  = !hideDir; cboWordOrient.Enabled  = !hideDir && streamActive; }
-            if (_lblWordOrient != null) { _lblWordOrient.Visible = !hideDir; _lblWordOrient.Enabled = !hideDir && streamActive; }
+            if (cboWordOrient     != null) { cboWordOrient.Visible     = !hideDir; cboWordOrient.Enabled     = !hideDir && streamActive; }
+            if (_lblWordOrient   != null) { _lblWordOrient.Visible   = !hideDir; _lblWordOrient.Enabled   = !hideDir && streamActive; }
+            // CrawlHideRain checkbox: only relevant when Crawl style is active
+            if (chkCrawlHideRain != null) { chkCrawlHideRain.Visible = (cur.WordStyle == "Crawl"); }
 
             // Rebuild orientation options when style switches between horizontal-only and all-directions
             if (cboWordOrient != null && streamActive && !isFade)
