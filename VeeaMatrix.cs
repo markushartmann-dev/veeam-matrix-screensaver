@@ -1,4 +1,4 @@
-﻿// VeeaMatrix.cs  –  Windows Screensaver v1.42
+﻿// VeeaMatrix.cs  –  Windows Screensaver v1.43
 // Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
@@ -687,9 +687,14 @@ namespace VeeaMatrix
                 float cv = -(float)(0.8 * s.WordSpeedFactor);  // fixed speed — prevents overtaking
                 float cx = W / 2f;
                 float cy;
+                if (scatter)
                 {
-                    // Always queue from bottom — scatter also uses queue so words
-                    // enter one at a time from below (true Star Wars crawl behaviour)
+                    // Initial spawn: start just at screen bottom so the word appears immediately
+                    cy = H;
+                }
+                else
+                {
+                    // Replacement: queue behind existing words — true Star Wars crawl, one at a time
                     cy = H + fs * 4f;
                     foreach (WDrop d in wdrops)
                     {
@@ -1805,6 +1810,7 @@ namespace VeeaMatrix
             yM += SL;
 
             yM += 10;
+            HSep(yM, c2, cW2); yM += 12;
 
             // ═══════════════════════════════════════════════════════════════════
             // MIDDLE COLUMN — POPUP WORDS
@@ -2072,7 +2078,7 @@ namespace VeeaMatrix
             {
                 var bannerImg = LoadBannerImage();
                 int bannerY   = yL + 8;
-                int bannerH   = yBot - bannerY - 8;
+                int bannerH   = (yBot - 12) - bannerY - 8;  // yBot-12 = separator position (before += 12)
                 if (bannerImg != null && bannerH > 50)
                 {
                     Image capturedBanner = bannerImg;
