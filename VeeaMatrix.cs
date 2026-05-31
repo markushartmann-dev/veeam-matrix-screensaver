@@ -1,4 +1,4 @@
-﻿// VeeaMatrix.cs  –  Windows Screensaver v1.46
+﻿// VeeaMatrix.cs  –  Windows Screensaver v1.47
 // Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
@@ -182,8 +182,8 @@ namespace VeeaMatrix
         public bool   ShowWatermark = true;
         // Falling words
         public string WordMode      = "Both";
-        public int    WordCount     = 3;
-        public int    WordFontSize  = 20;
+        public int    WordCount     = 30;
+        public int    WordFontSize  = 36;
         public Color  WordColor     = Color.FromArgb(0, 255, 65);
         public Color  WordHeadColor = Color.White;
         public float  GlowChance    = 0.22f;
@@ -197,7 +197,7 @@ namespace VeeaMatrix
         public string Orientation     = "TopDown";
         public string WordOrientation  = "LeftRight";
         public string WordStyle        = "Glitch";
-        public float  WordSpeedFactor  = 0.5f;
+        public float  WordSpeedFactor  = 2.0f;
         public bool   CrawlHideRain    = false;   // suppress background rain while Crawl is active
         public bool   CrawlStarfield   = false;   // draw star field behind Crawl words
         public bool   ShowVeeam100     = true;
@@ -695,7 +695,7 @@ namespace VeeaMatrix
                 float cy = scatter ? H : H + fs * 4f;
                 foreach (WDrop d in wdrops)
                 {
-                    float needed = d.Y + fs * 5.0f;  // gap scaled for CRAWL_SCALE 3.0 — no overlap
+                    float needed = d.Y + fs * 2.5f;  // tighter gap (-50%) for closer Star Wars feel
                     if (needed > cy) cy = needed;
                 }
                 return new WDrop { Chars=chars, X=cx, Y=cy, V=cv,
@@ -941,8 +941,8 @@ namespace VeeaMatrix
                     // HORIZON_FRAC: where the text vanishes (top area).
                     // t = 0 at horizon, 1 at screen bottom.
                     // Power curve keeps text large through most of screen; shrinks slowly toward top.
-                    const float CRAWL_SCALE  = 3.00f;  // 2× previous 1.5 as requested
-                    const float HORIZON_FRAC = 0.15f;  // horizon at 15% from top — wide visible area
+                    const float CRAWL_SCALE  = 6.00f;  // 2× previous 3.0 as requested (+100%)
+                    const float HORIZON_FRAC = 0.30f;  // horizon at 30% from top — text shrinks visibly earlier
                     float rawT       = w.Y / (float)H;
                     float t          = Math.Max(0.0f, Math.Min(1.0f,
                                            (rawT - HORIZON_FRAC) / (1.0f - HORIZON_FRAC)));
@@ -961,11 +961,12 @@ namespace VeeaMatrix
                                 SizeF  sz    = bg.MeasureString(text, crawlFont);
                                 float  drawX = (W - sz.Width) / 2f;
                                 float  drawY = w.Y - sz.Height / 2f;
-                                // Dynamic fade: start fading before font hits minimum size.
-                                // tFadeEnd = t where scaledSize ≈ 14px (below that it looks jerky).
-                                float minVisT  = Math.Min(0.25f, 14f / (fs * CRAWL_SCALE));
+                                // Fade: fully visible below t=0.2, smoothly transparent above t=0.05.
+                                // Font at t=0.2 ≈ 70px (no jitter); at t=0.05 ≈ 27px (already faded to 0).
+                                const float FADE_START = 0.20f;
+                                const float FADE_END   = 0.05f;
                                 float tFade    = Math.Max(0f, Math.Min(1f,
-                                                     (t - minVisT) / Math.Max(0.01f, minVisT + 0.14f - minVisT)));
+                                                     (t - FADE_END) / (FADE_START - FADE_END)));
                                 float eFade    = (H - w.Y + sz.Height) / Math.Max(1f, sz.Height * 2f);
                                 float fade     = Math.Min(1f, Math.Min(tFade, eFade));
                                 int   alpha    = Clamp((int)(fade * 255));
@@ -1652,14 +1653,14 @@ namespace VeeaMatrix
             _btnInaBdr= _dark ? Color.FromArgb(55,55,55)    : Color.FromArgb(148,158,148);
 
             // ── Layout constants ─────────────────────────────────────────────
-            const int c1    = 14,  cW1  = 480;       // left column  — RAIN only
-            const int c2    = 508, cW2  = 418;       // middle column — WORDS + POPUP + GENERAL + BACKUP
-            const int PREV_W = 660, PREV_H = 371;    // 75% of 880×495
-            const int c3    = c2 + cW2 + 14;         // = 940
-            const int cW3   = PREV_W + 2;            // = 662
-            const int fw    = c3 + cW3 + 14;         // = 940 + 662 + 14 = 1616
-            const int SL    = 46;                    // slider row step
-            const int CM    = 32;                    // combo row step
+            const int div2  = 506, div3  = 938;       // vertical divider x positions (1px lines)
+            const int c1    = 14,  cW1   = 480;       // left column — RAIN + banner
+            const int c2    = 516, cW2   = 412;       // middle column: 10px from div2 left, 10px from div3 right
+            const int PREV_W = 640, PREV_H = 360;     // 16:9 live preview
+            const int c3    = 948, cW3   = PREV_W+2; // right column: 10px from div3; cW3=642
+            const int fw    = 1616;                   // form width (unchanged)
+            const int SL    = 46;                     // slider row step
+            const int CM    = 32;                     // combo row step
 
             int y = 14;
 
@@ -1851,7 +1852,7 @@ namespace VeeaMatrix
             yM += SL;
 
             yM += 12;
-            HSep(yM, c2-2, c3-c2+1); yM += 12;
+            HSep(yM, div2, div3-div2+1); yM += 12;
 
             // ═══════════════════════════════════════════════════════════════════
             // MIDDLE COLUMN — POPUP WORDS
@@ -1922,7 +1923,7 @@ namespace VeeaMatrix
             // ═══════════════════════════════════════════════════════════════════
             // MIDDLE COLUMN — GENERAL
             // ═══════════════════════════════════════════════════════════════════
-            HSep(yM, c2-2, c3-c2+1); yM += 12;
+            HSep(yM, div2, div3-div2+1); yM += 12;
             Section(T("GENERAL","ALLGEMEIN"), c2, yM, cW2); yM += 26;
             chkScanlines = Chk("CRT Scanlines",   cur.ShowScanlines, c2,     yM);
             chkWatermark = Chk(T("Watermark","Wasserzeichen"), cur.ShowWatermark, c2+130, yM);
@@ -1995,7 +1996,7 @@ namespace VeeaMatrix
             yR += PREV_H + 2 + 10;
 
             // ── BACKUP OPERATIONS (Easter-egg) — right column ─────────────────
-            HSep(yR, c3-2, fw-c3-12); yR += 12;
+            HSep(yR, div3, fw-div3-14); yR += 12;
             Section(T("BACKUP OPERATIONS","BACKUP-OPERATIONEN"), c3, yR, cW3); yR += 26;
             {
                 string[] btnLabels = new string[] {
@@ -2031,7 +2032,7 @@ namespace VeeaMatrix
             }
 
             // ── CHANGE LOG — right column ─────────────────────────────────────
-            HSep(yR, c3-2, fw-c3-12); yR += 12;
+            HSep(yR, div3, fw-div3-14); yR += 12;
             Section(T("CHANGE LOG","ÄNDERUNGSPROTOKOLL"), c3, yR, cW3); yR += 26;
             {
                 string changelog =
@@ -2081,7 +2082,7 @@ namespace VeeaMatrix
                     "v1.0   Initial release — Matrix rain + word drops + popups";
                 var txtLog = new TextBox {
                     Location    = new Point(c3, yR),
-                    Size        = new Size(cW3, 160),
+                    Size        = new Size(cW3, 240),
                     Text        = changelog,
                     BackColor   = _dark ? Color.FromArgb(4,10,4) : Color.FromArgb(235,245,235),
                     ForeColor   = _dark ? Color.FromArgb(0,190,55) : Color.FromArgb(0,120,35),
@@ -2093,7 +2094,7 @@ namespace VeeaMatrix
                     WordWrap    = false
                 };
                 Controls.Add(txtLog);
-                yR += 166;
+                yR += 246;
             }
 
             // Wire all controls to mark preview dirty (exclude cboLanguage and txtFontPreviewText)
@@ -2120,11 +2121,11 @@ namespace VeeaMatrix
             HSep(yBot, 14, fw-28); yBot += 12;
 
             // ── Vertical dividers: span exactly from top separator to bottom separator ──
-            int sepTop = y - 12;        // top HSep is drawn at this y
-            int sepBot = yBot - 12;     // bottom HSep was drawn at this y (before yBot += 12)
+            int sepTop = y - 12;        // top HSep was drawn here
+            int sepBot = yBot - 12;     // bottom HSep was drawn here (before yBot += 12)
             int divH   = sepBot - sepTop + 1;
-            Controls.Add(new Panel { Location=new Point(c2-2, sepTop), Size=new Size(1, divH), BackColor=_sep });
-            Controls.Add(new Panel { Location=new Point(c3-2, sepTop), Size=new Size(1, divH), BackColor=_sep });
+            Controls.Add(new Panel { Location=new Point(div2, sepTop), Size=new Size(1, divH), BackColor=_sep });
+            Controls.Add(new Panel { Location=new Point(div3, sepTop), Size=new Size(1, divH), BackColor=_sep });
 
             int bRight = c3 + cW3;  // = 1602
             var btnOK = new Button { Text="OK",
