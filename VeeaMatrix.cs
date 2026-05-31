@@ -1,4 +1,4 @@
-﻿// VeeaMatrix.cs  –  Windows Screensaver v1.45
+﻿// VeeaMatrix.cs  –  Windows Screensaver v1.46
 // Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
@@ -688,14 +688,14 @@ namespace VeeaMatrix
             // Crawl: perspective scroll upward, centered, font scales with Y
             if (s.WordStyle == "Crawl")
             {
-                float cv = -(float)(0.8 * s.WordSpeedFactor);  // fixed speed — all words same pace, no overtaking
+                float cv = -(float)(1.5 * s.WordSpeedFactor);  // fixed speed — all words same pace, no overtaking
                 float cx = W / 2f;
                 // Initial base: first word enters at screen bottom immediately;
                 // replacements queue just below screen. Queue loop then spaces all subsequent words.
                 float cy = scatter ? H : H + fs * 4f;
                 foreach (WDrop d in wdrops)
                 {
-                    float needed = d.Y + fs * 2.5f;  // ~0.5 font-height gap — tight Star Wars crawl feel
+                    float needed = d.Y + fs * 5.0f;  // gap scaled for CRAWL_SCALE 3.0 — no overlap
                     if (needed > cy) cy = needed;
                 }
                 return new WDrop { Chars=chars, X=cx, Y=cy, V=cv,
@@ -937,19 +937,20 @@ namespace VeeaMatrix
                 }
                 else if (s.WordStyle == "Crawl")
                 {
-                    // Perspective crawl: horizon-based projection.
-                    // HORIZON_FRAC = fraction from top where text vanishes (like the real Star Wars crawl).
-                    // t = 0 at horizon, 1 at screen bottom → linear perspective scale.
-                    const float CRAWL_SCALE   = 1.50f;
-                    const float HORIZON_FRAC  = 0.35f;  // horizon line at 35% from top
+                    // Perspective crawl — Star Wars horizon projection.
+                    // HORIZON_FRAC: where the text vanishes (top area).
+                    // t = 0 at horizon, 1 at screen bottom.
+                    // Power curve keeps text large through most of screen; shrinks slowly toward top.
+                    const float CRAWL_SCALE  = 3.00f;  // 2× previous 1.5 as requested
+                    const float HORIZON_FRAC = 0.15f;  // horizon at 15% from top — wide visible area
                     float rawT       = w.Y / (float)H;
                     float t          = Math.Max(0.0f, Math.Min(1.0f,
                                            (rawT - HORIZON_FRAC) / (1.0f - HORIZON_FRAC)));
-                    float scaledSize = Math.Max(8f, fs * CRAWL_SCALE * t);
-                    // Always Bold+Italic for the Star Wars crawl feel
+                    // t^0.65: text stays large most of the journey, shrinks gradually near horizon
+                    float tP         = (float)Math.Pow(t, 0.65);
+                    float scaledSize = Math.Max(8f, fs * CRAWL_SCALE * tP);
                     FontStyle crawlFs = FontStyle.Bold | FontStyle.Italic;
-                    // Gone once past the horizon — word is invisible there anyway
-                    bool gone = w.Y < (float)H * (HORIZON_FRAC - 0.06f);
+                    bool gone = w.Y < (float)H * (HORIZON_FRAC - 0.05f);
                     if (!gone)
                     {
                         try
@@ -960,15 +961,16 @@ namespace VeeaMatrix
                                 SizeF  sz    = bg.MeasureString(text, crawlFont);
                                 float  drawX = (W - sz.Width) / 2f;
                                 float  drawY = w.Y - sz.Height / 2f;
-                                // Smooth horizon fade: full from t>0.25, eases to 0 at t=0
-                                float  tFade = Math.Min(1f, t * (1f / 0.25f));
-                                // Entry fade from below screen
-                                float  eFade = (H - w.Y + sz.Height) / Math.Max(1f, sz.Height * 2f);
-                                float  fade  = Math.Min(1f, Math.Min(tFade, eFade));
-                                int    alpha = Clamp((int)(fade * 255));
+                                // Dynamic fade: start fading before font hits minimum size.
+                                // tFadeEnd = t where scaledSize ≈ 14px (below that it looks jerky).
+                                float minVisT  = Math.Min(0.25f, 14f / (fs * CRAWL_SCALE));
+                                float tFade    = Math.Max(0f, Math.Min(1f,
+                                                     (t - minVisT) / Math.Max(0.01f, minVisT + 0.14f - minVisT)));
+                                float eFade    = (H - w.Y + sz.Height) / Math.Max(1f, sz.Height * 2f);
+                                float fade     = Math.Min(1f, Math.Min(tFade, eFade));
+                                int   alpha    = Clamp((int)(fade * 255));
                                 if (alpha > 4)
                                 {
-                                    // Blend WordColor (horizon/small) → WordHeadColor (bottom/large)
                                     int cr = Clamp((int)(s.WordColor.R + (s.WordHeadColor.R - s.WordColor.R) * t));
                                     int cg = Clamp((int)(s.WordColor.G + (s.WordHeadColor.G - s.WordColor.G) * t));
                                     int cb = Clamp((int)(s.WordColor.B + (s.WordHeadColor.B - s.WordColor.B) * t));
@@ -1848,8 +1850,8 @@ namespace VeeaMatrix
             _streamControls.Add(trkWordCount); _streamControls.Add(lblWCount);
             yM += SL;
 
-            yM += 10;
-            HSep(yM, c2, cW2); yM += 12;
+            yM += 12;
+            HSep(yM, c2-2, c3-c2+1); yM += 12;
 
             // ═══════════════════════════════════════════════════════════════════
             // MIDDLE COLUMN — POPUP WORDS
@@ -1915,12 +1917,12 @@ namespace VeeaMatrix
             _popupControls.Add(trkPopupSpeed); _popupControls.Add(lblPopupSpeed);
             yM += SL;
 
-            yM += 10;
+            yM += 12;
 
             // ═══════════════════════════════════════════════════════════════════
             // MIDDLE COLUMN — GENERAL
             // ═══════════════════════════════════════════════════════════════════
-            HSep(yM, c2, cW2); yM += 12;
+            HSep(yM, c2-2, c3-c2+1); yM += 12;
             Section(T("GENERAL","ALLGEMEIN"), c2, yM, cW2); yM += 26;
             chkScanlines = Chk("CRT Scanlines",   cur.ShowScanlines, c2,     yM);
             chkWatermark = Chk(T("Watermark","Wasserzeichen"), cur.ShowWatermark, c2+130, yM);
@@ -1993,7 +1995,7 @@ namespace VeeaMatrix
             yR += PREV_H + 2 + 10;
 
             // ── BACKUP OPERATIONS (Easter-egg) — right column ─────────────────
-            HSep(yR, c3, cW3); yR += 12;
+            HSep(yR, c3-2, fw-c3-12); yR += 12;
             Section(T("BACKUP OPERATIONS","BACKUP-OPERATIONEN"), c3, yR, cW3); yR += 26;
             {
                 string[] btnLabels = new string[] {
@@ -2029,28 +2031,54 @@ namespace VeeaMatrix
             }
 
             // ── CHANGE LOG — right column ─────────────────────────────────────
-            HSep(yR, c3, cW3); yR += 12;
+            HSep(yR, c3-2, fw-c3-12); yR += 12;
             Section(T("CHANGE LOG","ÄNDERUNGSPROTOKOLL"), c3, yR, cW3); yR += 26;
             {
                 string changelog =
-                    "v1.45  Star Wars Crawl: horizon perspective, smooth fade, star field option\r\n" +
-                    "v1.44  Crawl queue of words (WordCount = queue depth), gap 2.5×, Simultaneous slider re-enabled\r\n" +
-                    "v1.43  Crawl fix: immediate entry from screen bottom; separator WORD/POPUP; banner no-overlap\r\n" +
-                    "v1.42  Crawl Star Wars single-word fix; subtitle auto-migration; banner → left column\r\n" +
-                    "v1.41  Crawl scale 1.2→1.5 (50 % larger text at bottom)\r\n" +
-                    "v1.40  Restore 3-column layout; preview 75 %; banner right column\r\n" +
-                    "v1.39  Layout refactor — 2-column 1414 px form\r\n" +
-                    "v1.38  Banner fit-to-width; subtitle migration; Crawl trail fix; Clone fix\r\n" +
-                    "v1.37  Crawl same speed + no-rain option; cinematic image bars\r\n" +
-                    "v1.36  Crawl: no overlap, correct colors, 20 % larger\r\n" +
-                    "v1.35  Crawl style added; Star Wars color profile; Glitch defaults\r\n" +
-                    "v1.34  Subtitle field multiline + pipe-separator hint\r\n" +
-                    "v1.33  Settings: DarkMode toggle, profile system, language switch\r\n" +
-                    "v1.30  Popup effects: Fade / Glitch / Scan / Zoom / Scramble\r\n" +
-                    "v1.25  Word styles: Scroll / Fade / Build / Scramble / Glitch\r\n" +
-                    "v1.20  Color profiles (Veeam Green, Matrix, Amber, Aurora, Star Wars)\r\n" +
-                    "v1.10  Font picker, Bold/Italic toggles, font preview strip\r\n" +
-                    "v1.00  Initial release — Matrix rain + word drops + popups";
+                    "v1.46  Crawl ×3 scale, horizon at 15%, t^0.65 power curve, no-jitter fade; separator geometry fix\r\n" +
+                    "v1.45  Crawl horizon perspective (HORIZON_FRAC 0.35); star field option; BACKUP+CHANGELOG → right col\r\n" +
+                    "v1.44  Crawl: WordCount controls queue depth; simultaneous slider restored; gap 2.5×fs\r\n" +
+                    "v1.43  Crawl: first word enters from screen bottom immediately; HSep between WORD/POPUP; banner height fix\r\n" +
+                    "v1.42  Crawl: enforce 1 word at a time (true Star Wars queue); subtitle partial-value migration + auto-save\r\n" +
+                    "v1.41  Crawl font scale 1.2→1.5 (+50 %); spawn gap updated for new scale\r\n" +
+                    "v1.40  Restore 3-column layout; preview scaled to 75 % (660×371); banner back to right column\r\n" +
+                    "v1.39  Layout refactor: 2-column 1414 px form; preview removed temporarily\r\n" +
+                    "v1.38  Banner fit-to-width (letterbox); subtitle auto-migration; Crawl trail artefact fix; Clone missing field fix\r\n" +
+                    "v1.37  Crawl: all words same speed (no overtaking); 'Disable RAIN' option; cinematic image bars on banner\r\n" +
+                    "v1.36  Crawl: fixed word overlap, corrected color gradient, font 20 % larger\r\n" +
+                    "v1.35  Crawl word style (Star Wars perspective scroll); Star Wars color profile; Glitch as default style\r\n" +
+                    "v1.34  Subtitle field: multiline TextBox + pipe | line-break hint label\r\n" +
+                    "v1.33  Settings UI: improvements to layout, DarkMode, profile system, language switch DE/EN\r\n" +
+                    "v1.32  Easter-egg BACKUP OPERATIONS section in settings (Config Backup, License buttons)\r\n" +
+                    "v1.31  Reset to Default button in settings dialog\r\n" +
+                    "v1.30  Default settings updated to match intended visual\r\n" +
+                    "v1.29  Collision avoidance for word drops and popups (20-retry bounding-box check)\r\n" +
+                    "v1.28  Aurora color profile; banner hardcoded into binary; content isolation; blog post\r\n" +
+                    "v1.25  Replace Neon Tokyo with Deep Space color profile\r\n" +
+                    "v1.24  Wider banner column; watermark font style respect; Neon Tokyo profile\r\n" +
+                    "v1.23  Expanded term catalog; font Bold/Italic style option\r\n" +
+                    "v1.22  Restore form width; Light/Dark theme toggle; banner embedded into .scr at build time\r\n" +
+                    "v1.21  Direction filter; remove-profile button; term catalog dialog; form width −15 %; banner left\r\n" +
+                    "v1.20  Fix direction control; banner aspect-crop; UI readability improvements\r\n" +
+                    "v1.19  Move banner to preview column with fill-crop rendering\r\n" +
+                    "v1.18  App icon for taskbar; banner image support (external file)\r\n" +
+                    "v1.17  Button-style word-style selector; Glitch word style; Scramble popup effect; direction lock\r\n" +
+                    "v1.16  Remove Blink style and Flash popup effect; single-select popup effect buttons\r\n" +
+                    "v1.15  Grey out inactive layer controls based on Word Mode\r\n" +
+                    "v1.14  Direction in Build/Scramble; real line-height measurement; clearer UI labels\r\n" +
+                    "v1.13  Per-char spacing fix for proportional fonts; direction head-char; hover tooltips; Scramble/Blink styles\r\n" +
+                    "v1.12  Fix: live-sync all controls to cur; complete RebuildPreview coverage\r\n" +
+                    "v1.11  Popup speed control; correct popup font; 960×540 (16:9) preview size\r\n" +
+                    "v1.10  Rename to VeeaMatrix; 16:9 preview; popup in WORDS section; EN/DE toggle; wider subtitle box\r\n" +
+                    "v1.9   Live preview panel in config dialog; modern 2-column UI; custom font preview text; system font picker\r\n" +
+                    "v1.8   Veeam font; word speed slider; custom watermark text\r\n" +
+                    "v1.7   Update Veeam 100 People list from official 2026 directories\r\n" +
+                    "v1.6   Static word styles: Fade + Build\r\n" +
+                    "v1.5   Word direction control; Veeam 100 Names toggle\r\n" +
+                    "v1.4   Selective effects per layer; multi-monitor fix; color profiles (Veeam Green, Matrix, Amber)\r\n" +
+                    "v1.3   Separate colors for rain, falling words, and popups\r\n" +
+                    "v1.2   Popup word effects: Fade / Flash / Glitch / Scan / Zoom / Mixed\r\n" +
+                    "v1.0   Initial release — Matrix rain + word drops + popups";
                 var txtLog = new TextBox {
                     Location    = new Point(c3, yR),
                     Size        = new Size(cW3, 160),
@@ -2091,12 +2119,12 @@ namespace VeeaMatrix
             int yBot = Math.Max(yL, Math.Max(yM, yR)) + 14;
             HSep(yBot, 14, fw-28); yBot += 12;
 
-            // ── Vertical dividers between columns ─────────────────────────────
-            int colH = yBot - y - 12;
-            Controls.Add(new Panel { Location=new Point(c2-2, y), Size=new Size(1, colH+14),
-                BackColor=_sep });
-            Controls.Add(new Panel { Location=new Point(c3-2, y), Size=new Size(1, colH+14),
-                BackColor=_sep });
+            // ── Vertical dividers: span exactly from top separator to bottom separator ──
+            int sepTop = y - 12;        // top HSep is drawn at this y
+            int sepBot = yBot - 12;     // bottom HSep was drawn at this y (before yBot += 12)
+            int divH   = sepBot - sepTop + 1;
+            Controls.Add(new Panel { Location=new Point(c2-2, sepTop), Size=new Size(1, divH), BackColor=_sep });
+            Controls.Add(new Panel { Location=new Point(c3-2, sepTop), Size=new Size(1, divH), BackColor=_sep });
 
             int bRight = c3 + cW3;  // = 1602
             var btnOK = new Button { Text="OK",
