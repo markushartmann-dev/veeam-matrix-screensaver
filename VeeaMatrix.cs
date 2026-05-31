@@ -1,4 +1,4 @@
-﻿// VeeaMatrix.cs  –  Windows Screensaver v1.37
+﻿// VeeaMatrix.cs  –  Windows Screensaver v1.38
 // Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
@@ -337,6 +337,12 @@ namespace VeeaMatrix
                 }
                 s.PopupEffects = migrated;
             }
+            // Migrate old/empty subtitle to the current default
+            string newSub = "The Veeam-Themed Matrix Screensaver: | Nobody Asked For (But Everyone Needs)";
+            if (string.IsNullOrWhiteSpace(s.WatermarkSubText) ||
+                s.WatermarkSubText == "DATA PROTECTION * CYBER RESILIENCE * ALWAYS-ON" ||
+                s.WatermarkSubText == "DATA PROTECTION  *  CYBER RESILIENCE  *  ALWAYS-ON")
+                s.WatermarkSubText = newSub;
             return s;
         }
 
@@ -844,8 +850,11 @@ namespace VeeaMatrix
 
         public void Tick()
         {
-            bg.FillRectangle(fadeBrush,0,0,W,H);
             bool suppressRain = (s.WordStyle == "Crawl" && s.CrawlHideRain);
+            if (suppressRain)
+                bg.FillRectangle(Brushes.Black, 0, 0, W, H);  // pure black — no trail on Crawl words
+            else
+                bg.FillRectangle(fadeBrush, 0, 0, W, H);
             if (!suppressRain) DrawRain();
             if (s.WordMode=="Rain"||s.WordMode=="Both") DrawDrops();
             if (s.WordMode=="Popup"||s.WordMode=="Both") DrawPopups();
@@ -1490,7 +1499,8 @@ namespace VeeaMatrix
                 WordColor=s.WordColor, WordHeadColor=s.WordHeadColor, GlowChance=s.GlowChance,
                 PopupEffects=s.PopupEffects, PopupCount=s.PopupCount, PopupFontSize=s.PopupFontSize,
                 PopupColor=s.PopupColor, Orientation=s.Orientation, WordOrientation=s.WordOrientation,
-                WordStyle=s.WordStyle, WordSpeedFactor=s.WordSpeedFactor, ShowVeeam100=s.ShowVeeam100,
+                WordStyle=s.WordStyle, WordSpeedFactor=s.WordSpeedFactor, CrawlHideRain=s.CrawlHideRain,
+                ShowVeeam100=s.ShowVeeam100,
                 WatermarkText=s.WatermarkText, WatermarkSubText=s.WatermarkSubText, ExtraWords=s.ExtraWords,
                 WordFontName=s.WordFontName, WordFontBold=s.WordFontBold, WordFontItalic=s.WordFontItalic,
                 Language=s.Language,
@@ -2037,7 +2047,7 @@ namespace VeeaMatrix
             {
                 var bannerImg = LoadBannerImage();
                 int bannerY   = yL + 8;
-                int bannerH   = (int)((yBot - bannerY - 8) * 0.85f);  // 15% smaller than available gap
+                int bannerH   = (int)((yBot - bannerY - 8) * 0.72f);  // compact — room for cinematic bars
                 if (bannerImg != null && bannerH > 50)
                 {
                     Image capturedBanner = bannerImg;
@@ -2047,30 +2057,22 @@ namespace VeeaMatrix
                         BackColor   = Color.Black,
                         BorderStyle = BorderStyle.FixedSingle
                     };
-                    // Fill-crop + cinematic bars: fill width (crop top/bottom a little),
-                    // then draw thin black bars (9% each) for the widescreen cinema look.
+                    // Fit-to-width: show FULL image (no cropping), black bars top/bottom = cinematic feel.
+                    // BackColor=Black on the PictureBox provides the bars automatically.
                     picBanner.Paint += delegate(object bps, PaintEventArgs bpe)
                     {
                         if (capturedBanner == null || capturedBanner.Width == 0) return;
-                        var    pb    = (PictureBox)bps;
-                        double srcAR = (double)capturedBanner.Width  / capturedBanner.Height;
-                        double dstAR = (double)pb.Width / pb.Height;
-                        int sx, sy, sw, sh;
-                        if (srcAR > dstAR)   // image wider than box — crop left & right
-                        { sh=capturedBanner.Height; sw=(int)(sh*dstAR); sx=(capturedBanner.Width-sw)/2; sy=0; }
-                        else                  // image taller than box — crop top & bottom
-                        { sw=capturedBanner.Width; sh=(int)(sw/dstAR); sx=0; sy=(capturedBanner.Height-sh)/2; }
+                        var pb   = (PictureBox)bps;
+                        double srcAR = (double)capturedBanner.Width / capturedBanner.Height;
+                        int dw = pb.Width;
+                        int dh = (int)(dw / srcAR);
+                        if (dh > pb.Height) { dh = pb.Height; dw = (int)(dh * srcAR); }
+                        int dx = (pb.Width  - dw) / 2;
+                        int dy = (pb.Height - dh) / 2;
                         bpe.Graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
                         bpe.Graphics.DrawImage(capturedBanner,
-                            new Rectangle(0, 0, pb.Width, pb.Height),
-                            new Rectangle(sx, sy, sw, sh), GraphicsUnit.Pixel);
-                        // Cinematic letterbox bars — 9% of height each (≈ 2.35:1 feel)
-                        int barH = Math.Max(4, pb.Height * 9 / 100);
-                        using (var black = new SolidBrush(Color.Black))
-                        {
-                            bpe.Graphics.FillRectangle(black, 0, 0,              pb.Width, barH);
-                            bpe.Graphics.FillRectangle(black, 0, pb.Height-barH, pb.Width, barH);
-                        }
+                            new Rectangle(dx, dy, dw, dh),
+                            new Rectangle(0, 0, capturedBanner.Width, capturedBanner.Height), GraphicsUnit.Pixel);
                     };
                     Controls.Add(picBanner);
                 }
