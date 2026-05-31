@@ -1,4 +1,4 @@
-﻿// VeeaMatrix.cs  –  Windows Screensaver v1.44
+﻿// VeeaMatrix.cs  –  Windows Screensaver v1.45
 // Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
@@ -199,6 +199,7 @@ namespace VeeaMatrix
         public string WordStyle        = "Glitch";
         public float  WordSpeedFactor  = 0.5f;
         public bool   CrawlHideRain    = false;   // suppress background rain while Crawl is active
+        public bool   CrawlStarfield   = false;   // draw star field behind Crawl words
         public bool   ShowVeeam100     = true;
         public bool   UseBuiltinTerms  = true;
         // Watermark
@@ -260,6 +261,7 @@ namespace VeeaMatrix
             sb.AppendLine("WordStyle="        + WordStyle);
             sb.AppendLine("WordSpeedFactor="  + WordSpeedFactor.ToString("F2", System.Globalization.CultureInfo.InvariantCulture));
             sb.AppendLine("CrawlHideRain="    + CrawlHideRain);
+            sb.AppendLine("CrawlStarfield="   + CrawlStarfield);
             sb.AppendLine("ShowVeeam100="     + ShowVeeam100);
             sb.AppendLine("UseBuiltinTerms="  + UseBuiltinTerms);
             sb.AppendLine("WatermarkText="    + WatermarkText);
@@ -315,6 +317,7 @@ namespace VeeaMatrix
                         case "WordStyle":        s.WordStyle        = v; break;
                         case "WordSpeedFactor":  s.WordSpeedFactor  = float.Parse(v, ic); break;
                         case "CrawlHideRain":    s.CrawlHideRain    = bool.Parse(v); break;
+                        case "CrawlStarfield":   s.CrawlStarfield   = bool.Parse(v); break;
                         case "ShowVeeam100":     s.ShowVeeam100     = bool.Parse(v); break;
                         case "UseBuiltinTerms":  s.UseBuiltinTerms  = bool.Parse(v); break;
                         case "WatermarkText":    s.WatermarkText    = v; break;
@@ -509,6 +512,8 @@ namespace VeeaMatrix
         private bool[]  laneBright;
         private int     laneCount;
 
+        private float[] starX, starY, starBright, starSize, starTwinkle;
+
         private readonly List<WDrop>  wdrops = new List<WDrop>();
         private readonly List<WPopup> popups = new List<WPopup>();
 
@@ -617,6 +622,7 @@ namespace VeeaMatrix
                 for (int i = 0; i < s.PopupCount; i++) popups.Add(SpawnPopup(true));
 
             BuildScanlines();
+            if (s.CrawlStarfield) InitStars(); else starX = null;
         }
 
         // Per-char x-offsets using typographic metrics — fixes disproportionate "I" spacing
@@ -689,7 +695,7 @@ namespace VeeaMatrix
                 float cy = scatter ? H : H + fs * 4f;
                 foreach (WDrop d in wdrops)
                 {
-                    float needed = d.Y + fs * 3.5f;  // ~1 font-height gap between consecutive crawl words
+                    float needed = d.Y + fs * 2.5f;  // ~0.5 font-height gap — tight Star Wars crawl feel
                     if (needed > cy) cy = needed;
                 }
                 return new WDrop { Chars=chars, X=cx, Y=cy, V=cv,
@@ -855,6 +861,35 @@ namespace VeeaMatrix
             }
         }
 
+        private void InitStars()
+        {
+            const int N = 280;
+            starX = new float[N]; starY = new float[N];
+            starBright = new float[N]; starSize = new float[N]; starTwinkle = new float[N];
+            for (int i = 0; i < N; i++)
+            {
+                starX[i]      = (float)(rng.NextDouble() * W);
+                starY[i]      = (float)(rng.NextDouble() * H);
+                starBright[i] = 0.25f + (float)(rng.NextDouble() * 0.75f);
+                starSize[i]   = 0.8f  + (float)(rng.NextDouble() * 2.0f);
+                starTwinkle[i]= (float)(rng.NextDouble() * Math.PI * 2.0);
+            }
+        }
+
+        private void DrawStars()
+        {
+            if (starX == null) return;
+            for (int i = 0; i < starX.Length; i++)
+            {
+                starTwinkle[i] += 0.018f;
+                float alpha = starBright[i] * (0.55f + 0.45f * (float)Math.Sin(starTwinkle[i]));
+                int   a     = Math.Max(0, Math.Min(255, (int)(alpha * 230)));
+                float sz    = starSize[i];
+                tmpBrush.Color = Color.FromArgb(a, 255, 252, 220);  // warm white stars
+                bg.FillEllipse(tmpBrush, starX[i] - sz * 0.5f, starY[i] - sz * 0.5f, sz, sz);
+            }
+        }
+
         public void Tick()
         {
             bool suppressRain = (s.WordStyle == "Crawl" && s.CrawlHideRain);
@@ -862,6 +897,7 @@ namespace VeeaMatrix
                 bg.FillRectangle(Brushes.Black, 0, 0, W, H);  // pure black — no trail on Crawl words
             else
                 bg.FillRectangle(fadeBrush, 0, 0, W, H);
+            if (s.WordStyle == "Crawl" && s.CrawlStarfield) DrawStars();
             if (!suppressRain) DrawRain();
             if (s.WordMode=="Rain"||s.WordMode=="Both") DrawDrops();
             if (s.WordMode=="Popup"||s.WordMode=="Both") DrawPopups();
@@ -901,14 +937,19 @@ namespace VeeaMatrix
                 }
                 else if (s.WordStyle == "Crawl")
                 {
-                    // Perspective crawl: text scrolls up, font shrinks toward horizon.
-                    // Base scale is 1.5× the word font size (50% larger than other styles).
-                    const float CRAWL_SCALE = 1.50f;
-                    float t          = Math.Max(0.0f, Math.Min(1.0f, w.Y / (float)H));
-                    float scaledSize = Math.Max(6f, fs * CRAWL_SCALE * (0.18f + 0.82f * t));
+                    // Perspective crawl: horizon-based projection.
+                    // HORIZON_FRAC = fraction from top where text vanishes (like the real Star Wars crawl).
+                    // t = 0 at horizon, 1 at screen bottom → linear perspective scale.
+                    const float CRAWL_SCALE   = 1.50f;
+                    const float HORIZON_FRAC  = 0.35f;  // horizon line at 35% from top
+                    float rawT       = w.Y / (float)H;
+                    float t          = Math.Max(0.0f, Math.Min(1.0f,
+                                           (rawT - HORIZON_FRAC) / (1.0f - HORIZON_FRAC)));
+                    float scaledSize = Math.Max(8f, fs * CRAWL_SCALE * t);
                     // Always Bold+Italic for the Star Wars crawl feel
                     FontStyle crawlFs = FontStyle.Bold | FontStyle.Italic;
-                    bool gone = w.Y < -(fs * CRAWL_SCALE * 6f);
+                    // Gone once past the horizon — word is invisible there anyway
+                    bool gone = w.Y < (float)H * (HORIZON_FRAC - 0.06f);
                     if (!gone)
                     {
                         try
@@ -919,13 +960,15 @@ namespace VeeaMatrix
                                 SizeF  sz    = bg.MeasureString(text, crawlFont);
                                 float  drawX = (W - sz.Width) / 2f;
                                 float  drawY = w.Y - sz.Height / 2f;
-                                float  fade  = Math.Min(1f, Math.Min(t * 4f,
-                                    (H - w.Y + sz.Height) / Math.Max(1f, sz.Height * 2f)));
+                                // Smooth horizon fade: full from t>0.25, eases to 0 at t=0
+                                float  tFade = Math.Min(1f, t * (1f / 0.25f));
+                                // Entry fade from below screen
+                                float  eFade = (H - w.Y + sz.Height) / Math.Max(1f, sz.Height * 2f);
+                                float  fade  = Math.Min(1f, Math.Min(tFade, eFade));
                                 int    alpha = Clamp((int)(fade * 255));
                                 if (alpha > 4)
                                 {
-                                    // Blend WordColor (top/small) → WordHeadColor (bottom/large),
-                                    // matching the brightness gradient of other word styles
+                                    // Blend WordColor (horizon/small) → WordHeadColor (bottom/large)
                                     int cr = Clamp((int)(s.WordColor.R + (s.WordHeadColor.R - s.WordColor.R) * t));
                                     int cg = Clamp((int)(s.WordColor.G + (s.WordHeadColor.G - s.WordColor.G) * t));
                                     int cb = Clamp((int)(s.WordColor.B + (s.WordHeadColor.B - s.WordColor.B) * t));
@@ -1310,6 +1353,7 @@ namespace VeeaMatrix
         private CheckBox   chkScanlines, chkWatermark, chkVeeam100, chkBuiltinTerms;
         private CheckBox   chkWordFontBold, chkWordFontItalic;
         private CheckBox   chkCrawlHideRain;
+        private CheckBox   chkCrawlStarfield;
         private bool       _syncingOrient;
         // Theme colours — initialised at the top of Build() from cur.DarkMode
         private bool  _dark;
@@ -1489,7 +1533,7 @@ namespace VeeaMatrix
             btnFxEffects = null; btnWordStyles = null; _lblWordOrient = null;
             chkScanlines = chkWatermark = chkVeeam100 = chkBuiltinTerms = null;
             chkWordFontBold = chkWordFontItalic = null;
-            chkCrawlHideRain = null;
+            chkCrawlHideRain = null; chkCrawlStarfield = null;
             cboProfiles = cboWordFontName = null;
             picFontPreview = null; txtFontPreviewText = null; picPreview = null;
             _previewDirty = true;
@@ -1506,7 +1550,7 @@ namespace VeeaMatrix
                 WordColor=s.WordColor, WordHeadColor=s.WordHeadColor, GlowChance=s.GlowChance,
                 PopupEffects=s.PopupEffects, PopupCount=s.PopupCount, PopupFontSize=s.PopupFontSize,
                 PopupColor=s.PopupColor, Orientation=s.Orientation, WordOrientation=s.WordOrientation,
-                WordStyle=s.WordStyle, WordSpeedFactor=s.WordSpeedFactor, CrawlHideRain=s.CrawlHideRain,
+                WordStyle=s.WordStyle, WordSpeedFactor=s.WordSpeedFactor, CrawlHideRain=s.CrawlHideRain, CrawlStarfield=s.CrawlStarfield,
                 ShowVeeam100=s.ShowVeeam100,
                 WatermarkText=s.WatermarkText, WatermarkSubText=s.WatermarkSubText, ExtraWords=s.ExtraWords,
                 WordFontName=s.WordFontName, WordFontBold=s.WordFontBold, WordFontItalic=s.WordFontItalic,
@@ -1764,13 +1808,18 @@ namespace VeeaMatrix
             SetWordStyle(string.IsNullOrEmpty(cur.WordStyle) ? "Scroll" : cur.WordStyle);
             yM += 32;
 
-            // ── Crawl-only option: suppress background rain ───────────────────
+            // ── Crawl-only options ────────────────────────────────────────────
             chkCrawlHideRain = Chk(T("Disable RAIN while Crawl active", "REGEN während Crawl ausblenden"),
                                    cur.CrawlHideRain, c2, yM);
             chkCrawlHideRain.CheckedChanged += delegate { cur.CrawlHideRain = chkCrawlHideRain.Checked; };
             _streamControls.Add(chkCrawlHideRain);
             Controls.Add(chkCrawlHideRain);
-            yM += 24;
+            chkCrawlStarfield = Chk(T("Star field background", "Sternenhimmel-Hintergrund"),
+                                    cur.CrawlStarfield, c2 + 4, yM + 22);
+            chkCrawlStarfield.CheckedChanged += delegate { cur.CrawlStarfield = chkCrawlStarfield.Checked; };
+            _streamControls.Add(chkCrawlStarfield);
+            Controls.Add(chkCrawlStarfield);
+            yM += 48;
 
             // ── Word Direction ────────────────────────────────────────────────
             _lblWordOrient = DLbl(T("Direction:","Richtung:"), c2, yM+5, 68);
@@ -1926,45 +1975,8 @@ namespace VeeaMatrix
             Controls.Add(txtExtra);
             yM += 30;
 
-            HSep(yM, c2, cW2); yM += 12;
-
-            // ── BACKUP OPERATIONS (Easter-egg section) ────────────────────────
-            Section(T("BACKUP OPERATIONS","BACKUP-OPERATIONEN"), c2, yM, cW2); yM += 26;
-            {
-                string[] btnLabels = new string[] {
-                    T("Configuration Backup", "Konfigurations-Backup"),
-                    T("License",              "Lizenz")
-                };
-                string[] btnMsgs = new string[] {
-                    T("For that you should use\nVeeam Backup & Replication!",
-                      "Dafuer solltest du besser\nVeeam Backup & Replication verwenden!"),
-                    T("You already have the Premium features.",
-                      "Du hast bereits die Premium-Features.")
-                };
-                int ebw = (cW2 - 8) / 2;
-                for (int ei = 0; ei < btnLabels.Length; ei++)
-                {
-                    var eb = new Button {
-                        Text      = btnLabels[ei],
-                        Location  = new Point(c2 + ei * (ebw + 8), yM),
-                        Size      = new Size(ebw, 28),
-                        BackColor = Color.FromArgb(0, 75, 22),
-                        ForeColor = Color.White,
-                        FlatStyle = FlatStyle.Flat
-                    };
-                    eb.FlatAppearance.BorderColor = Color.FromArgb(0, 170, 55);
-                    string capturedMsg = btnMsgs[ei];
-                    eb.Click += delegate {
-                        MessageBox.Show(capturedMsg, "VeeaMatrix",
-                            MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    };
-                    Controls.Add(eb);
-                }
-                yM += 34;
-            }
-
             // ═══════════════════════════════════════════════════════════════════
-            // RIGHT COLUMN — LIVE PREVIEW
+            // RIGHT COLUMN — LIVE PREVIEW  +  BACKUP OPERATIONS  +  CHANGE LOG
             // ═══════════════════════════════════════════════════════════════════
             Section(T("LIVE PREVIEW","LIVE-VORSCHAU"), c3, yR, cW3); yR += 26;
             picPreview = new PictureBox {
@@ -1979,6 +1991,82 @@ namespace VeeaMatrix
                 if (_prevEngine != null) _prevEngine.Render(pe.Graphics);
             };
             yR += PREV_H + 2 + 10;
+
+            // ── BACKUP OPERATIONS (Easter-egg) — right column ─────────────────
+            HSep(yR, c3, cW3); yR += 12;
+            Section(T("BACKUP OPERATIONS","BACKUP-OPERATIONEN"), c3, yR, cW3); yR += 26;
+            {
+                string[] btnLabels = new string[] {
+                    T("Configuration Backup", "Konfigurations-Backup"),
+                    T("License",              "Lizenz")
+                };
+                string[] btnMsgs = new string[] {
+                    T("For that you should use\nVeeam Backup & Replication!",
+                      "Dafuer solltest du besser\nVeeam Backup & Replication verwenden!"),
+                    T("You already have the Premium features.",
+                      "Du hast bereits die Premium-Features.")
+                };
+                int ebw3 = (cW3 - 8) / 2;
+                for (int ei = 0; ei < btnLabels.Length; ei++)
+                {
+                    var eb = new Button {
+                        Text      = btnLabels[ei],
+                        Location  = new Point(c3 + ei * (ebw3 + 8), yR),
+                        Size      = new Size(ebw3, 28),
+                        BackColor = Color.FromArgb(0, 75, 22),
+                        ForeColor = Color.White,
+                        FlatStyle = FlatStyle.Flat
+                    };
+                    eb.FlatAppearance.BorderColor = Color.FromArgb(0, 170, 55);
+                    string capturedMsg = btnMsgs[ei];
+                    eb.Click += delegate {
+                        MessageBox.Show(capturedMsg, "VeeaMatrix",
+                            MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    };
+                    Controls.Add(eb);
+                }
+                yR += 36;
+            }
+
+            // ── CHANGE LOG — right column ─────────────────────────────────────
+            HSep(yR, c3, cW3); yR += 12;
+            Section(T("CHANGE LOG","ÄNDERUNGSPROTOKOLL"), c3, yR, cW3); yR += 26;
+            {
+                string changelog =
+                    "v1.45  Star Wars Crawl: horizon perspective, smooth fade, star field option\r\n" +
+                    "v1.44  Crawl queue of words (WordCount = queue depth), gap 2.5×, Simultaneous slider re-enabled\r\n" +
+                    "v1.43  Crawl fix: immediate entry from screen bottom; separator WORD/POPUP; banner no-overlap\r\n" +
+                    "v1.42  Crawl Star Wars single-word fix; subtitle auto-migration; banner → left column\r\n" +
+                    "v1.41  Crawl scale 1.2→1.5 (50 % larger text at bottom)\r\n" +
+                    "v1.40  Restore 3-column layout; preview 75 %; banner right column\r\n" +
+                    "v1.39  Layout refactor — 2-column 1414 px form\r\n" +
+                    "v1.38  Banner fit-to-width; subtitle migration; Crawl trail fix; Clone fix\r\n" +
+                    "v1.37  Crawl same speed + no-rain option; cinematic image bars\r\n" +
+                    "v1.36  Crawl: no overlap, correct colors, 20 % larger\r\n" +
+                    "v1.35  Crawl style added; Star Wars color profile; Glitch defaults\r\n" +
+                    "v1.34  Subtitle field multiline + pipe-separator hint\r\n" +
+                    "v1.33  Settings: DarkMode toggle, profile system, language switch\r\n" +
+                    "v1.30  Popup effects: Fade / Glitch / Scan / Zoom / Scramble\r\n" +
+                    "v1.25  Word styles: Scroll / Fade / Build / Scramble / Glitch\r\n" +
+                    "v1.20  Color profiles (Veeam Green, Matrix, Amber, Aurora, Star Wars)\r\n" +
+                    "v1.10  Font picker, Bold/Italic toggles, font preview strip\r\n" +
+                    "v1.00  Initial release — Matrix rain + word drops + popups";
+                var txtLog = new TextBox {
+                    Location    = new Point(c3, yR),
+                    Size        = new Size(cW3, 160),
+                    Text        = changelog,
+                    BackColor   = _dark ? Color.FromArgb(4,10,4) : Color.FromArgb(235,245,235),
+                    ForeColor   = _dark ? Color.FromArgb(0,190,55) : Color.FromArgb(0,120,35),
+                    BorderStyle = BorderStyle.FixedSingle,
+                    Multiline   = true,
+                    ReadOnly    = true,
+                    ScrollBars  = ScrollBars.Vertical,
+                    Font        = new Font("Consolas", 8f),
+                    WordWrap    = false
+                };
+                Controls.Add(txtLog);
+                yR += 166;
+            }
 
             // Wire all controls to mark preview dirty (exclude cboLanguage and txtFontPreviewText)
             foreach (Control ctrl in Controls)
@@ -2034,7 +2122,8 @@ namespace VeeaMatrix
                 if (cboWordFontName.SelectedItem != null) cur.WordFontName = cboWordFontName.SelectedItem.ToString();
                 if (chkWordFontBold   != null) cur.WordFontBold   = chkWordFontBold.Checked;
                 if (chkWordFontItalic != null) cur.WordFontItalic = chkWordFontItalic.Checked;
-                if (chkCrawlHideRain != null)  cur.CrawlHideRain  = chkCrawlHideRain.Checked;
+                if (chkCrawlHideRain  != null) cur.CrawlHideRain  = chkCrawlHideRain.Checked;
+            if (chkCrawlStarfield != null) cur.CrawlStarfield = chkCrawlStarfield.Checked;
                 // cur.PopupEffects already in sync via SetPopupEffect()
                 Result=cur; Result.Save();
             };
@@ -2277,7 +2366,9 @@ namespace VeeaMatrix
             if (cboWordOrient     != null) { cboWordOrient.Visible     = !hideDir; cboWordOrient.Enabled     = !hideDir && streamActive; }
             if (_lblWordOrient   != null) { _lblWordOrient.Visible   = !hideDir; _lblWordOrient.Enabled   = !hideDir && streamActive; }
             // CrawlHideRain checkbox: only relevant when Crawl style is active
-            if (chkCrawlHideRain != null) { chkCrawlHideRain.Visible = (cur.WordStyle == "Crawl"); }
+            bool isCrawl = (cur.WordStyle == "Crawl");
+            if (chkCrawlHideRain  != null) { chkCrawlHideRain.Visible  = isCrawl; }
+            if (chkCrawlStarfield != null) { chkCrawlStarfield.Visible = isCrawl; }
             // Crawl uses WordCount as queue depth — slider stays visible for all styles
 
             // Rebuild orientation options when style switches between horizontal-only and all-directions
