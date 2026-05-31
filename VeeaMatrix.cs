@@ -1,4 +1,4 @@
-﻿// VeeaMatrix.cs  –  Windows Screensaver v1.43
+﻿// VeeaMatrix.cs  –  Windows Screensaver v1.44
 // Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
@@ -609,9 +609,7 @@ namespace VeeaMatrix
             wdrops.Clear();
             if ((s.WordMode == "Rain" || s.WordMode == "Both") && allTerms.Length > 0)
             {
-                // Crawl style: exactly 1 word on-screen, rest queue below — Star Wars style
-                int spawnCount = (s.WordStyle == "Crawl") ? 1 : s.WordCount;
-                for (int i = 0; i < spawnCount; i++) wdrops.Add(SpawnDrop(true));
+                for (int i = 0; i < s.WordCount; i++) wdrops.Add(SpawnDrop(true));
             }
 
             popups.Clear();
@@ -684,23 +682,15 @@ namespace VeeaMatrix
             // Crawl: perspective scroll upward, centered, font scales with Y
             if (s.WordStyle == "Crawl")
             {
-                float cv = -(float)(0.8 * s.WordSpeedFactor);  // fixed speed — prevents overtaking
+                float cv = -(float)(0.8 * s.WordSpeedFactor);  // fixed speed — all words same pace, no overtaking
                 float cx = W / 2f;
-                float cy;
-                if (scatter)
+                // Initial base: first word enters at screen bottom immediately;
+                // replacements queue just below screen. Queue loop then spaces all subsequent words.
+                float cy = scatter ? H : H + fs * 4f;
+                foreach (WDrop d in wdrops)
                 {
-                    // Initial spawn: start just at screen bottom so the word appears immediately
-                    cy = H;
-                }
-                else
-                {
-                    // Replacement: queue behind existing words — true Star Wars crawl, one at a time
-                    cy = H + fs * 4f;
-                    foreach (WDrop d in wdrops)
-                    {
-                        float needed = d.Y + fs * 1.5f * 5f;
-                        if (needed > cy) cy = needed;
-                    }
+                    float needed = d.Y + fs * 3.5f;  // ~1 font-height gap between consecutive crawl words
+                    if (needed > cy) cy = needed;
                 }
                 return new WDrop { Chars=chars, X=cx, Y=cy, V=cv,
                                    Glow=rng.NextDouble()<s.GlowChance, CharOffsets=null };
@@ -2158,7 +2148,7 @@ namespace VeeaMatrix
                 tip(btnWordStyles[2], "Build — chars decode left-to-right",                                 "Build — Zeichen werden von links nach rechts eingeblendet");
                 tip(btnWordStyles[3], "Scramble — noise resolves to the correct word sequentially",         "Scramble — Rauschen löst sich sequenziell auf");
                 tip(btnWordStyles[4], "Glitch — word appears through noise that gradually clears",          "Glitch — Wort erscheint durch Rauschen, das sich auflöst");
-                tip(btnWordStyles[5], "Crawl — Star Wars-style perspective scroll upward from the bottom",  "Crawl — Star-Wars-Schriftzug-Stil von unten nach oben mit Perspektive");
+                tip(btnWordStyles[5], "Crawl — Star Wars-style perspective scroll; words queue up from the bottom one after another (Simultaneous = queue depth)",  "Crawl — Star-Wars-Stil: Wörter scrollen nacheinander von unten nach oben (Gleichzeitig = Queue-Tiefe)");
             }
             tip(cboWordOrient,   "Scroll: all 4 directions · Build/Scramble/Glitch: LeftRight or RightLeft only · Fade: disabled",  "Scroll: alle 4 Richtungen · Build/Scramble/Glitch: nur Links↔Rechts · Fade: deaktiviert");
             tip(trkWordFont,     "Character size for keyword streams (px)",                                  "Zeichengröße der Keyword-Streams (px)");
@@ -2288,10 +2278,7 @@ namespace VeeaMatrix
             if (_lblWordOrient   != null) { _lblWordOrient.Visible   = !hideDir; _lblWordOrient.Enabled   = !hideDir && streamActive; }
             // CrawlHideRain checkbox: only relevant when Crawl style is active
             if (chkCrawlHideRain != null) { chkCrawlHideRain.Visible = (cur.WordStyle == "Crawl"); }
-            // Crawl: "Simultaneous" count is meaningless — always 1 word at a time
-            bool isCrawl = (cur.WordStyle == "Crawl");
-            if (trkWordCount != null) trkWordCount.Visible = !isCrawl;
-            if (lblWCount    != null) lblWCount.Visible    = !isCrawl;
+            // Crawl uses WordCount as queue depth — slider stays visible for all styles
 
             // Rebuild orientation options when style switches between horizontal-only and all-directions
             if (cboWordOrient != null && streamActive && !isFade)
