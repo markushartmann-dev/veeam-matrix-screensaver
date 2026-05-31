@@ -1,4 +1,4 @@
-﻿// VeeaMatrix.cs  –  Windows Screensaver v1.40
+﻿// VeeaMatrix.cs  –  Windows Screensaver v1.41
 // Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
@@ -685,7 +685,7 @@ namespace VeeaMatrix
                     cy = H + fs * 4f;
                     foreach (WDrop d in wdrops)
                     {
-                        float needed = d.Y + fs * 1.2f * 5f; // 5 × base char height gap
+                        float needed = d.Y + fs * 1.5f * 5f; // 5 × base char height gap (matches CRAWL_SCALE)
                         if (needed > cy) cy = needed;
                     }
                 }
@@ -899,8 +899,8 @@ namespace VeeaMatrix
                 else if (s.WordStyle == "Crawl")
                 {
                     // Perspective crawl: text scrolls up, font shrinks toward horizon.
-                    // Base scale is 1.2× the word font size (20% larger than other styles).
-                    const float CRAWL_SCALE = 1.20f;
+                    // Base scale is 1.5× the word font size (50% larger than other styles).
+                    const float CRAWL_SCALE = 1.50f;
                     float t          = Math.Max(0.0f, Math.Min(1.0f, w.Y / (float)H));
                     float scaledSize = Math.Max(6f, fs * CRAWL_SCALE * (0.18f + 0.82f * t));
                     // Always Bold+Italic for the Star Wars crawl feel
