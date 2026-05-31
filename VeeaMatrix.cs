@@ -1,4 +1,4 @@
-﻿// VeeaMatrix.cs  –  Windows Screensaver v1.41
+﻿// VeeaMatrix.cs  –  Windows Screensaver v1.42
 // Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
@@ -341,12 +341,21 @@ namespace VeeaMatrix
                 }
                 s.PopupEffects = migrated;
             }
-            // Migrate old/empty subtitle to the current default
+            // Migrate old/empty/partial subtitle to the current default and persist
             string newSub = "The Veeam-Themed Matrix Screensaver: | Nobody Asked For (But Everyone Needs)";
-            if (string.IsNullOrWhiteSpace(s.WatermarkSubText) ||
-                s.WatermarkSubText == "DATA PROTECTION * CYBER RESILIENCE * ALWAYS-ON" ||
-                s.WatermarkSubText == "DATA PROTECTION  *  CYBER RESILIENCE  *  ALWAYS-ON")
+            string sub = s.WatermarkSubText ?? "";
+            bool needsMigration =
+                string.IsNullOrWhiteSpace(sub) ||
+                sub == "DATA PROTECTION * CYBER RESILIENCE * ALWAYS-ON" ||
+                sub == "DATA PROTECTION  *  CYBER RESILIENCE  *  ALWAYS-ON" ||
+                // Partial new subtitle: starts correctly but missing second half
+                (sub.StartsWith("The Veeam-Themed Matrix Screensaver") &&
+                 !sub.Contains("Nobody Asked For"));
+            if (needsMigration)
+            {
                 s.WatermarkSubText = newSub;
+                try { s.Save(); } catch { }
+            }
             return s;
         }
 
@@ -599,7 +608,11 @@ namespace VeeaMatrix
 
             wdrops.Clear();
             if ((s.WordMode == "Rain" || s.WordMode == "Both") && allTerms.Length > 0)
-                for (int i = 0; i < s.WordCount; i++) wdrops.Add(SpawnDrop(true));
+            {
+                // Crawl style: exactly 1 word on-screen, rest queue below — Star Wars style
+                int spawnCount = (s.WordStyle == "Crawl") ? 1 : s.WordCount;
+                for (int i = 0; i < spawnCount; i++) wdrops.Add(SpawnDrop(true));
+            }
 
             popups.Clear();
             if ((s.WordMode == "Popup" || s.WordMode == "Both") && allTerms.Length > 0)
@@ -674,18 +687,13 @@ namespace VeeaMatrix
                 float cv = -(float)(0.8 * s.WordSpeedFactor);  // fixed speed — prevents overtaking
                 float cx = W / 2f;
                 float cy;
-                if (scatter)
                 {
-                    // Initial scatter: spread evenly across screen height
-                    cy = (float)(rng.NextDouble() * H);
-                }
-                else
-                {
-                    // Queue behind all existing Crawl words — prevents any overlap
+                    // Always queue from bottom — scatter also uses queue so words
+                    // enter one at a time from below (true Star Wars crawl behaviour)
                     cy = H + fs * 4f;
                     foreach (WDrop d in wdrops)
                     {
-                        float needed = d.Y + fs * 1.5f * 5f; // 5 × base char height gap (matches CRAWL_SCALE)
+                        float needed = d.Y + fs * 1.5f * 5f;
                         if (needed > cy) cy = needed;
                     }
                 }
@@ -2058,19 +2066,19 @@ namespace VeeaMatrix
             Controls.Add(btnReset); Controls.Add(btnOK); Controls.Add(btnCancel);
             AcceptButton=btnOK; CancelButton=btnCancel;
 
-            // ── Banner image — right column, below preview ────────────────────
+            // ── Banner image — left column bottom (below RAIN section) ──────────
             int finalH = yBot + 48;
             try
             {
                 var bannerImg = LoadBannerImage();
-                int bannerY   = yR;
+                int bannerY   = yL + 8;
                 int bannerH   = yBot - bannerY - 8;
                 if (bannerImg != null && bannerH > 50)
                 {
                     Image capturedBanner = bannerImg;
                     var picBanner = new PictureBox {
-                        Location    = new Point(c3, bannerY),
-                        Size        = new Size(cW3, bannerH),
+                        Location    = new Point(c1, bannerY),
+                        Size        = new Size(cW1, bannerH),
                         BackColor   = Color.Black,
                         BorderStyle = BorderStyle.FixedSingle
                     };
@@ -2094,11 +2102,11 @@ namespace VeeaMatrix
                 }
                 else if (bannerH > 50)
                 {
-                    // No banner found — show an instructional placeholder in the right column
+                    // No banner found — show an instructional placeholder in the left column
                     bool dm = cur.DarkMode;
                     var picPlaceholder = new Panel {
-                        Location    = new Point(c3, bannerY),
-                        Size        = new Size(cW3, bannerH),
+                        Location    = new Point(c1, bannerY),
+                        Size        = new Size(cW1, bannerH),
                         BackColor   = dm ? Color.FromArgb(8, 14, 8) : Color.FromArgb(230, 240, 230),
                         BorderStyle = BorderStyle.FixedSingle
                     };
@@ -2274,6 +2282,10 @@ namespace VeeaMatrix
             if (_lblWordOrient   != null) { _lblWordOrient.Visible   = !hideDir; _lblWordOrient.Enabled   = !hideDir && streamActive; }
             // CrawlHideRain checkbox: only relevant when Crawl style is active
             if (chkCrawlHideRain != null) { chkCrawlHideRain.Visible = (cur.WordStyle == "Crawl"); }
+            // Crawl: "Simultaneous" count is meaningless — always 1 word at a time
+            bool isCrawl = (cur.WordStyle == "Crawl");
+            if (trkWordCount != null) trkWordCount.Visible = !isCrawl;
+            if (lblWCount    != null) lblWCount.Visible    = !isCrawl;
 
             // Rebuild orientation options when style switches between horizontal-only and all-directions
             if (cboWordOrient != null && streamActive && !isFade)
