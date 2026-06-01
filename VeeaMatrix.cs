@@ -1,4 +1,4 @@
-﻿// VeeaMatrix.cs  –  Windows Screensaver v1.49
+﻿// VeeaMatrix.cs  –  Windows Screensaver v1.50
 // Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
@@ -516,7 +516,8 @@ namespace VeeaMatrix
         private int     laneCount;
 
         private float[] starX, starY, starBright, starSize, starTwinkle;
-        private int     _termIndex = 0;   // sequential term counter (used when OrderedTerms=true)
+        private int     _termIndex   = 0;    // sequential term counter (used when OrderedTerms=true)
+        private float   _crawlScroll = 0f;  // continuous scroll position for the perspective crawl
 
         private readonly List<WDrop>  wdrops = new List<WDrop>();
         private readonly List<WPopup> popups = new List<WPopup>();
@@ -615,8 +616,11 @@ namespace VeeaMatrix
                 laneBright[i] = rng.NextDouble() < 0.1;
             }
 
+            _crawlScroll = 0f;   // restart perspective crawl from bottom
             wdrops.Clear();
-            if ((s.WordMode == "Rain" || s.WordMode == "Both") && allTerms.Length > 0)
+            // Crawl uses the perspective engine (DrawCrawlPerspective) — no wdrops needed
+            if ((s.WordMode == "Rain" || s.WordMode == "Both") && allTerms.Length > 0
+                && s.WordStyle != "Crawl")
             {
                 for (int i = 0; i < s.WordCount; i++) wdrops.Add(SpawnDrop(true));
             }
@@ -901,6 +905,112 @@ namespace VeeaMatrix
             }
         }
 
+        // ── Perspective Crawl — matches CSS rotateX+perspective from veeam_star_wars_crawl.html ───
+        private void DrawCrawlPerspective()
+        {
+            if (allTerms.Length == 0) return;
+
+            // Perspective parameters — tuned to match HTML: perspective:280 / height:520, rotateX:28°
+            const float TILT_DEG = 25f;
+            float tilt  = TILT_DEG * (float)Math.PI / 180f;
+            float cosT  = (float)Math.Cos(tilt);
+            float sinT  = (float)Math.Sin(tilt);
+            float focal = H * 0.55f;       // focal length ≈ perspective:280/height:520 × H
+
+            float baseSize = Math.Max(10f, s.WordFontSize * 2.0f);  // logical font at y=0
+            float lineH    = baseSize * 1.75f;                       // line spacing
+            float stageW   = W * 0.74f;                             // text band width (HTML: 76%)
+
+            // Advance scroll — 1.5 × WordSpeedFactor logical px per tick (smooth continuous)
+            _crawlScroll += s.WordSpeedFactor * 1.5f;
+            // Wrap: when all text has scrolled past the horizon, restart
+            float totalH = allTerms.Length * lineH + H * 1.5f;
+            if (_crawlScroll > totalH) _crawlScroll = 0f;
+
+            FontStyle crawlFs = FontStyle.Bold | FontStyle.Italic;
+            var prevHint = bg.TextRenderingHint;
+            bg.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;  // smooth scaling
+
+            for (int i = 0; i < allTerms.Length; i++)
+            {
+                // y_log: position of line i in logical scroll space
+                // y_log=0 → visible at screen bottom; positive → above bottom, toward horizon
+                float y_log = _crawlScroll - (float)i * lineH;
+
+                // Skip lines still below the screen
+                if (y_log < -lineH) continue;
+
+                // 3D perspective projection (matches CSS perspective + rotateX)
+                float z       = y_log * sinT + focal;
+                if (z <= 0.001f) continue;          // behind the viewer
+
+                float scale   = focal / z;
+                float screenY = H - y_log * cosT * focal / z;
+
+                // Skip lines off-screen
+                if (screenY < -baseSize * scale * 2f || screenY > H + baseSize * scale) continue;
+
+                float fontSize = Math.Max(5f, baseSize * scale);
+
+                // Fade: smooth fade near horizon (small scale) + entry fade from bottom
+                float horizonFade = Math.Min(1f, (scale - 0.08f) / 0.12f);   // full at scale>0.20, 0 at 0.08
+                float entryFade   = Math.Min(1f, (y_log + lineH) / lineH);     // fade-in from below
+                float fade        = Math.Min(horizonFade, entryFade);
+                if (fade <= 0f) continue;
+
+                // Color: WordColor at horizon → WordHeadColor at bottom (bright entry)
+                float ct = Math.Max(0f, Math.Min(1f, scale));
+                int   cr = Clamp((int)(s.WordColor.R + (s.WordHeadColor.R - s.WordColor.R) * ct));
+                int   cg = Clamp((int)(s.WordColor.G + (s.WordHeadColor.G - s.WordColor.G) * ct));
+                int   cb = Clamp((int)(s.WordColor.B + (s.WordHeadColor.B - s.WordColor.B) * ct));
+                int   ca = Clamp((int)(fade * 255));
+
+                string text = allTerms[i];
+                if (string.IsNullOrWhiteSpace(text)) continue;
+
+                try
+                {
+                    using (Font cf = new Font(s.WordFontName, fontSize, crawlFs, GraphicsUnit.Pixel))
+                    {
+                        SizeF sz = bg.MeasureString(text, cf);
+                        // Shrink font if text would exceed stage width
+                        float drawFont = fontSize;
+                        Font  useFont  = cf;
+                        Font  shrunk   = null;
+                        if (sz.Width > stageW * scale && sz.Width > 1f)
+                        {
+                            drawFont = Math.Max(5f, fontSize * stageW * scale / sz.Width);
+                            shrunk   = new Font(s.WordFontName, drawFont, crawlFs, GraphicsUnit.Pixel);
+                            useFont  = shrunk;
+                            sz       = bg.MeasureString(text, useFont);
+                        }
+                        float drawX = (W - sz.Width) / 2f;
+                        float drawY = screenY - sz.Height / 2f;
+
+                        tmpBrush.Color = Color.FromArgb(ca, cr, cg, cb);
+                        bg.DrawString(text, useFont, tmpBrush, new PointF(drawX, drawY));
+
+                        if (shrunk != null) shrunk.Dispose();
+                    }
+                }
+                catch { }
+            }
+
+            bg.TextRenderingHint = prevHint;
+
+            // ── Horizon fade overlay (top) — matches .crawl-fade-top in HTML ──────
+            int fadeTopH = H / 4;
+            using (var lgb = new System.Drawing.Drawing2D.LinearGradientBrush(
+                new Point(0, 0), new Point(0, fadeTopH), Color.Black, Color.Transparent))
+                bg.FillRectangle(lgb, 0, 0, W, fadeTopH);
+
+            // ── Entry fade overlay (bottom) — matches .crawl-fade-bottom in HTML ──
+            int fadeBotH = H / 8;
+            using (var lgb = new System.Drawing.Drawing2D.LinearGradientBrush(
+                new Point(0, H - fadeBotH), new Point(0, H), Color.Transparent, Color.Black))
+                bg.FillRectangle(lgb, 0, H - fadeBotH, W, fadeBotH);
+        }
+
         public void Tick()
         {
             bool suppressRain = (s.WordStyle == "Crawl" && s.CrawlHideRain);
@@ -908,9 +1018,14 @@ namespace VeeaMatrix
                 bg.FillRectangle(Brushes.Black, 0, 0, W, H);  // pure black — no trail on Crawl words
             else
                 bg.FillRectangle(fadeBrush, 0, 0, W, H);
-            if (s.WordStyle == "Crawl" && s.CrawlStarfield) DrawStars();
+            bool isCrawlMode = (s.WordStyle == "Crawl");
+            if (isCrawlMode && s.CrawlStarfield) DrawStars();
             if (!suppressRain) DrawRain();
-            if (s.WordMode=="Rain"||s.WordMode=="Both") DrawDrops();
+            if (s.WordMode=="Rain"||s.WordMode=="Both")
+            {
+                if (isCrawlMode) DrawCrawlPerspective();
+                else             DrawDrops();
+            }
             if (s.WordMode=="Popup"||s.WordMode=="Both") DrawPopups();
             if (scanBmp!=null) bg.DrawImage(scanBmp,0,0);
         }
@@ -2612,14 +2727,29 @@ namespace VeeaMatrix
             var lblT = new Label { Text = T("Templates:","Vorlagen:"), Location = new Point(px, py+4), AutoSize=true, ForeColor=fg };
             dlg.Controls.Add(lblT);
 
-            string[] tmplNames = { "Episode IV", "Episode VI", "Spaceballs" };
+            string[] tmplNames = { "Episode IV", "Episode VI", "Spaceballs", "Veeam" };
             string ep4 =
                 "A LONG TIME AGO\r\nIN A GALAXY\r\nFAR FAR AWAY\r\n\r\nIT IS A PERIOD\r\nOF CIVIL WAR\r\n\r\nREBEL SPACESHIPS\r\nSTRIKING FROM A\r\nHIDDEN BASE\r\nHAVE WON THEIR FIRST\r\nVICTORY AGAINST\r\nTHE EVIL\r\nGALACTIC EMPIRE\r\n\r\nDURING THE BATTLE\r\nREBEL SPIES MANAGED\r\nTO STEAL SECRET PLANS\r\nTO THE DEATH STAR\r\n\r\nPURSUED BY\r\nTHE EMPIRE'S AGENTS\r\nPRINCESS LEIA\r\nRACES HOME\r\nWITH STOLEN PLANS\r\nTHAT CAN SAVE\r\nHER PEOPLE\r\nAND RESTORE FREEDOM\r\nTO THE GALAXY";
             string ep6 =
                 "A LONG TIME AGO\r\nIN A GALAXY\r\nFAR FAR AWAY\r\n\r\nLUKE SKYWALKER\r\nHAS RETURNED\r\nTO TATOOINE\r\nTO RESCUE HIS FRIEND\r\nHAN SOLO\r\nFROM THE CLUTCHES OF\r\nTHE VILE GANGSTER\r\nJABBA THE HUTT\r\n\r\nLITTLE DOES LUKE KNOW\r\nTHAT THE GALACTIC EMPIRE\r\nHAS SECRETLY BEGUN\r\nCONSTRUCTION OF\r\nA NEW ARMORED\r\nSPACE STATION\r\n\r\nEVEN MORE POWERFUL\r\nTHAN THE FIRST\r\nDREADED DEATH STAR\r\n\r\nWHEN COMPLETED\r\nTHIS ULTIMATE WEAPON\r\nWILL SPELL DOOM\r\nFOR THE REBELS\r\n\r\nFREEDOM TO\r\nTHE GALAXY";
             string sp =
                 "A LONG TIME AGO\r\nIN A GALAXY\r\nVERY VERY FAR AWAY\r\n\r\nTHERE LIVED\r\nA RUTHLESS RACE\r\nKNOWN AS\r\nSPACEBALLS\r\n\r\nHAVING FOOLISHLY\r\nSQUANDERED\r\nTHEIR OWN ATMOSPHERE\r\n\r\nTHESE MONGRELS\r\nNOW PLOT TO STEAL\r\nTHE AIR FROM\r\nTHEIR PEACEFUL\r\nNEIGHBORS\r\n\r\nDRUIDIA\r\n\r\nLONE STARR\r\nVS DARK HELMET\r\n\r\nMAY THE SCHWARTZ\r\nBE WITH YOU";
-            string[] tmplTexts = { ep4, ep6, sp };
+            string veeam =
+                "A LONG TIME AGO\r\nIN A DATACENTER\r\nFAR FAR AWAY\r\n\r\n" +
+                "VEEAM\r\nBACKUP & REPLICATION\r\n\r\n" +
+                "EPISODE XIII\r\nTHE RISE OF\r\nCYBER RESILIENCE\r\n\r\n" +
+                "THE GALAXY IS UNDER SIEGE\r\n" +
+                "RANSOMWARE OPERATORS\r\nHAVE UNLEASHED CHAOS\r\nACROSS DATACENTERS\r\n\r\n" +
+                "ONLY THOSE WHO\r\nEMBRACED IMMUTABILITY\r\nHAVE SURVIVED\r\n\r\n" +
+                "VEEAM DATA CLOUD\r\nA SOVEREIGN FORTRESS\r\nOF RESILIENT BACKUPS\r\n\r\n" +
+                "ALWAYS-ON RECOVERY\r\nZERO-TRUST ARCHITECTURE\r\n\r\n" +
+                "VEEAM BACKUP & REPLICATION\r\nNO WORKLOAD LEFT BEHIND\r\nNO RECOVERY POINT FORGOTTEN\r\n\r\n" +
+                "THE 3-2-1-1-0 RULE\r\n3 COPIES  2 MEDIA\r\n1 OFFSITE  1 IMMUTABLE\r\nZERO ERRORS\r\n\r\n" +
+                "YOU CANNOT PROTECT\r\nWHAT YOU HAVE NOT BACKED UP\r\n" +
+                "YOU CANNOT RECOVER\r\nWHAT YOU CANNOT TRUST\r\n\r\n" +
+                "IMMUTABLE SNAPSHOTS\r\nAIR-GAPPED IMMUTABILITY\r\nRECOVERY COMPLETES\r\nSYSTEMS BREATHE AGAIN\r\n\r\n" +
+                "VEEAM\r\nALWAYS ON\r\nALWAYS AVAILABLE\r\nALWAYS PROTECTED";
+            string[] tmplTexts = { ep4, ep6, sp, veeam };
 
             // Current text → lines
             string raw = cur.ExtraWords ?? "";
@@ -2641,8 +2771,8 @@ namespace VeeaMatrix
                 int cap = ti;
                 var btnT = new Button {
                     Text      = tmplNames[cap],
-                    Location  = new Point(px + 70 + cap * 112, py - 1),
-                    Size      = new Size(108, 24),
+                    Location  = new Point(px + 70 + cap * 108, py - 1),
+                    Size      = new Size(104, 24),
                     BackColor = Color.FromArgb(0,75,22), ForeColor = Color.White,
                     FlatStyle = FlatStyle.Flat
                 };
