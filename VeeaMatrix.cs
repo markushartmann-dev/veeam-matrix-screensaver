@@ -1,4 +1,4 @@
-﻿// VeeaMatrix.cs  –  Windows Screensaver v1.52
+﻿// VeeaMatrix.cs  –  Windows Screensaver v1.53
 // Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
@@ -917,7 +917,7 @@ namespace VeeaMatrix
             float sinT  = (float)Math.Sin(tilt);
             float focal = H * 0.55f;       // focal length ≈ perspective:280/height:520 × H
 
-            float baseSize = Math.Max(10f, s.WordFontSize * 2.0f);  // logical font at y=0
+            float baseSize = Math.Max(10f, s.WordFontSize * 4.0f);  // +300% internal scale (4× slider value)
             float lineH    = baseSize * 1.75f;                       // line spacing
             float stageW   = W * 0.74f;                             // text band width (HTML: 76%)
 
@@ -1951,14 +1951,8 @@ namespace VeeaMatrix
             chkCrawlStarfield.CheckedChanged += delegate { cur.CrawlStarfield = chkCrawlStarfield.Checked; };
             _streamControls.Add(chkCrawlStarfield);
             Controls.Add(chkCrawlStarfield);
-            yM += 24;
-            chkOrderedTerms = Chk(T("Sequential order  ★ Recommended for Crawl text",
-                                    "Sequenzielle Reihenfolge  ★ Empfohlen für Crawl-Text"),
-                                  cur.OrderedTerms, c2, yM);
-            chkOrderedTerms.CheckedChanged += delegate { cur.OrderedTerms = chkOrderedTerms.Checked; };
-            _streamControls.Add(chkOrderedTerms);
-            Controls.Add(chkOrderedTerms);
             yM += 28;
+            // Sequential order is ALWAYS on for Crawl (enforced in engine) — no checkbox needed
             // "like Star Wars Intro" button — opens crawl text editor with templates
             _btnCrawlText = new Button {
                 Text      = T("✦ like Star Wars Intro…","✦ wie Star Wars Intro…"),
@@ -2536,11 +2530,18 @@ namespace VeeaMatrix
             // Apply Crawl-specific defaults when user switches to Crawl
             if (applyStyleDefaults && name == "Crawl")
             {
-                if (trkWordCount    != null) { trkWordCount.Value = 30; cur.WordCount = 30; if (lblWCount != null) lblWCount.Text = "30"; }
-                if (trkWordFont     != null) { trkWordFont.Value  = 36; cur.WordFontSize = 36; if (lblWFont != null) lblWFont.Text = "36 px"; }
-                if (trkWordSpeed    != null) { trkWordSpeed.Value = 20; cur.WordSpeedFactor = 2.0f; if (lblWordSpeed != null) lblWordSpeed.Text = "2.0x"; }
-                // Sequential order is strongly recommended for Crawl — enable it by default
-                if (chkOrderedTerms != null) { chkOrderedTerms.Checked = true; } cur.OrderedTerms = true;
+                // Slider defaults
+                if (trkWordCount != null) { trkWordCount.Value = 30; cur.WordCount = 30; if (lblWCount != null) lblWCount.Text = "30"; }
+                if (trkWordFont  != null) { trkWordFont.Value  = 36; cur.WordFontSize = 36; if (lblWFont != null) lblWFont.Text = "36 px"; }
+                if (trkWordSpeed != null) { trkWordSpeed.Value = 20; cur.WordSpeedFactor = 2.0f; if (lblWordSpeed != null) lblWordSpeed.Text = "2.0x"; }
+                // Sequential order is always mandatory for Crawl (enforced in engine)
+                cur.OrderedTerms = true;
+                // Disable background rain, enable star field
+                if (chkCrawlHideRain  != null) chkCrawlHideRain.Checked  = true;  cur.CrawlHideRain  = true;
+                if (chkCrawlStarfield != null) chkCrawlStarfield.Checked = true;  cur.CrawlStarfield = true;
+                // Word Mode: only Rain (= Word Streams) — no popups in Crawl
+                if (cboWordMode != null) cboWordMode.Text = "Rain"; cur.WordMode = "Rain";
+                SyncWordModeVisibility();
             }
             SyncWordStyleDirection();
         }
@@ -2562,8 +2563,8 @@ namespace VeeaMatrix
             bool isCrawl = (cur.WordStyle == "Crawl");
             if (chkCrawlHideRain  != null) { chkCrawlHideRain.Visible  = isCrawl; }
             if (chkCrawlStarfield != null) { chkCrawlStarfield.Visible = isCrawl; }
-            if (chkOrderedTerms   != null) { chkOrderedTerms.Visible   = isCrawl; }
             if (_btnCrawlText     != null) { _btnCrawlText.Visible      = isCrawl; }
+            // chkOrderedTerms removed — Crawl always uses sequential order internally
             // Speed slider: Crawl gets 4× the range (max 120 = 12.0× vs normal 30 = 3.0×)
             if (trkWordSpeed != null)
             {
