@@ -1,4 +1,4 @@
-﻿// VeeaMatrix.cs  –  Windows Screensaver v1.50
+﻿// VeeaMatrix.cs  –  Windows Screensaver v1.51
 // Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
@@ -1947,10 +1947,17 @@ namespace VeeaMatrix
             Controls.Add(chkCrawlHideRain);
             yM += 24;
             chkCrawlStarfield = Chk(T("Star field background", "Sternenhimmel-Hintergrund"),
-                                    cur.CrawlStarfield, c2, yM);  // same x=c2, same indent as above
+                                    cur.CrawlStarfield, c2, yM);
             chkCrawlStarfield.CheckedChanged += delegate { cur.CrawlStarfield = chkCrawlStarfield.Checked; };
             _streamControls.Add(chkCrawlStarfield);
             Controls.Add(chkCrawlStarfield);
+            yM += 24;
+            chkOrderedTerms = Chk(T("Sequential order  ★ Recommended for Crawl text",
+                                    "Sequenzielle Reihenfolge  ★ Empfohlen für Crawl-Text"),
+                                  cur.OrderedTerms, c2, yM);
+            chkOrderedTerms.CheckedChanged += delegate { cur.OrderedTerms = chkOrderedTerms.Checked; };
+            _streamControls.Add(chkOrderedTerms);
+            Controls.Add(chkOrderedTerms);
             yM += 28;
             // "like Star Wars Intro" button — opens crawl text editor with templates
             _btnCrawlText = new Button {
@@ -2122,12 +2129,7 @@ namespace VeeaMatrix
             Controls.Add(txtExtra);
             yM += 30;
 
-            // ── Sequential / random order ─────────────────────────────────────
-            chkOrderedTerms = Chk(T("Sequential order (no random)","Sequenziell (kein Zufall)"),
-                                  cur.OrderedTerms, c2, yM);
-            chkOrderedTerms.CheckedChanged += delegate { cur.OrderedTerms = chkOrderedTerms.Checked; };
-            Controls.Add(chkOrderedTerms);
-            yM += 26;
+            // (Sequential order checkbox is in the Crawl section — see _streamControls)
 
             // ═══════════════════════════════════════════════════════════════════
             // RIGHT COLUMN — LIVE PREVIEW  +  BACKUP OPERATIONS  +  CHANGE LOG
@@ -2534,9 +2536,11 @@ namespace VeeaMatrix
             // Apply Crawl-specific defaults when user switches to Crawl
             if (applyStyleDefaults && name == "Crawl")
             {
-                if (trkWordCount != null) { trkWordCount.Value = 30; cur.WordCount = 30; if (lblWCount != null) lblWCount.Text = "30"; }
-                if (trkWordFont  != null) { trkWordFont.Value  = 36; cur.WordFontSize = 36; if (lblWFont != null) lblWFont.Text = "36 px"; }
-                if (trkWordSpeed != null) { trkWordSpeed.Value = 20; cur.WordSpeedFactor = 2.0f; if (lblWordSpeed != null) lblWordSpeed.Text = "2.0x"; }
+                if (trkWordCount    != null) { trkWordCount.Value = 30; cur.WordCount = 30; if (lblWCount != null) lblWCount.Text = "30"; }
+                if (trkWordFont     != null) { trkWordFont.Value  = 36; cur.WordFontSize = 36; if (lblWFont != null) lblWFont.Text = "36 px"; }
+                if (trkWordSpeed    != null) { trkWordSpeed.Value = 20; cur.WordSpeedFactor = 2.0f; if (lblWordSpeed != null) lblWordSpeed.Text = "2.0x"; }
+                // Sequential order is strongly recommended for Crawl — enable it by default
+                if (chkOrderedTerms != null) { chkOrderedTerms.Checked = true; } cur.OrderedTerms = true;
             }
             SyncWordStyleDirection();
         }
@@ -2558,6 +2562,7 @@ namespace VeeaMatrix
             bool isCrawl = (cur.WordStyle == "Crawl");
             if (chkCrawlHideRain  != null) { chkCrawlHideRain.Visible  = isCrawl; }
             if (chkCrawlStarfield != null) { chkCrawlStarfield.Visible = isCrawl; }
+            if (chkOrderedTerms   != null) { chkOrderedTerms.Visible   = isCrawl; }
             if (_btnCrawlText     != null) { _btnCrawlText.Visible      = isCrawl; }
             // Crawl uses WordCount as queue depth — slider stays visible for all styles
 
