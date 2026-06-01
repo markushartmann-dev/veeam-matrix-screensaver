@@ -1,4 +1,4 @@
-﻿// VeeaMatrix.cs  –  Windows Screensaver v1.51
+﻿// VeeaMatrix.cs  –  Windows Screensaver v1.52
 // Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
@@ -2564,6 +2564,22 @@ namespace VeeaMatrix
             if (chkCrawlStarfield != null) { chkCrawlStarfield.Visible = isCrawl; }
             if (chkOrderedTerms   != null) { chkOrderedTerms.Visible   = isCrawl; }
             if (_btnCrawlText     != null) { _btnCrawlText.Visible      = isCrawl; }
+            // Speed slider: Crawl gets 4× the range (max 120 = 12.0× vs normal 30 = 3.0×)
+            if (trkWordSpeed != null)
+            {
+                int newMax = isCrawl ? 120 : 30;
+                if (trkWordSpeed.Maximum != newMax)
+                {
+                    if (!isCrawl && trkWordSpeed.Value > 30)   // clamp when leaving Crawl
+                    {
+                        trkWordSpeed.Value = 30;
+                        cur.WordSpeedFactor = 3.0f;
+                        if (lblWordSpeed != null) lblWordSpeed.Text = "3.0x";
+                    }
+                    trkWordSpeed.Maximum       = newMax;
+                    trkWordSpeed.TickFrequency = Math.Max(1, newMax / 10);
+                }
+            }
             // Crawl uses WordCount as queue depth — slider stays visible for all styles
 
             // Rebuild orientation options when style switches between horizontal-only and all-directions
