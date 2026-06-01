@@ -1,4 +1,4 @@
-﻿// VeeaMatrix.cs  –  Windows Screensaver v1.48
+﻿// VeeaMatrix.cs  –  Windows Screensaver v1.49
 // Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
@@ -1369,6 +1369,7 @@ namespace VeeaMatrix
         private CheckBox   chkCrawlHideRain;
         private CheckBox   chkCrawlStarfield;
         private CheckBox   chkOrderedTerms;
+        private Button     _btnCrawlText;
         private bool       _syncingOrient;
         // Theme colours — initialised at the top of Build() from cur.DarkMode
         private bool  _dark;
@@ -1548,7 +1549,7 @@ namespace VeeaMatrix
             btnFxEffects = null; btnWordStyles = null; _lblWordOrient = null;
             chkScanlines = chkWatermark = chkVeeam100 = chkBuiltinTerms = null;
             chkWordFontBold = chkWordFontItalic = null;
-            chkCrawlHideRain = null; chkCrawlStarfield = null; chkOrderedTerms = null;
+            chkCrawlHideRain = null; chkCrawlStarfield = null; chkOrderedTerms = null; _btnCrawlText = null;
             cboProfiles = cboWordFontName = null;
             picFontPreview = null; txtFontPreviewText = null; picPreview = null;
             _previewDirty = true;
@@ -1829,12 +1830,28 @@ namespace VeeaMatrix
             chkCrawlHideRain.CheckedChanged += delegate { cur.CrawlHideRain = chkCrawlHideRain.Checked; };
             _streamControls.Add(chkCrawlHideRain);
             Controls.Add(chkCrawlHideRain);
+            yM += 24;
             chkCrawlStarfield = Chk(T("Star field background", "Sternenhimmel-Hintergrund"),
-                                    cur.CrawlStarfield, c2 + 4, yM + 22);
+                                    cur.CrawlStarfield, c2, yM);  // same x=c2, same indent as above
             chkCrawlStarfield.CheckedChanged += delegate { cur.CrawlStarfield = chkCrawlStarfield.Checked; };
             _streamControls.Add(chkCrawlStarfield);
             Controls.Add(chkCrawlStarfield);
-            yM += 48;
+            yM += 28;
+            // "like Star Wars Intro" button — opens crawl text editor with templates
+            _btnCrawlText = new Button {
+                Text      = T("✦ like Star Wars Intro…","✦ wie Star Wars Intro…"),
+                Location  = new Point(c2, yM),
+                Size      = new Size(cW2, 26),
+                BackColor = Color.FromArgb(8, 8, 60),
+                ForeColor = Color.FromArgb(255, 232, 31),
+                FlatStyle = FlatStyle.Flat,
+                Font      = new Font("Segoe UI", 8.5f, FontStyle.Bold)
+            };
+            _btnCrawlText.FlatAppearance.BorderColor = Color.FromArgb(80, 80, 160);
+            _btnCrawlText.Click += delegate { ShowCrawlTextEditor(); };
+            _streamControls.Add(_btnCrawlText);
+            Controls.Add(_btnCrawlText);
+            yM += 32;
 
             // ── Word Direction ────────────────────────────────────────────────
             _lblWordOrient = DLbl(T("Direction:","Richtung:"), c2, yM+5, 68);
@@ -1990,36 +2007,12 @@ namespace VeeaMatrix
             Controls.Add(txtExtra);
             yM += 30;
 
-            // ── Sequential / random + Star Wars preset ────────────────────────
+            // ── Sequential / random order ─────────────────────────────────────
             chkOrderedTerms = Chk(T("Sequential order (no random)","Sequenziell (kein Zufall)"),
                                   cur.OrderedTerms, c2, yM);
             chkOrderedTerms.CheckedChanged += delegate { cur.OrderedTerms = chkOrderedTerms.Checked; };
             Controls.Add(chkOrderedTerms);
-            // Star Wars / Spaceballs text preset
-            var btnSwPreset = new Button {
-                Text = T("★ Star Wars Text","★ Star Wars Text"),
-                Location = new Point(c2 + cW2/2, yM - 1), Size = new Size(cW2/2 - 4, 24),
-                BackColor = Color.FromArgb(10,10,80), ForeColor = Color.FromArgb(255,232,31),
-                FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 8f, FontStyle.Bold)
-            };
-            btnSwPreset.FlatAppearance.BorderColor = Color.FromArgb(100,100,180);
-            btnSwPreset.Click += delegate {
-                string swText =
-                    "A LONG TIME AGO|IN A GALAXY|FAR FAR AWAY|" +
-                    "A RUTHLESS RACE|KNOWN AS|SPACEBALLS|" +
-                    "HAVING FOOLISHLY|SQUANDERED|THEIR OWN ATMOSPHERE|" +
-                    "THESE MONGRELS|NOW PLOT TO STEAL|THE AIR FROM|" +
-                    "THEIR PEACEFUL|NEIGHBORS|" +
-                    "DRUIDIA|LONE STARR|VS DARK HELMET|" +
-                    "MAY THE SCHWARTZ|BE WITH YOU|" +
-                    "TODAY'S STORY|BEGINS NOW";
-                if (txtExtra != null) txtExtra.Text = swText;
-                if (chkOrderedTerms != null) { chkOrderedTerms.Checked = true; cur.OrderedTerms = true; }
-                SetWordStyle("Crawl", applyStyleDefaults: true);
-                MarkDirty();
-            };
-            Controls.Add(btnSwPreset);
-            yM += 30;
+            yM += 26;
 
             // ═══════════════════════════════════════════════════════════════════
             // RIGHT COLUMN — LIVE PREVIEW  +  BACKUP OPERATIONS  +  CHANGE LOG
@@ -2450,6 +2443,7 @@ namespace VeeaMatrix
             bool isCrawl = (cur.WordStyle == "Crawl");
             if (chkCrawlHideRain  != null) { chkCrawlHideRain.Visible  = isCrawl; }
             if (chkCrawlStarfield != null) { chkCrawlStarfield.Visible = isCrawl; }
+            if (_btnCrawlText     != null) { _btnCrawlText.Visible      = isCrawl; }
             // Crawl uses WordCount as queue depth — slider stays visible for all styles
 
             // Rebuild orientation options when style switches between horizontal-only and all-directions
@@ -2584,6 +2578,181 @@ namespace VeeaMatrix
 
         // Opens the term catalog editor — shows built-in or custom terms.txt one per line,
         // saves to %APPDATA%\VeeaMatrix\terms.txt on OK.
+        // ── Crawl Text Editor ──────────────────────────────────────────────────
+        private void ShowCrawlTextEditor()
+        {
+            bool dm   = cur.DarkMode;
+            Color bg  = dm ? Color.FromArgb(20,26,20) : Color.FromArgb(240,244,240);
+            Color fg  = dm ? Color.FromArgb(0,210,60) : Color.FromArgb(0,120,35);
+            Color ibg = dm ? Color.FromArgb(4,10,4)   : Color.FromArgb(235,247,235);
+            Color ifg = dm ? Color.FromArgb(0,200,55) : Color.FromArgb(0,100,30);
+
+            var dlg = new Form {
+                Text            = T("Crawl Text Editor  –  like Star Wars Intro",
+                                    "Crawl Text Editor  –  wie Star Wars Intro"),
+                Size            = new Size(560, 640),
+                MinimumSize     = new Size(420, 480),
+                FormBorderStyle = FormBorderStyle.Sizable,
+                StartPosition   = FormStartPosition.CenterParent,
+                MaximizeBox     = false, MinimizeBox = false,
+                BackColor       = bg, ForeColor = fg
+            };
+
+            int px = 12, py = 10, pw = 528;
+
+            // ── Info ────────────────────────────────────────────────────────────
+            var lblInfo = new Label {
+                Text      = T("One phrase per line — each line scrolls as its own word in the Crawl effect.",
+                              "Eine Phrase pro Zeile — jede Zeile scrollt als eigenes Wort im Crawl-Effekt."),
+                Location  = new Point(px, py), Size = new Size(pw, 32), ForeColor = fg
+            };
+            dlg.Controls.Add(lblInfo); py += 34;
+
+            // ── Templates ───────────────────────────────────────────────────────
+            var lblT = new Label { Text = T("Templates:","Vorlagen:"), Location = new Point(px, py+4), AutoSize=true, ForeColor=fg };
+            dlg.Controls.Add(lblT);
+
+            string[] tmplNames = { "Episode IV", "Episode VI", "Spaceballs" };
+            string ep4 =
+                "A LONG TIME AGO\r\nIN A GALAXY\r\nFAR FAR AWAY\r\n\r\nIT IS A PERIOD\r\nOF CIVIL WAR\r\n\r\nREBEL SPACESHIPS\r\nSTRIKING FROM A\r\nHIDDEN BASE\r\nHAVE WON THEIR FIRST\r\nVICTORY AGAINST\r\nTHE EVIL\r\nGALACTIC EMPIRE\r\n\r\nDURING THE BATTLE\r\nREBEL SPIES MANAGED\r\nTO STEAL SECRET PLANS\r\nTO THE DEATH STAR\r\n\r\nPURSUED BY\r\nTHE EMPIRE'S AGENTS\r\nPRINCESS LEIA\r\nRACES HOME\r\nWITH STOLEN PLANS\r\nTHAT CAN SAVE\r\nHER PEOPLE\r\nAND RESTORE FREEDOM\r\nTO THE GALAXY";
+            string ep6 =
+                "A LONG TIME AGO\r\nIN A GALAXY\r\nFAR FAR AWAY\r\n\r\nLUKE SKYWALKER\r\nHAS RETURNED\r\nTO TATOOINE\r\nTO RESCUE HIS FRIEND\r\nHAN SOLO\r\nFROM THE CLUTCHES OF\r\nTHE VILE GANGSTER\r\nJABBA THE HUTT\r\n\r\nLITTLE DOES LUKE KNOW\r\nTHAT THE GALACTIC EMPIRE\r\nHAS SECRETLY BEGUN\r\nCONSTRUCTION OF\r\nA NEW ARMORED\r\nSPACE STATION\r\n\r\nEVEN MORE POWERFUL\r\nTHAN THE FIRST\r\nDREADED DEATH STAR\r\n\r\nWHEN COMPLETED\r\nTHIS ULTIMATE WEAPON\r\nWILL SPELL DOOM\r\nFOR THE REBELS\r\n\r\nFREEDOM TO\r\nTHE GALAXY";
+            string sp =
+                "A LONG TIME AGO\r\nIN A GALAXY\r\nVERY VERY FAR AWAY\r\n\r\nTHERE LIVED\r\nA RUTHLESS RACE\r\nKNOWN AS\r\nSPACEBALLS\r\n\r\nHAVING FOOLISHLY\r\nSQUANDERED\r\nTHEIR OWN ATMOSPHERE\r\n\r\nTHESE MONGRELS\r\nNOW PLOT TO STEAL\r\nTHE AIR FROM\r\nTHEIR PEACEFUL\r\nNEIGHBORS\r\n\r\nDRUIDIA\r\n\r\nLONE STARR\r\nVS DARK HELMET\r\n\r\nMAY THE SCHWARTZ\r\nBE WITH YOU";
+            string[] tmplTexts = { ep4, ep6, sp };
+
+            // Current text → lines
+            string raw = cur.ExtraWords ?? "";
+            var initLines = raw.Split(new char[]{'|','\r','\n'}, StringSplitOptions.RemoveEmptyEntries);
+            string initText = string.Join("\r\n", initLines);
+
+            var txtCrawl = new TextBox {
+                Location    = new Point(px, py + 30),
+                Size        = new Size(pw, 380),
+                Multiline   = true, ScrollBars = ScrollBars.Vertical, AcceptsReturn = true,
+                Text        = initText,
+                Font        = new Font("Consolas", 10f),
+                BackColor   = ibg, ForeColor = ifg,
+                BorderStyle = BorderStyle.FixedSingle
+            };
+
+            for (int ti = 0; ti < tmplNames.Length; ti++)
+            {
+                int cap = ti;
+                var btnT = new Button {
+                    Text      = tmplNames[cap],
+                    Location  = new Point(px + 70 + cap * 112, py - 1),
+                    Size      = new Size(108, 24),
+                    BackColor = Color.FromArgb(0,75,22), ForeColor = Color.White,
+                    FlatStyle = FlatStyle.Flat
+                };
+                btnT.FlatAppearance.BorderColor = Color.FromArgb(0,150,45);
+                btnT.Click += delegate { txtCrawl.Text = tmplTexts[cap]; };
+                dlg.Controls.Add(btnT);
+            }
+            dlg.Controls.Add(txtCrawl);
+            py += 30 + 380 + 8;
+
+            // ── Save / Load templates ────────────────────────────────────────────
+            string tmplDir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "VeeaMatrix", "templates");
+
+            var btnSave = new Button {
+                Text      = T("Save as Template…","Als Vorlage speichern…"),
+                Location  = new Point(px, py), Size = new Size(160, 26),
+                BackColor = Color.FromArgb(0,55,18), ForeColor = Color.White, FlatStyle = FlatStyle.Flat
+            };
+            btnSave.FlatAppearance.BorderColor = Color.FromArgb(0,120,36);
+            btnSave.Click += delegate {
+                // Ask name via tiny inline dialog
+                var fName = new Form {
+                    Size=new Size(320,110), FormBorderStyle=FormBorderStyle.FixedDialog,
+                    Text="Save Template", StartPosition=FormStartPosition.CenterParent,
+                    MaximizeBox=false, MinimizeBox=false, BackColor=bg, ForeColor=fg
+                };
+                var tName = new TextBox { Location=new Point(12,12), Size=new Size(280,24),
+                    Text="My Crawl", BackColor=ibg, ForeColor=ifg, BorderStyle=BorderStyle.FixedSingle };
+                var bOk = new Button { Text="Save", Location=new Point(12,44), Size=new Size(80,26),
+                    DialogResult=DialogResult.OK, BackColor=Color.FromArgb(0,100,30), ForeColor=Color.White, FlatStyle=FlatStyle.Flat };
+                var bCl = new Button { Text="Cancel", Location=new Point(100,44), Size=new Size(80,26),
+                    DialogResult=DialogResult.Cancel, BackColor=Color.FromArgb(50,15,15), ForeColor=Color.White, FlatStyle=FlatStyle.Flat };
+                fName.Controls.AddRange(new Control[]{tName,bOk,bCl});
+                fName.AcceptButton=bOk; fName.CancelButton=bCl;
+                if (fName.ShowDialog(dlg) == DialogResult.OK && tName.Text.Trim().Length > 0)
+                {
+                    try {
+                        Directory.CreateDirectory(tmplDir);
+                        string safe = string.Concat(tName.Text.Trim().Split(Path.GetInvalidFileNameChars()));
+                        File.WriteAllText(Path.Combine(tmplDir, safe + ".txt"), txtCrawl.Text, Encoding.UTF8);
+                    } catch { }
+                }
+            };
+            dlg.Controls.Add(btnSave);
+
+            var btnLoad = new Button {
+                Text      = T("Load Template…","Vorlage laden…"),
+                Location  = new Point(px + 168, py), Size = new Size(140, 26),
+                BackColor = Color.FromArgb(0,55,18), ForeColor = Color.White, FlatStyle = FlatStyle.Flat
+            };
+            btnLoad.FlatAppearance.BorderColor = Color.FromArgb(0,120,36);
+            btnLoad.Click += delegate {
+                if (!Directory.Exists(tmplDir)) { MessageBox.Show(T("No saved templates yet.","Noch keine gespeicherten Vorlagen.")); return; }
+                var files = Directory.GetFiles(tmplDir, "*.txt");
+                if (files.Length == 0) { MessageBox.Show(T("No saved templates yet.","Noch keine gespeicherten Vorlagen.")); return; }
+                var fPick = new Form {
+                    Size=new Size(300,260), FormBorderStyle=FormBorderStyle.FixedDialog,
+                    Text="Load Template", StartPosition=FormStartPosition.CenterParent,
+                    MaximizeBox=false, MinimizeBox=false, BackColor=bg, ForeColor=fg
+                };
+                var lst = new ListBox { Location=new Point(8,8), Size=new Size(270,170), BackColor=ibg, ForeColor=ifg };
+                foreach (var f in files) lst.Items.Add(Path.GetFileNameWithoutExtension(f));
+                if (lst.Items.Count > 0) lst.SelectedIndex = 0;
+                var bOkL = new Button { Text="Load", Location=new Point(8,186), Size=new Size(80,26),
+                    DialogResult=DialogResult.OK, BackColor=Color.FromArgb(0,100,30), ForeColor=Color.White, FlatStyle=FlatStyle.Flat };
+                var bClL = new Button { Text="Cancel", Location=new Point(96,186), Size=new Size(80,26),
+                    DialogResult=DialogResult.Cancel, BackColor=Color.FromArgb(50,15,15), ForeColor=Color.White, FlatStyle=FlatStyle.Flat };
+                fPick.Controls.AddRange(new Control[]{lst,bOkL,bClL});
+                fPick.AcceptButton=bOkL; fPick.CancelButton=bClL;
+                if (fPick.ShowDialog(dlg) == DialogResult.OK && lst.SelectedItem != null)
+                {
+                    string path = Path.Combine(tmplDir, lst.SelectedItem + ".txt");
+                    if (File.Exists(path)) txtCrawl.Text = File.ReadAllText(path, Encoding.UTF8);
+                }
+            };
+            dlg.Controls.Add(btnLoad);
+            py += 34;
+
+            // ── OK / Cancel ──────────────────────────────────────────────────────
+            var btnOK = new Button {
+                Text            = "OK", Size = new Size(108, 30),
+                Location        = new Point(px + pw - 220, py),
+                DialogResult    = DialogResult.OK,
+                BackColor       = Color.FromArgb(0,118,34), ForeColor = Color.White, FlatStyle = FlatStyle.Flat
+            };
+            btnOK.FlatAppearance.BorderColor = Color.FromArgb(0,200,55);
+            var btnCancelDlg = new Button {
+                Text            = T("Cancel","Abbrechen"), Size = new Size(108, 30),
+                Location        = new Point(px + pw - 108, py),
+                DialogResult    = DialogResult.Cancel,
+                BackColor       = Color.FromArgb(50,15,15), ForeColor = Color.White, FlatStyle = FlatStyle.Flat
+            };
+            btnCancelDlg.FlatAppearance.BorderColor = Color.FromArgb(130,36,36);
+            dlg.Controls.AddRange(new Control[]{btnOK, btnCancelDlg});
+            dlg.AcceptButton = btnOK; dlg.CancelButton = btnCancelDlg;
+
+            if (dlg.ShowDialog(this) == DialogResult.OK)
+            {
+                // Convert lines back to | separated (skip blank spacer lines)
+                var lines = txtCrawl.Text.Split(new char[]{'\n','\r'}, StringSplitOptions.RemoveEmptyEntries);
+                string result = string.Join("|", lines);
+                if (txtExtra != null) txtExtra.Text = result;
+                cur.ExtraWords = result;
+                if (chkOrderedTerms != null) { chkOrderedTerms.Checked = true; cur.OrderedTerms = true; }
+                MarkDirty();
+            }
+        }
+
         private void ShowTermsCatalog()
         {
             string termsDir  = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "VeeaMatrix");
