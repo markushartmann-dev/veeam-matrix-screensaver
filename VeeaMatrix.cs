@@ -1,4 +1,4 @@
-﻿// VeeaMatrix.cs  –  Windows Screensaver v1.47
+﻿// VeeaMatrix.cs  –  Windows Screensaver v1.48
 // Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
@@ -182,8 +182,8 @@ namespace VeeaMatrix
         public bool   ShowWatermark = true;
         // Falling words
         public string WordMode      = "Both";
-        public int    WordCount     = 30;
-        public int    WordFontSize  = 36;
+        public int    WordCount     = 3;
+        public int    WordFontSize  = 20;
         public Color  WordColor     = Color.FromArgb(0, 255, 65);
         public Color  WordHeadColor = Color.White;
         public float  GlowChance    = 0.22f;
@@ -197,9 +197,10 @@ namespace VeeaMatrix
         public string Orientation     = "TopDown";
         public string WordOrientation  = "LeftRight";
         public string WordStyle        = "Glitch";
-        public float  WordSpeedFactor  = 2.0f;
+        public float  WordSpeedFactor  = 0.5f;
         public bool   CrawlHideRain    = false;   // suppress background rain while Crawl is active
         public bool   CrawlStarfield   = false;   // draw star field behind Crawl words
+        public bool   OrderedTerms     = false;   // use terms in sequential order, no random
         public bool   ShowVeeam100     = true;
         public bool   UseBuiltinTerms  = true;
         // Watermark
@@ -262,6 +263,7 @@ namespace VeeaMatrix
             sb.AppendLine("WordSpeedFactor="  + WordSpeedFactor.ToString("F2", System.Globalization.CultureInfo.InvariantCulture));
             sb.AppendLine("CrawlHideRain="    + CrawlHideRain);
             sb.AppendLine("CrawlStarfield="   + CrawlStarfield);
+            sb.AppendLine("OrderedTerms="     + OrderedTerms);
             sb.AppendLine("ShowVeeam100="     + ShowVeeam100);
             sb.AppendLine("UseBuiltinTerms="  + UseBuiltinTerms);
             sb.AppendLine("WatermarkText="    + WatermarkText);
@@ -318,6 +320,7 @@ namespace VeeaMatrix
                         case "WordSpeedFactor":  s.WordSpeedFactor  = float.Parse(v, ic); break;
                         case "CrawlHideRain":    s.CrawlHideRain    = bool.Parse(v); break;
                         case "CrawlStarfield":   s.CrawlStarfield   = bool.Parse(v); break;
+                        case "OrderedTerms":     s.OrderedTerms     = bool.Parse(v); break;
                         case "ShowVeeam100":     s.ShowVeeam100     = bool.Parse(v); break;
                         case "UseBuiltinTerms":  s.UseBuiltinTerms  = bool.Parse(v); break;
                         case "WatermarkText":    s.WatermarkText    = v; break;
@@ -513,6 +516,7 @@ namespace VeeaMatrix
         private int     laneCount;
 
         private float[] starX, starY, starBright, starSize, starTwinkle;
+        private int     _termIndex = 0;   // sequential term counter (used when OrderedTerms=true)
 
         private readonly List<WDrop>  wdrops = new List<WDrop>();
         private readonly List<WPopup> popups = new List<WPopup>();
@@ -547,7 +551,7 @@ namespace VeeaMatrix
             if (s.ShowVeeam100)
                 list.AddRange(VEEAM100_PEOPLE);
             if (!string.IsNullOrEmpty(s.ExtraWords))
-                foreach (string p in s.ExtraWords.Split(','))
+                foreach (string p in s.ExtraWords.Split(new char[]{',','|','\n','\r'}, StringSplitOptions.RemoveEmptyEntries))
                 { string t = p.Trim().ToUpper(); if (t.Length > 0) list.Add(t); }
             // No fallback to "VEEAM" — if every Veeam source is off and no custom words
             // are defined, allTerms stays empty and no word drops / popups are spawned.
@@ -679,9 +683,16 @@ namespace VeeaMatrix
 
         // ─────────────────────────────────────────────────────────────────────────
 
+        private string NextTerm()
+        {
+            if (allTerms.Length == 0) return "";
+            if (s.OrderedTerms) return allTerms[_termIndex++ % allTerms.Length];
+            return allTerms[rng.Next(allTerms.Length)];
+        }
+
         private WDrop SpawnDrop(bool scatter)
         {
-            string term  = allTerms[rng.Next(allTerms.Length)];
+            string term  = NextTerm();
             char[] chars = term.ToCharArray();
             int    fs    = s.WordFontSize;
 
@@ -695,7 +706,7 @@ namespace VeeaMatrix
                 float cy = scatter ? H : H + fs * 4f;
                 foreach (WDrop d in wdrops)
                 {
-                    float needed = d.Y + fs * 2.5f;  // tighter gap (-50%) for closer Star Wars feel
+                    float needed = d.Y + fs * 9.0f;  // min safe gap for CRAWL_SCALE 6.0 — no overlap
                     if (needed > cy) cy = needed;
                 }
                 return new WDrop { Chars=chars, X=cx, Y=cy, V=cv,
@@ -784,7 +795,7 @@ namespace VeeaMatrix
 
         private WPopup SpawnPopup(bool scatter)
         {
-            string term = allTerms[rng.Next(allTerms.Length)];
+            string term = NextTerm();
             char[] word = term.ToCharArray();
             int  fs     = Math.Max(6, s.PopupFontSize);
             PopupMode mode = enabledModes[rng.Next(enabledModes.Length)];
@@ -1357,6 +1368,7 @@ namespace VeeaMatrix
         private CheckBox   chkWordFontBold, chkWordFontItalic;
         private CheckBox   chkCrawlHideRain;
         private CheckBox   chkCrawlStarfield;
+        private CheckBox   chkOrderedTerms;
         private bool       _syncingOrient;
         // Theme colours — initialised at the top of Build() from cur.DarkMode
         private bool  _dark;
@@ -1536,7 +1548,7 @@ namespace VeeaMatrix
             btnFxEffects = null; btnWordStyles = null; _lblWordOrient = null;
             chkScanlines = chkWatermark = chkVeeam100 = chkBuiltinTerms = null;
             chkWordFontBold = chkWordFontItalic = null;
-            chkCrawlHideRain = null; chkCrawlStarfield = null;
+            chkCrawlHideRain = null; chkCrawlStarfield = null; chkOrderedTerms = null;
             cboProfiles = cboWordFontName = null;
             picFontPreview = null; txtFontPreviewText = null; picPreview = null;
             _previewDirty = true;
@@ -1553,7 +1565,7 @@ namespace VeeaMatrix
                 WordColor=s.WordColor, WordHeadColor=s.WordHeadColor, GlowChance=s.GlowChance,
                 PopupEffects=s.PopupEffects, PopupCount=s.PopupCount, PopupFontSize=s.PopupFontSize,
                 PopupColor=s.PopupColor, Orientation=s.Orientation, WordOrientation=s.WordOrientation,
-                WordStyle=s.WordStyle, WordSpeedFactor=s.WordSpeedFactor, CrawlHideRain=s.CrawlHideRain, CrawlStarfield=s.CrawlStarfield,
+                WordStyle=s.WordStyle, WordSpeedFactor=s.WordSpeedFactor, CrawlHideRain=s.CrawlHideRain, CrawlStarfield=s.CrawlStarfield, OrderedTerms=s.OrderedTerms,
                 ShowVeeam100=s.ShowVeeam100,
                 WatermarkText=s.WatermarkText, WatermarkSubText=s.WatermarkSubText, ExtraWords=s.ExtraWords,
                 WordFontName=s.WordFontName, WordFontBold=s.WordFontBold, WordFontItalic=s.WordFontItalic,
@@ -1803,7 +1815,7 @@ namespace VeeaMatrix
                     Tag       = capturedWS
                 };
                 wsBtn.FlatAppearance.BorderSize = 1;
-                wsBtn.Click += delegate { SetWordStyle(capturedWS); MarkDirty(); };
+                wsBtn.Click += delegate { SetWordStyle(capturedWS, applyStyleDefaults: true); MarkDirty(); };
                 Controls.Add(wsBtn);
                 btnWordStyles[wi] = wsBtn;
                 _streamControls.Add(wsBtn);
@@ -1970,12 +1982,43 @@ namespace VeeaMatrix
             Controls.Add(txtWatermarkSub);
             yM += 48;
 
-            DLbl(T("Custom terms (comma-separated):","Eigene Begriffe (kommagetrennt):"), c2, yM+5);
+            DLbl(T("Custom terms (comma / | / newline separated):","Eigene Begriffe (Komma / | / Zeilenumbruch):"), c2, yM+5);
             yM += 22;
             txtExtra = new TextBox { Location=new Point(c2, yM), Size=new Size(cW2-4, 24),
                 Text=cur.ExtraWords, BackColor=_inputBg,
                 ForeColor=_inputFg, BorderStyle=BorderStyle.FixedSingle };
             Controls.Add(txtExtra);
+            yM += 30;
+
+            // ── Sequential / random + Star Wars preset ────────────────────────
+            chkOrderedTerms = Chk(T("Sequential order (no random)","Sequenziell (kein Zufall)"),
+                                  cur.OrderedTerms, c2, yM);
+            chkOrderedTerms.CheckedChanged += delegate { cur.OrderedTerms = chkOrderedTerms.Checked; };
+            Controls.Add(chkOrderedTerms);
+            // Star Wars / Spaceballs text preset
+            var btnSwPreset = new Button {
+                Text = T("★ Star Wars Text","★ Star Wars Text"),
+                Location = new Point(c2 + cW2/2, yM - 1), Size = new Size(cW2/2 - 4, 24),
+                BackColor = Color.FromArgb(10,10,80), ForeColor = Color.FromArgb(255,232,31),
+                FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 8f, FontStyle.Bold)
+            };
+            btnSwPreset.FlatAppearance.BorderColor = Color.FromArgb(100,100,180);
+            btnSwPreset.Click += delegate {
+                string swText =
+                    "A LONG TIME AGO|IN A GALAXY|FAR FAR AWAY|" +
+                    "A RUTHLESS RACE|KNOWN AS|SPACEBALLS|" +
+                    "HAVING FOOLISHLY|SQUANDERED|THEIR OWN ATMOSPHERE|" +
+                    "THESE MONGRELS|NOW PLOT TO STEAL|THE AIR FROM|" +
+                    "THEIR PEACEFUL|NEIGHBORS|" +
+                    "DRUIDIA|LONE STARR|VS DARK HELMET|" +
+                    "MAY THE SCHWARTZ|BE WITH YOU|" +
+                    "TODAY'S STORY|BEGINS NOW";
+                if (txtExtra != null) txtExtra.Text = swText;
+                if (chkOrderedTerms != null) { chkOrderedTerms.Checked = true; cur.OrderedTerms = true; }
+                SetWordStyle("Crawl", applyStyleDefaults: true);
+                MarkDirty();
+            };
+            Controls.Add(btnSwPreset);
             yM += 30;
 
             // ═══════════════════════════════════════════════════════════════════
@@ -2152,7 +2195,8 @@ namespace VeeaMatrix
                 if (chkWordFontBold   != null) cur.WordFontBold   = chkWordFontBold.Checked;
                 if (chkWordFontItalic != null) cur.WordFontItalic = chkWordFontItalic.Checked;
                 if (chkCrawlHideRain  != null) cur.CrawlHideRain  = chkCrawlHideRain.Checked;
-            if (chkCrawlStarfield != null) cur.CrawlStarfield = chkCrawlStarfield.Checked;
+                if (chkCrawlStarfield != null) cur.CrawlStarfield = chkCrawlStarfield.Checked;
+                if (chkOrderedTerms   != null) cur.OrderedTerms   = chkOrderedTerms.Checked;
                 // cur.PopupEffects already in sync via SetPopupEffect()
                 Result=cur; Result.Save();
             };
@@ -2363,7 +2407,8 @@ namespace VeeaMatrix
         }
 
         // Single-select: highlight chosen word style button and update cur.WordStyle
-        private void SetWordStyle(string name)
+        private bool _settingStyle = false;  // guard: suppress Crawl-defaults during init
+        private void SetWordStyle(string name, bool applyStyleDefaults = false)
         {
             if (btnWordStyles == null) return;
             string[] valid = new string[]{ "Scroll", "Fade", "Build", "Scramble", "Glitch", "Crawl" };
@@ -2377,6 +2422,13 @@ namespace VeeaMatrix
                 b.BackColor = active ? Color.FromArgb(0,100,28) : _btnIna;
                 b.ForeColor = active ? Color.White               : _btnInaFg;
                 b.FlatAppearance.BorderColor = active ? Color.FromArgb(0,185,55) : _btnInaBdr;
+            }
+            // Apply Crawl-specific defaults when user switches to Crawl
+            if (applyStyleDefaults && name == "Crawl")
+            {
+                if (trkWordCount != null) { trkWordCount.Value = 30; cur.WordCount = 30; if (lblWCount != null) lblWCount.Text = "30"; }
+                if (trkWordFont  != null) { trkWordFont.Value  = 36; cur.WordFontSize = 36; if (lblWFont != null) lblWFont.Text = "36 px"; }
+                if (trkWordSpeed != null) { trkWordSpeed.Value = 20; cur.WordSpeedFactor = 2.0f; if (lblWordSpeed != null) lblWordSpeed.Text = "2.0x"; }
             }
             SyncWordStyleDirection();
         }
@@ -2465,7 +2517,10 @@ namespace VeeaMatrix
             // General flags – live-synced to cur, but read directly for safety
             if (chkScanlines != null) s.ShowScanlines = chkScanlines.Checked;
             if (chkWatermark != null) s.ShowWatermark = chkWatermark.Checked;
-            if (chkVeeam100  != null) s.ShowVeeam100  = chkVeeam100.Checked;
+            if (chkVeeam100      != null) s.ShowVeeam100   = chkVeeam100.Checked;
+            if (chkOrderedTerms  != null) s.OrderedTerms   = chkOrderedTerms.Checked;
+            if (chkCrawlHideRain != null) s.CrawlHideRain  = chkCrawlHideRain.Checked;
+            if (chkCrawlStarfield!= null) s.CrawlStarfield = chkCrawlStarfield.Checked;
 
             if (_prevEngine != null) { _prevEngine.Dispose(); _prevEngine = null; }
             if (picPreview != null && picPreview.Width > 8 && picPreview.Height > 8)
