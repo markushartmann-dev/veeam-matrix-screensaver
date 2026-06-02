@@ -1,4 +1,4 @@
-﻿// VeeaMatrix.cs  –  Windows Screensaver v1.53
+﻿// VeeaMatrix.cs  –  Windows Screensaver v1.54
 // Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
@@ -201,6 +201,7 @@ namespace VeeaMatrix
         public bool   CrawlHideRain    = false;   // suppress background rain while Crawl is active
         public bool   CrawlStarfield   = false;   // draw star field behind Crawl words
         public bool   OrderedTerms     = false;   // use terms in sequential order, no random
+        public string CrawlText        = "";      // text used exclusively by the Crawl effect (independent of ExtraWords)
         public bool   ShowVeeam100     = true;
         public bool   UseBuiltinTerms  = true;
         // Watermark
@@ -264,6 +265,7 @@ namespace VeeaMatrix
             sb.AppendLine("CrawlHideRain="    + CrawlHideRain);
             sb.AppendLine("CrawlStarfield="   + CrawlStarfield);
             sb.AppendLine("OrderedTerms="     + OrderedTerms);
+            sb.AppendLine("CrawlText="        + CrawlText);
             sb.AppendLine("ShowVeeam100="     + ShowVeeam100);
             sb.AppendLine("UseBuiltinTerms="  + UseBuiltinTerms);
             sb.AppendLine("WatermarkText="    + WatermarkText);
@@ -321,6 +323,7 @@ namespace VeeaMatrix
                         case "CrawlHideRain":    s.CrawlHideRain    = bool.Parse(v); break;
                         case "CrawlStarfield":   s.CrawlStarfield   = bool.Parse(v); break;
                         case "OrderedTerms":     s.OrderedTerms     = bool.Parse(v); break;
+                        case "CrawlText":        s.CrawlText        = v;            break;
                         case "ShowVeeam100":     s.ShowVeeam100     = bool.Parse(v); break;
                         case "UseBuiltinTerms":  s.UseBuiltinTerms  = bool.Parse(v); break;
                         case "WatermarkText":    s.WatermarkText    = v; break;
@@ -517,7 +520,8 @@ namespace VeeaMatrix
 
         private float[] starX, starY, starBright, starSize, starTwinkle;
         private int     _termIndex   = 0;    // sequential term counter (used when OrderedTerms=true)
-        private float   _crawlScroll = 0f;  // continuous scroll position for the perspective crawl
+        private float    _crawlScroll = 0f;    // continuous scroll position for the perspective crawl
+        private string[] _crawlTerms = null;  // terms used exclusively by Crawl (from s.CrawlText)
 
         private readonly List<WDrop>  wdrops = new List<WDrop>();
         private readonly List<WPopup> popups = new List<WPopup>();
@@ -617,6 +621,14 @@ namespace VeeaMatrix
             }
 
             _crawlScroll = 0f;   // restart perspective crawl from bottom
+            // Build Crawl-exclusive term list from s.CrawlText; fall back to allTerms if empty
+            {
+                var ct = new List<string>();
+                if (!string.IsNullOrEmpty(s.CrawlText))
+                    foreach (string p in s.CrawlText.Split(new char[]{'|','\r','\n'}, StringSplitOptions.RemoveEmptyEntries))
+                    { string t = p.Trim().ToUpper(); if (t.Length > 0) ct.Add(t); }
+                _crawlTerms = ct.Count > 0 ? ct.ToArray() : allTerms;
+            }
             wdrops.Clear();
             // Crawl uses the perspective engine (DrawCrawlPerspective) — no wdrops needed
             if ((s.WordMode == "Rain" || s.WordMode == "Both") && allTerms.Length > 0
@@ -908,7 +920,8 @@ namespace VeeaMatrix
         // ── Perspective Crawl — matches CSS rotateX+perspective from veeam_star_wars_crawl.html ───
         private void DrawCrawlPerspective()
         {
-            if (allTerms.Length == 0) return;
+            string[] terms = _crawlTerms;
+            if (terms == null || terms.Length == 0) return;
 
             // Perspective parameters — tuned to match HTML: perspective:280 / height:520, rotateX:28°
             const float TILT_DEG = 25f;
@@ -924,17 +937,15 @@ namespace VeeaMatrix
             // Advance scroll — 1.5 × WordSpeedFactor logical px per tick (smooth continuous)
             _crawlScroll += s.WordSpeedFactor * 1.5f;
             // Wrap: when all text has scrolled past the horizon, restart
-            float totalH = allTerms.Length * lineH + H * 1.5f;
+            float totalH = terms.Length * lineH + H * 1.5f;
             if (_crawlScroll > totalH) _crawlScroll = 0f;
 
             FontStyle crawlFs = FontStyle.Bold | FontStyle.Italic;
             var prevHint = bg.TextRenderingHint;
             bg.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;  // smooth scaling
 
-            for (int i = 0; i < allTerms.Length; i++)
+            for (int i = 0; i < terms.Length; i++)
             {
-                // y_log: position of line i in logical scroll space
-                // y_log=0 → visible at screen bottom; positive → above bottom, toward horizon
                 float y_log = _crawlScroll - (float)i * lineH;
 
                 // Skip lines still below the screen
@@ -965,7 +976,7 @@ namespace VeeaMatrix
                 int   cb = Clamp((int)(s.WordColor.B + (s.WordHeadColor.B - s.WordColor.B) * ct));
                 int   ca = Clamp((int)(fade * 255));
 
-                string text = allTerms[i];
+                string text = terms[i];
                 if (string.IsNullOrWhiteSpace(text)) continue;
 
                 try
@@ -998,17 +1009,17 @@ namespace VeeaMatrix
 
             bg.TextRenderingHint = prevHint;
 
-            // ── Horizon fade overlay (top) — matches .crawl-fade-top in HTML ──────
+            // ── Horizon fade overlay (top) — WrapMode.Clamp prevents 1px tile-seam artifact ──
             int fadeTopH = H / 4;
             using (var lgb = new System.Drawing.Drawing2D.LinearGradientBrush(
                 new Point(0, 0), new Point(0, fadeTopH), Color.Black, Color.Transparent))
+            {
+                lgb.WrapMode = System.Drawing.Drawing2D.WrapMode.Clamp;
                 bg.FillRectangle(lgb, 0, 0, W, fadeTopH);
-
-            // ── Entry fade overlay (bottom) — matches .crawl-fade-bottom in HTML ──
-            int fadeBotH = H / 8;
-            using (var lgb = new System.Drawing.Drawing2D.LinearGradientBrush(
-                new Point(0, H - fadeBotH), new Point(0, H), Color.Transparent, Color.Black))
-                bg.FillRectangle(lgb, 0, H - fadeBotH, W, fadeBotH);
+            }
+            // Entry from bottom is handled by entryFade in text rendering — no separate overlay needed
+            // Solid black strip at very bottom ensures clean edge (no pixel artifacts)
+            bg.FillRectangle(Brushes.Black, 0, H - 3, W, 3);
         }
 
         public void Tick()
@@ -1681,7 +1692,7 @@ namespace VeeaMatrix
                 WordColor=s.WordColor, WordHeadColor=s.WordHeadColor, GlowChance=s.GlowChance,
                 PopupEffects=s.PopupEffects, PopupCount=s.PopupCount, PopupFontSize=s.PopupFontSize,
                 PopupColor=s.PopupColor, Orientation=s.Orientation, WordOrientation=s.WordOrientation,
-                WordStyle=s.WordStyle, WordSpeedFactor=s.WordSpeedFactor, CrawlHideRain=s.CrawlHideRain, CrawlStarfield=s.CrawlStarfield, OrderedTerms=s.OrderedTerms,
+                WordStyle=s.WordStyle, WordSpeedFactor=s.WordSpeedFactor, CrawlHideRain=s.CrawlHideRain, CrawlStarfield=s.CrawlStarfield, OrderedTerms=s.OrderedTerms, CrawlText=s.CrawlText,
                 ShowVeeam100=s.ShowVeeam100,
                 WatermarkText=s.WatermarkText, WatermarkSubText=s.WatermarkSubText, ExtraWords=s.ExtraWords,
                 WordFontName=s.WordFontName, WordFontBold=s.WordFontBold, WordFontItalic=s.WordFontItalic,
@@ -2293,6 +2304,7 @@ namespace VeeaMatrix
                 cur.WatermarkText    = txtWatermark.Text.Trim();
                 cur.WatermarkSubText = txtWatermarkSub.Text.Trim();
                 cur.ExtraWords       = txtExtra.Text.Trim();
+                // CrawlText is already live-synced via ShowCrawlTextEditor dialog
                 cur.Language         = cboLanguage  != null ? cboLanguage.Text  : cur.Language;
                 if (trkPopupSpeed != null) cur.PopupSpeedFactor = trkPopupSpeed.Value / 10f;
                 if (cboWordFontName.SelectedItem != null) cur.WordFontName = cboWordFontName.SelectedItem.ToString();
@@ -2541,6 +2553,11 @@ namespace VeeaMatrix
                 if (chkCrawlStarfield != null) chkCrawlStarfield.Checked = true;  cur.CrawlStarfield = true;
                 // Word Mode: only Rain (= Word Streams) — no popups in Crawl
                 if (cboWordMode != null) cboWordMode.Text = "Rain"; cur.WordMode = "Rain";
+                // Disable distractions: Watermark, Veeam100 names, Built-in terms
+                // (user can re-enable individually; Crawl text editor provides its own content)
+                if (chkWatermark    != null) chkWatermark.Checked    = false; cur.ShowWatermark   = false;
+                if (chkVeeam100     != null) chkVeeam100.Checked     = false; cur.ShowVeeam100    = false;
+                if (chkBuiltinTerms != null) chkBuiltinTerms.Checked = false; cur.UseBuiltinTerms = false;
                 SyncWordModeVisibility();
             }
             SyncWordStyleDirection();
@@ -2643,6 +2660,7 @@ namespace VeeaMatrix
             if (txtWatermark    != null) s.WatermarkText    = txtWatermark.Text.Trim();
             if (txtWatermarkSub != null) s.WatermarkSubText = txtWatermarkSub.Text.Trim();
             if (txtExtra        != null) s.ExtraWords       = txtExtra.Text.Trim();
+            s.CrawlText = cur.CrawlText;  // always carry through (edited via dialog, not a text field)
             // Effects – kept in sync by SetPopupEffect()
             s.PopupEffects = cur.PopupEffects;
             // General flags – live-synced to cur, but read directly for safety
@@ -2774,7 +2792,7 @@ namespace VeeaMatrix
             string[] tmplTexts = { ep4, ep6, sp, veeam };
 
             // Current text → lines
-            string raw = cur.ExtraWords ?? "";
+            string raw = cur.CrawlText ?? "";
             var initLines = raw.Split(new char[]{'|','\r','\n'}, StringSplitOptions.RemoveEmptyEntries);
             string initText = string.Join("\r\n", initLines);
 
@@ -2898,9 +2916,8 @@ namespace VeeaMatrix
                 // Convert lines back to | separated (skip blank spacer lines)
                 var lines = txtCrawl.Text.Split(new char[]{'\n','\r'}, StringSplitOptions.RemoveEmptyEntries);
                 string result = string.Join("|", lines);
-                if (txtExtra != null) txtExtra.Text = result;
-                cur.ExtraWords = result;
-                if (chkOrderedTerms != null) { chkOrderedTerms.Checked = true; cur.OrderedTerms = true; }
+                // Save to CrawlText — independent of ExtraWords (which is for other styles)
+                cur.CrawlText = result;
                 MarkDirty();
             }
         }
