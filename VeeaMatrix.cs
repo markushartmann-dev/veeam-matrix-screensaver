@@ -1,4 +1,4 @@
-﻿// VeeaMatrix.cs  –  Windows Screensaver v1.54
+﻿// VeeaMatrix.cs  –  Windows Screensaver v1.55
 // Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
@@ -1009,12 +1009,14 @@ namespace VeeaMatrix
 
             bg.TextRenderingHint = prevHint;
 
-            // ── Horizon fade overlay (top) — WrapMode.Clamp prevents 1px tile-seam artifact ──
-            int fadeTopH = H / 4;
+            // ── Horizon fade overlay (top) ────────────────────────────────────────
+            // Note: LinearGradientBrush in .NET 4.x only supports Tile wrap modes.
+            // Use TileFlipXY (reverses at boundary) to avoid a visible tile-seam.
+            int fadeTopH = Math.Max(2, H / 4);
             using (var lgb = new System.Drawing.Drawing2D.LinearGradientBrush(
                 new Point(0, 0), new Point(0, fadeTopH), Color.Black, Color.Transparent))
             {
-                lgb.WrapMode = System.Drawing.Drawing2D.WrapMode.Clamp;
+                lgb.WrapMode = System.Drawing.Drawing2D.WrapMode.TileFlipXY;
                 bg.FillRectangle(lgb, 0, 0, W, fadeTopH);
             }
             // Entry from bottom is handled by entryFade in text rendering — no separate overlay needed
@@ -1496,6 +1498,7 @@ namespace VeeaMatrix
         private CheckBox   chkCrawlStarfield;
         private CheckBox   chkOrderedTerms;
         private Button     _btnCrawlText;
+        private Panel      _crawlSectionPnl;
         private bool       _syncingOrient;
         // Theme colours — initialised at the top of Build() from cur.DarkMode
         private bool  _dark;
@@ -1675,7 +1678,7 @@ namespace VeeaMatrix
             btnFxEffects = null; btnWordStyles = null; _lblWordOrient = null;
             chkScanlines = chkWatermark = chkVeeam100 = chkBuiltinTerms = null;
             chkWordFontBold = chkWordFontItalic = null;
-            chkCrawlHideRain = null; chkCrawlStarfield = null; chkOrderedTerms = null; _btnCrawlText = null;
+            chkCrawlHideRain = null; chkCrawlStarfield = null; chkOrderedTerms = null; _btnCrawlText = null; _crawlSectionPnl = null;
             cboProfiles = cboWordFontName = null;
             picFontPreview = null; txtFontPreviewText = null; picPreview = null;
             _previewDirty = true;
@@ -1873,7 +1876,40 @@ namespace VeeaMatrix
             cboOrient.SelectedIndexChanged   += delegate { cur.Orientation = cboOrient.Text; };
             cboWordMode.SelectedIndexChanged += delegate { cur.WordMode = cboWordMode.Text; SyncWordModeVisibility(); SyncWordStyleDirection(); };
             yL += CM;
-            yL += 10;
+            yL += 12;
+
+            // ═══════════════════════════════════════════════════════════════════
+            // LEFT COLUMN — CRAWL  (visible only when Crawl style is active)
+            // ═══════════════════════════════════════════════════════════════════
+            HSep(yL, c1, div2-c1); yL += 12;
+            _crawlSectionPnl = new Panel { Location=new Point(c1, yL), Size=new Size(cW1, 20), BackColor=_panelBg };
+            _crawlSectionPnl.Controls.Add(new Label { Text=T("CRAWL","CRAWL"), Location=new Point(8,2), AutoSize=true,
+                ForeColor=_secTxt, Font=new Font("Segoe UI",8.5f,FontStyle.Bold) });
+            Controls.Add(_crawlSectionPnl);
+            yL += 26;
+            chkCrawlHideRain = Chk(T("Disable RAIN while Crawl active", "REGEN während Crawl ausblenden"),
+                                   cur.CrawlHideRain, c1, yL);
+            chkCrawlHideRain.CheckedChanged += delegate { cur.CrawlHideRain = chkCrawlHideRain.Checked; };
+            Controls.Add(chkCrawlHideRain);
+            yL += 24;
+            chkCrawlStarfield = Chk(T("Star field background", "Sternenhimmel-Hintergrund"),
+                                    cur.CrawlStarfield, c1, yL);
+            chkCrawlStarfield.CheckedChanged += delegate { cur.CrawlStarfield = chkCrawlStarfield.Checked; };
+            Controls.Add(chkCrawlStarfield);
+            yL += 28;
+            _btnCrawlText = new Button {
+                Text      = T("✦ like Star Wars Intro…","✦ wie Star Wars Intro…"),
+                Location  = new Point(c1, yL),
+                Size      = new Size(cW1, 26),
+                BackColor = Color.FromArgb(8, 8, 60),
+                ForeColor = Color.FromArgb(255, 232, 31),
+                FlatStyle = FlatStyle.Flat,
+                Font      = new Font("Segoe UI", 8.5f, FontStyle.Bold)
+            };
+            _btnCrawlText.FlatAppearance.BorderColor = Color.FromArgb(80, 80, 160);
+            _btnCrawlText.Click += delegate { ShowCrawlTextEditor(); };
+            Controls.Add(_btnCrawlText);
+            yL += 30;
 
             // ═══════════════════════════════════════════════════════════════════
             // MIDDLE COLUMN — WORD STREAMS
@@ -1949,36 +1985,7 @@ namespace VeeaMatrix
             }
             SetWordStyle(string.IsNullOrEmpty(cur.WordStyle) ? "Scroll" : cur.WordStyle);
             yM += 32;
-
-            // ── Crawl-only options ────────────────────────────────────────────
-            chkCrawlHideRain = Chk(T("Disable RAIN while Crawl active", "REGEN während Crawl ausblenden"),
-                                   cur.CrawlHideRain, c2, yM);
-            chkCrawlHideRain.CheckedChanged += delegate { cur.CrawlHideRain = chkCrawlHideRain.Checked; };
-            _streamControls.Add(chkCrawlHideRain);
-            Controls.Add(chkCrawlHideRain);
-            yM += 24;
-            chkCrawlStarfield = Chk(T("Star field background", "Sternenhimmel-Hintergrund"),
-                                    cur.CrawlStarfield, c2, yM);
-            chkCrawlStarfield.CheckedChanged += delegate { cur.CrawlStarfield = chkCrawlStarfield.Checked; };
-            _streamControls.Add(chkCrawlStarfield);
-            Controls.Add(chkCrawlStarfield);
-            yM += 28;
-            // Sequential order is ALWAYS on for Crawl (enforced in engine) — no checkbox needed
-            // "like Star Wars Intro" button — opens crawl text editor with templates
-            _btnCrawlText = new Button {
-                Text      = T("✦ like Star Wars Intro…","✦ wie Star Wars Intro…"),
-                Location  = new Point(c2, yM),
-                Size      = new Size(cW2, 26),
-                BackColor = Color.FromArgb(8, 8, 60),
-                ForeColor = Color.FromArgb(255, 232, 31),
-                FlatStyle = FlatStyle.Flat,
-                Font      = new Font("Segoe UI", 8.5f, FontStyle.Bold)
-            };
-            _btnCrawlText.FlatAppearance.BorderColor = Color.FromArgb(80, 80, 160);
-            _btnCrawlText.Click += delegate { ShowCrawlTextEditor(); };
-            _streamControls.Add(_btnCrawlText);
-            Controls.Add(_btnCrawlText);
-            yM += 32;
+            // Crawl-specific options are in the dedicated CRAWL section (left column)
 
             // ── Word Direction ────────────────────────────────────────────────
             _lblWordOrient = DLbl(T("Direction:","Richtung:"), c2, yM+5, 68);
@@ -2578,6 +2585,7 @@ namespace VeeaMatrix
             if (_lblWordOrient   != null) { _lblWordOrient.Visible   = !hideDir; _lblWordOrient.Enabled   = !hideDir && streamActive; }
             // CrawlHideRain checkbox: only relevant when Crawl style is active
             bool isCrawl = (cur.WordStyle == "Crawl");
+            if (_crawlSectionPnl  != null) { _crawlSectionPnl.Visible  = isCrawl; }
             if (chkCrawlHideRain  != null) { chkCrawlHideRain.Visible  = isCrawl; }
             if (chkCrawlStarfield != null) { chkCrawlStarfield.Visible = isCrawl; }
             if (_btnCrawlText     != null) { _btnCrawlText.Visible      = isCrawl; }
