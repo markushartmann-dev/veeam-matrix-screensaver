@@ -1,4 +1,4 @@
-﻿// VeeaMatrix.cs  –  Windows Screensaver v1.59
+﻿// VeeaMatrix.cs  –  Windows Screensaver v1.60
 // Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
@@ -342,6 +342,14 @@ namespace VeeaMatrix
             if (s.WordStyle == "Blink") s.WordStyle = "Scramble";
             // v1.56 migration: "Both" removed — map to "Rain"
             if (s.WordMode == "Both") s.WordMode = "Rain";
+            // v1.60 migration: ExtraWords that starts with crawl-style phrases was set by mistake — clear it
+            // (CRAWL uses CrawlText exclusively; ExtraWords is only for WORD STREAM / POPUP custom terms)
+            if (!string.IsNullOrEmpty(s.ExtraWords))
+            {
+                string ew = s.ExtraWords.ToUpper();
+                if (ew.StartsWith("A LONG TIME AGO") || ew.StartsWith("EPISODE") || ew.StartsWith("IT IS A PERIOD"))
+                    s.ExtraWords = "";
+            }
             if (s.PopupEffects.Contains(",") || s.PopupEffects == "Flash")
             {
                 string migrated = "Glitch";
@@ -1503,7 +1511,7 @@ namespace VeeaMatrix
         private CheckBox   chkCrawlStarfield;
         private CheckBox   chkOrderedTerms;
         private Button     _btnCrawlText;
-        private Panel      _crawlSectionPnl;
+        private Panel      _crawlSectionPnl, _streamSectionPnl, _popupSectionPnl;
         private bool       _syncingOrient;
         // Theme colours — initialised at the top of Build() from cur.DarkMode
         private bool  _dark;
@@ -1685,7 +1693,8 @@ namespace VeeaMatrix
             btnFxEffects = null; btnWordStyles = null; _lblWordOrient = null;
             chkScanlines = chkWatermark = chkVeeam100 = chkBuiltinTerms = null;
             chkWordFontBold = chkWordFontItalic = null;
-            chkCrawlHideRain = null; chkCrawlStarfield = null; chkOrderedTerms = null; _btnCrawlText = null; _crawlSectionPnl = null;
+            chkCrawlHideRain = null; chkCrawlStarfield = null; chkOrderedTerms = null; _btnCrawlText = null;
+            _crawlSectionPnl = null; _streamSectionPnl = null; _popupSectionPnl = null;
             trkCrawlFont = trkCrawlSpeed = trkCrawlCount = null;
             lblCrawlFont = lblCrawlSpeed = lblCrawlCount = null;
             cboProfiles = cboWordFontName = null;
@@ -1955,7 +1964,12 @@ namespace VeeaMatrix
             // ═══════════════════════════════════════════════════════════════════
             // MIDDLE COLUMN — WORD STREAMS
             // ═══════════════════════════════════════════════════════════════════
-            Section(T("WORD STREAMS", "WORT-STREAMS"), c2, yM, cW2); yM += 26;
+            _streamSectionPnl = new Panel { Location=new Point(c2, yM), Size=new Size(cW2, 20), BackColor=_panelBg };
+            _streamSectionPnl.Controls.Add(new Label { Text=T("WORD STREAMS","WORT-STREAMS"), Location=new Point(8,2),
+                AutoSize=true, ForeColor=_secTxt, Font=new Font("Segoe UI",8.5f,FontStyle.Bold) });
+            Controls.Add(_streamSectionPnl);
+            _streamControls.Add(_streamSectionPnl);
+            yM += 26;
             _streamControls.Add(DLbl(T("Colors:", "Farben:"), c2, yM+5)); yM += 20;
             btnWordColor     = ColBtn(T("Words","Wörter"),      cur.WordColor,     c2,     yM, 130);
             btnWordHeadColor = ColBtn(T("Head (bright)","Kopf (hell)"), cur.WordHeadColor, c2+136, yM, 130);
@@ -2089,6 +2103,7 @@ namespace VeeaMatrix
                     ForeColor=_secTxt, Font=new Font("Segoe UI",8.5f,FontStyle.Bold) });
                 Controls.Add(popHdrPnl);
                 lblPopupHeader = popHdrPnl.Controls[0] as Label;
+                _popupSectionPnl = popHdrPnl;
                 _popupControls.Add(popHdrPnl);
             }
             yM += 26;
@@ -2198,6 +2213,20 @@ namespace VeeaMatrix
             yM += 48;
 
             DLbl(T("Custom terms (comma / | / newline separated):","Eigene Begriffe (Komma / | / Zeilenumbruch):"), c2, yM+5);
+            {
+                var btnClearExtra = new Button {
+                    Text      = T("✕ Clear","✕ Löschen"),
+                    Location  = new Point(c2 + cW2 - 76, yM),
+                    Size      = new Size(72, 20),
+                    FlatStyle = FlatStyle.Flat,
+                    BackColor = Color.FromArgb(60, 18, 18),
+                    ForeColor = Color.White,
+                    Font      = new Font("Segoe UI", 7.5f)
+                };
+                btnClearExtra.FlatAppearance.BorderColor = Color.FromArgb(130, 40, 40);
+                btnClearExtra.Click += delegate { if (txtExtra != null) { txtExtra.Text = ""; cur.ExtraWords = ""; MarkDirty(); } };
+                Controls.Add(btnClearExtra);
+            }
             yM += 22;
             txtExtra = new TextBox { Location=new Point(c2, yM), Size=new Size(cW2-4, 24),
                 Text=cur.ExtraWords, BackColor=_inputBg,
@@ -2265,6 +2294,7 @@ namespace VeeaMatrix
             Section(T("CHANGE LOG","ÄNDERUNGSPROTOKOLL"), c3, yR, cW3); yR += 26;
             {
                 string changelog =
+                    "v1.60  Section headers grey when inactive; Clear button for Custom Terms; ExtraWords CRAWL migration\r\n" +
                     "v1.59  Layout: GENERAL(left)+FONT(left); WORD STREAMS+CRAWL+POPUP in middle; all buttons grey/white inactive\r\n" +
                     "v1.58  Font/Bold/Italic moved to GENERAL section; Word Mode buttons grey/white inactive, green/white active\r\n" +
                     "v1.57  CRAWL section always visible (greyed when inactive); own Font/Speed/Queue sliders; CrawlText independent\r\n" +
@@ -2773,6 +2803,12 @@ namespace VeeaMatrix
             foreach (var c in _crawlControls)  c.Enabled = isCrawl;
             foreach (var c in _streamControls) c.Enabled = hasStream;
             foreach (var c in _popupControls)  c.Enabled = hasPopup;
+            // Section header panels: green when active, grey when inactive
+            Color hdrActive = _panelBg;
+            Color hdrInactive = Color.FromArgb(55, 55, 55);
+            if (_crawlSectionPnl  != null) _crawlSectionPnl.BackColor  = isCrawl   ? hdrActive : hdrInactive;
+            if (_streamSectionPnl != null) _streamSectionPnl.BackColor = hasStream  ? hdrActive : hdrInactive;
+            if (_popupSectionPnl  != null) _popupSectionPnl.BackColor  = hasPopup   ? hdrActive : hdrInactive;
         }
 
         private void RebuildPreview()
