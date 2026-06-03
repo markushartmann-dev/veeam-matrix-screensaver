@@ -2279,8 +2279,8 @@ namespace VeeaMatrix
             yM += 26;
 
             chkScanlines = Chk("CRT Scanlines",   cur.ShowScanlines, c2,     yM);
-            chkWatermark = Chk(T("Watermark","Wasserzeichen"), cur.ShowWatermark, c2+130, yM);
-            chkVeeam100  = Chk(T("Veeam 100 Names","Veeam 100 Namen"), cur.ShowVeeam100, c2+260, yM);
+            chkWatermark = Chk(T("Watermark","Wasserzeichen"), cur.ShowWatermark, c2+148, yM);
+            chkVeeam100  = Chk(T("Veeam 100 Names","Veeam 100 Namen"), cur.ShowVeeam100, c2+282, yM);
             chkScanlines.CheckedChanged += delegate { cur.ShowScanlines = chkScanlines.Checked; };
             chkWatermark.CheckedChanged += delegate { cur.ShowWatermark = chkWatermark.Checked; };
             chkVeeam100.CheckedChanged  += delegate { cur.ShowVeeam100  = chkVeeam100.Checked;  };
@@ -2291,7 +2291,7 @@ namespace VeeaMatrix
             chkBuiltinTerms = Chk(T("Built-in terms","Eingebaut. Begriffe"), cur.UseBuiltinTerms, c2, yM+3);
             chkBuiltinTerms.CheckedChanged += delegate { cur.UseBuiltinTerms = chkBuiltinTerms.Checked; };
             _miscControls.Add(chkBuiltinTerms);
-            int catX = 120, catW = cW2 - 124;   // button x-offset and width (also used for Watermark field)
+            int catX = 148, catW = cW2 - 152;   // button x-offset and width (also used for Watermark field)
             var btnCatalog = new Button {
                 Text=T("Adjust catalog with built-in terms","Katalog mit eingebaut. Begriffen anpassen"),
                 Location=new Point(c2+catX, yM), Size=new Size(catW, 24),
