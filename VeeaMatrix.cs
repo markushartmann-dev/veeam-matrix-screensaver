@@ -1,4 +1,4 @@
-﻿// VeeaMatrix.cs  –  Windows Screensaver v1.55
+﻿// VeeaMatrix.cs  –  Windows Screensaver v1.56
 // Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
@@ -181,7 +181,7 @@ namespace VeeaMatrix
         public bool   ShowScanlines = true;
         public bool   ShowWatermark = true;
         // Falling words
-        public string WordMode      = "Both";
+        public string WordMode      = "Rain";
         public int    WordCount     = 3;
         public int    WordFontSize  = 20;
         public Color  WordColor     = Color.FromArgb(0, 255, 65);
@@ -340,6 +340,8 @@ namespace VeeaMatrix
             }
             // v1.16 migrations
             if (s.WordStyle == "Blink") s.WordStyle = "Scramble";
+            // v1.56 migration: "Both" removed — map to "Rain"
+            if (s.WordMode == "Both") s.WordMode = "Rain";
             if (s.PopupEffects.Contains(",") || s.PopupEffects == "Flash")
             {
                 string migrated = "Glitch";
@@ -631,14 +633,14 @@ namespace VeeaMatrix
             }
             wdrops.Clear();
             // Crawl uses the perspective engine (DrawCrawlPerspective) — no wdrops needed
-            if ((s.WordMode == "Rain" || s.WordMode == "Both") && allTerms.Length > 0
+            if (s.WordMode == "Rain" && allTerms.Length > 0
                 && s.WordStyle != "Crawl")
             {
                 for (int i = 0; i < s.WordCount; i++) wdrops.Add(SpawnDrop(true));
             }
 
             popups.Clear();
-            if ((s.WordMode == "Popup" || s.WordMode == "Both") && allTerms.Length > 0)
+            if (s.WordMode == "Popup" && allTerms.Length > 0)
                 for (int i = 0; i < s.PopupCount; i++) popups.Add(SpawnPopup(true));
 
             BuildScanlines();
@@ -1034,12 +1036,12 @@ namespace VeeaMatrix
             bool isCrawlMode = (s.WordStyle == "Crawl");
             if (isCrawlMode && s.CrawlStarfield) DrawStars();
             if (!suppressRain) DrawRain();
-            if (s.WordMode=="Rain"||s.WordMode=="Both")
+            if (s.WordMode=="Rain")
             {
                 if (isCrawlMode) DrawCrawlPerspective();
                 else             DrawDrops();
             }
-            if (s.WordMode=="Popup"||s.WordMode=="Both") DrawPopups();
+            if (s.WordMode=="Popup") DrawPopups();
             if (scanBmp!=null) bg.DrawImage(scanBmp,0,0);
         }
 
@@ -1487,7 +1489,8 @@ namespace VeeaMatrix
         private Button     btnRainColor, btnHeadColor, btnWordColor, btnWordHeadColor, btnPopupColor;
         private TrackBar   trkFade, trkFont, trkSpeed, trkWordCount, trkWordFont, trkPopupCount, trkPopupFont, trkWordSpeed, trkPopupSpeed;
         private Label      lblFade, lblFont, lblSpeed, lblWCount, lblWFont, lblPCount, lblPFont, lblWordSpeed, lblPopupSpeed;
-        private ComboBox   cboOrient, cboWordOrient, cboWordMode;
+        private ComboBox   cboOrient, cboWordOrient;
+        private Button[]   btnWordModes;   // 3-way single-select: Crawl / Rain / Popup
         private Button[]   btnWordStyles;  // single-select word style buttons [Scroll, Fade, Build, Scramble, Glitch]
         private Label      _lblWordOrient; // reference for enable/disable alongside cboWordOrient
         private TextBox    txtWatermark, txtWatermarkSub, txtExtra;
@@ -1673,7 +1676,8 @@ namespace VeeaMatrix
             btnRainColor = btnHeadColor = btnWordColor = btnWordHeadColor = btnPopupColor = null;
             trkFade = trkFont = trkSpeed = trkWordCount = trkWordFont = trkPopupCount = trkPopupFont = trkWordSpeed = trkPopupSpeed = null;
             lblFade = lblFont = lblSpeed = lblWCount = lblWFont = lblPCount = lblPFont = lblWordSpeed = lblPopupSpeed = null;
-            cboOrient = cboWordOrient = cboWordMode = cboLanguage = null;
+            cboOrient = cboWordOrient = cboLanguage = null;
+            btnWordModes = null;
             txtWatermark = txtWatermarkSub = txtExtra = null;
             btnFxEffects = null; btnWordStyles = null; _lblWordOrient = null;
             chkScanlines = chkWatermark = chkVeeam100 = chkBuiltinTerms = null;
@@ -1870,11 +1874,34 @@ namespace VeeaMatrix
             yL += SL;
 
             DLbl(T("Direction:","Richtung:"), c1, yL+5, 76);
-            cboOrient   = Cbo(c1+80,  yL, 138, new string[]{"TopDown","BottomUp","LeftRight","RightLeft"}, cur.Orientation);
-            DLbl(T("Word Mode:","Wortmodus:"), c1+226, yL+5, 74);
-            cboWordMode = Cbo(c1+304, yL, 102, new string[]{"Rain","Popup","Both"}, cur.WordMode);
-            cboOrient.SelectedIndexChanged   += delegate { cur.Orientation = cboOrient.Text; };
-            cboWordMode.SelectedIndexChanged += delegate { cur.WordMode = cboWordMode.Text; SyncWordModeVisibility(); SyncWordStyleDirection(); };
+            cboOrient = Cbo(c1+80, yL, 138, new string[]{"TopDown","BottomUp","LeftRight","RightLeft"}, cur.Orientation);
+            cboOrient.SelectedIndexChanged += delegate { cur.Orientation = cboOrient.Text; };
+            yL += CM;
+
+            // Word Mode — 3 exclusive buttons: CRAWL / WORD STREAM Rain / POPUP WORDS
+            DLbl(T("Word Mode:","Wortmodus:"), c1, yL+5, 76);
+            string[] _wmLabels = new string[]{ "CRAWL", "WORD STREAM Rain", "POPUP WORDS" };
+            string[] _wmKeys   = new string[]{ "Crawl", "Rain", "Popup" };
+            int[]    _wmWidths = new int[]   { 100,     156,    138 };   // 100+4+156+4+138 = 402; 76+4+402 = 482 ≤ cW1
+            btnWordModes = new Button[3];
+            int wmX = c1 + 80;
+            for (int wmi = 0; wmi < 3; wmi++)
+            {
+                string capturedKey = _wmKeys[wmi];
+                var wmBtn = new Button {
+                    Text      = _wmLabels[wmi],
+                    Location  = new Point(wmX, yL),
+                    Size      = new Size(_wmWidths[wmi], 26),
+                    FlatStyle = FlatStyle.Flat,
+                    Tag       = capturedKey,
+                    Font      = new Font("Segoe UI", 8f, FontStyle.Bold)
+                };
+                wmBtn.FlatAppearance.BorderSize = 1;
+                wmBtn.Click += delegate { SetWordMode(capturedKey); MarkDirty(); };
+                Controls.Add(wmBtn);
+                btnWordModes[wmi] = wmBtn;
+                wmX += _wmWidths[wmi] + 4;
+            }
             yL += CM;
             yL += 12;
 
@@ -1914,7 +1941,7 @@ namespace VeeaMatrix
             // ═══════════════════════════════════════════════════════════════════
             // MIDDLE COLUMN — WORD STREAMS
             // ═══════════════════════════════════════════════════════════════════
-            Section(T("WORD STREAMS  (Rain / Both)", "WORT-STREAMS  (Regen / Beides)"), c2, yM, cW2); yM += 26;
+            Section(T("WORD STREAMS", "WORT-STREAMS"), c2, yM, cW2); yM += 26;
             _streamControls.Add(DLbl(T("Colors:", "Farben:"), c2, yM+5)); yM += 20;
             btnWordColor     = ColBtn(T("Words","Wörter"),      cur.WordColor,     c2,     yM, 130);
             btnWordHeadColor = ColBtn(T("Head (bright)","Kopf (hell)"), cur.WordHeadColor, c2+136, yM, 130);
@@ -1964,7 +1991,7 @@ namespace VeeaMatrix
             // ── Word Style single-select buttons ──────────────────────────────
             _streamControls.Add(DLbl(T("Style:","Stil:"), c2, yM+5));
             yM += 22;
-            string[] wsNames = new string[]{ "Scroll", "Fade", "Build", "Scramble", "Glitch", "Crawl" };
+            string[] wsNames = new string[]{ "Scroll", "Fade", "Build", "Scramble", "Glitch" };
             btnWordStyles = new Button[wsNames.Length];
             const int WS_W = 57, WS_GAP = 4;
             for (int wi = 0; wi < wsNames.Length; wi++)
@@ -2023,7 +2050,7 @@ namespace VeeaMatrix
             {
                 var popHdrPnl = new Panel { Location=new Point(c2, yM), Size=new Size(cW2, 20), BackColor=_panelBg };
                 popHdrPnl.Controls.Add(new Label {
-                    Text=T("POPUP WORDS  (Popup / Both)", "POPUP-WÖRTER  (Popup / Beides)"),
+                    Text=T("POPUP WORDS", "POPUP-WÖRTER"),
                     Location=new Point(8,2), AutoSize=true,
                     ForeColor=_secTxt, Font=new Font("Segoe UI",8.5f,FontStyle.Bold) });
                 Controls.Add(popHdrPnl);
@@ -2201,6 +2228,7 @@ namespace VeeaMatrix
             Section(T("CHANGE LOG","ÄNDERUNGSPROTOKOLL"), c3, yR, cW3); yR += 26;
             {
                 string changelog =
+                    "v1.56  Word Mode: 3-way exclusive selector (CRAWL / WORD STREAM Rain / POPUP WORDS); no more 'Both'\r\n" +
                     "v1.46  Crawl ×3 scale, horizon at 15%, t^0.65 power curve, no-jitter fade; separator geometry fix\r\n" +
                     "v1.45  Crawl horizon perspective (HORIZON_FRAC 0.35); star field option; BACKUP+CHANGELOG → right col\r\n" +
                     "v1.44  Crawl: WordCount controls queue depth; simultaneous slider restored; gap 2.5×fs\r\n" +
@@ -2302,8 +2330,7 @@ namespace VeeaMatrix
             {
                 cur.Orientation      = cboOrient.Text;
                 cur.WordOrientation  = cboWordOrient.Text;
-                cur.WordMode         = cboWordMode.Text;
-                // cur.WordStyle already synced by SetWordStyle()
+                // cur.WordMode and cur.WordStyle already synced by SetWordMode() / SetWordStyle()
                 cur.ShowScanlines    = chkScanlines.Checked;
                 cur.ShowWatermark    = chkWatermark.Checked;
                 cur.ShowVeeam100     = chkVeeam100.Checked;
@@ -2405,6 +2432,7 @@ namespace VeeaMatrix
             catch { }
 
             // ── Enable/disable sections based on initial WordMode + style ────
+            SetWordModeButton(GetActiveWordModeKey());
             SyncWordModeVisibility();
             SyncWordStyleDirection();
 
@@ -2418,7 +2446,12 @@ namespace VeeaMatrix
             tip(trkSpeed,        "Overall animation speed multiplier (1x = default)",                        "Animationsgeschwindigkeit (1x = Standard)");
             tip(trkFade,         "Trail persistence — lower value = longer glowing trail",                   "Spurlänge — kleiner Wert = längere Leuchtspur");
             tip(cboOrient,       "Direction the rain falls: TopDown / BottomUp / LeftRight / RightLeft",     "Regenrichtung: Von oben / unten / links / rechts");
-            tip(cboWordMode,     "Rain = keyword scrolls only · Popup = blips only · Both = mixed",          "Wortmodus: Regen / Popup / Beides");
+            if (btnWordModes != null && btnWordModes.Length == 3)
+            {
+                tip(btnWordModes[0], "CRAWL — Star Wars perspective scroll (independent mode)",            "CRAWL — Star-Wars-Perspektiv-Scroll (eigenständiger Modus)");
+                tip(btnWordModes[1], "WORD STREAM Rain — keywords scroll across the screen",               "WORT-STREAM Regen — Keywords scrollen über den Bildschirm");
+                tip(btnWordModes[2], "POPUP WORDS — words appear as blips in random positions",            "POPUP-WÖRTER — Wörter erscheinen als Blips an zufälligen Positionen");
+            }
             // Words section
             tip(btnWordColor,    "Color of the keyword stream characters",                                   "Farbe der Keyword-Stream-Zeichen");
             tip(btnWordHeadColor,"Color of the leading (head) character in keyword streams",                 "Farbe des Kopfzeichens in Keyword-Streams");
@@ -2426,14 +2459,13 @@ namespace VeeaMatrix
             tip(txtFontPreviewText, "Edit the sample text shown in the font preview box",                    "Vorschautext für die Schriftart-Vorschau ändern");
             tip(chkWordFontBold,    "Render keyword streams and popups in bold weight",                      "Keyword-Streams und Popups fett darstellen");
             tip(chkWordFontItalic,  "Render keyword streams and popups in italic",                           "Keyword-Streams und Popups kursiv darstellen");
-            if (btnWordStyles != null && btnWordStyles.Length == 6)
+            if (btnWordStyles != null && btnWordStyles.Length == 5)
             {
                 tip(btnWordStyles[0], "Scroll — keyword scrolls across the screen",                         "Scroll — Keyword scrollt über den Bildschirm");
                 tip(btnWordStyles[1], "Fade — keyword fades in and out in place",                           "Fade — Keyword blendet an Ort und Stelle ein/aus");
                 tip(btnWordStyles[2], "Build — chars decode left-to-right",                                 "Build — Zeichen werden von links nach rechts eingeblendet");
                 tip(btnWordStyles[3], "Scramble — noise resolves to the correct word sequentially",         "Scramble — Rauschen löst sich sequenziell auf");
                 tip(btnWordStyles[4], "Glitch — word appears through noise that gradually clears",          "Glitch — Wort erscheint durch Rauschen, das sich auflöst");
-                tip(btnWordStyles[5], "Crawl — Star Wars-style perspective scroll; words queue up from the bottom one after another (Simultaneous = queue depth)",  "Crawl — Star-Wars-Stil: Wörter scrollen nacheinander von unten nach oben (Gleichzeitig = Queue-Tiefe)");
             }
             tip(cboWordOrient,   "Scroll: all 4 directions · Build/Scramble/Glitch: LeftRight or RightLeft only · Fade: disabled",  "Scroll: alle 4 Richtungen · Build/Scramble/Glitch: nur Links↔Rechts · Fade: deaktiviert");
             tip(trkWordFont,     "Character size for keyword streams (px)",                                  "Zeichengröße der Keyword-Streams (px)");
@@ -2558,8 +2590,9 @@ namespace VeeaMatrix
                 // Disable background rain, enable star field
                 if (chkCrawlHideRain  != null) chkCrawlHideRain.Checked  = true;  cur.CrawlHideRain  = true;
                 if (chkCrawlStarfield != null) chkCrawlStarfield.Checked = true;  cur.CrawlStarfield = true;
-                // Word Mode: only Rain (= Word Streams) — no popups in Crawl
-                if (cboWordMode != null) cboWordMode.Text = "Rain"; cur.WordMode = "Rain";
+                // Word Mode: Crawl is its own mode — highlight the CRAWL button
+                cur.WordMode = "Rain";
+                SetWordModeButton("Crawl");
                 // Disable distractions: Watermark, Veeam100 names, Built-in terms
                 // (user can re-enable individually; Crawl text editor provides its own content)
                 if (chkWatermark    != null) chkWatermark.Checked    = false; cur.ShowWatermark   = false;
@@ -2579,8 +2612,7 @@ namespace VeeaMatrix
             bool isFade  = (cur.WordStyle == "Fade");
             bool hideDir = (cur.WordStyle == "Glitch" || cur.WordStyle == "Scramble" ||
                             cur.WordStyle == "Crawl"  || cur.WordStyle == "Fade");
-            string mode = cboWordMode != null ? cboWordMode.Text : cur.WordMode;
-            bool streamActive = (mode == "Rain" || mode == "Both");
+            bool streamActive = (GetActiveWordModeKey() == "Rain");
             if (cboWordOrient     != null) { cboWordOrient.Visible     = !hideDir; cboWordOrient.Enabled     = !hideDir && streamActive; }
             if (_lblWordOrient   != null) { _lblWordOrient.Visible   = !hideDir; _lblWordOrient.Enabled   = !hideDir && streamActive; }
             // CrawlHideRain checkbox: only relevant when Crawl style is active
@@ -2634,12 +2666,63 @@ namespace VeeaMatrix
             }
         }
 
+        // Returns the active word-mode key: "Crawl", "Rain", or "Popup"
+        private string GetActiveWordModeKey()
+        {
+            if (cur.WordStyle == "Crawl") return "Crawl";
+            if (cur.WordMode == "Popup")  return "Popup";
+            return "Rain";
+        }
+
+        // Highlight the matching Word Mode button
+        private void SetWordModeButton(string key)
+        {
+            if (btnWordModes == null) return;
+            string[] tags = new string[]{ "Crawl", "Rain", "Popup" };
+            for (int i = 0; i < btnWordModes.Length; i++)
+            {
+                bool active = (tags[i] == key);
+                btnWordModes[i].BackColor = active ? Color.FromArgb(0, 100, 28) : _btnIna;
+                btnWordModes[i].ForeColor = active ? Color.White                 : _btnInaFg;
+                btnWordModes[i].FlatAppearance.BorderColor = active ? Color.FromArgb(0, 185, 55) : _btnInaBdr;
+            }
+        }
+
+        // Switch the active word mode (called by the 3 Word Mode buttons)
+        private void SetWordMode(string key)
+        {
+            if (key == "Crawl")
+            {
+                if (cur.WordStyle != "Crawl")
+                    SetWordStyle("Crawl", applyStyleDefaults: true);
+                else
+                {
+                    cur.WordMode = "Rain";
+                    SetWordModeButton("Crawl");
+                }
+            }
+            else if (key == "Popup")
+            {
+                if (cur.WordStyle == "Crawl") SetWordStyle("Glitch");
+                cur.WordMode = "Popup";
+                SetWordModeButton("Popup");
+            }
+            else  // Rain
+            {
+                if (cur.WordStyle == "Crawl") SetWordStyle("Glitch");
+                cur.WordMode = "Rain";
+                SetWordModeButton("Rain");
+            }
+            SyncWordModeVisibility();
+            SyncWordStyleDirection();
+        }
+
         // Enable / disable controls depending on which layers are active
         private void SyncWordModeVisibility()
         {
-            string mode = cboWordMode != null ? cboWordMode.Text : cur.WordMode;
-            bool hasStream = (mode == "Rain" || mode == "Both");
-            bool hasPopup  = (mode == "Popup" || mode == "Both");
+            string key = GetActiveWordModeKey();
+            bool hasStream = (key == "Rain");
+            bool hasPopup  = (key == "Popup");
             foreach (var c in _streamControls) c.Enabled = hasStream;
             foreach (var c in _popupControls)  c.Enabled = hasPopup;
         }
@@ -2650,7 +2733,7 @@ namespace VeeaMatrix
             var s = Clone(cur);
             if (cboOrient       != null) s.Orientation     = cboOrient.Text;
             if (cboWordOrient   != null) s.WordOrientation  = string.IsNullOrEmpty(cboWordOrient.Text) ? "Same" : cboWordOrient.Text;
-            if (cboWordMode     != null) s.WordMode         = cboWordMode.Text;
+            // cur.WordMode is always in sync via SetWordMode / SetWordStyle
             s.WordStyle = cur.WordStyle;
             if (cboWordFontName != null && cboWordFontName.SelectedItem != null)
                 s.WordFontName = cboWordFontName.SelectedItem.ToString();
