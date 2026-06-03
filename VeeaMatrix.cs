@@ -1848,12 +1848,16 @@ namespace VeeaMatrix
         private static int Clamp(int v, int lo, int hi) { return v<lo?lo:v>hi?hi:v; }
         private static void SetBtn(Button b, Color c)
         { b.BackColor=c; b.ForeColor=c.GetBrightness()>.45f?Color.Black:Color.White; }
-        // Safe TrackBar setter — expands Maximum if needed, then clamps Value within range
+        // Safe TrackBar setter — adjusts Maximum (up or down) then sets Value within range
         private static void TrkSet(TrackBar t, int max, int val)
         {
             if (t == null) return;
-            if (max > t.Maximum) { t.Maximum = max; t.TickFrequency = Math.Max(1, max/10); }
-            t.Value = Clamp(val, t.Minimum, t.Maximum);
+            int clamped = Clamp(val, t.Minimum, max);
+            // When reducing Maximum below current Value, reduce Value first to avoid exception
+            if (max < t.Maximum && t.Value > max) t.Value = max;
+            t.Maximum       = max;
+            t.TickFrequency = Math.Max(1, max / 10);
+            t.Value         = clamped;
         }
         // Converts a \r\n-based template string into pipe-separated CrawlText format
         // so it can be stored safely in a single config.ini line
@@ -2937,11 +2941,15 @@ namespace VeeaMatrix
                 SetWordModeButton("Rain");
                 if (wasCrawl)
                 {
+                    // Reset Word Effects sliders to Word Stream defaults
+                    TrkSet(trkWordFont,  72, 20); cur.WordFontSize    = 20;   if (lblWFont     != null) lblWFont.Text     = "20 px";
+                    TrkSet(trkWordSpeed, 30,  5); cur.WordSpeedFactor = 0.5f; if (lblWordSpeed != null) lblWordSpeed.Text = "0.5x";
+                    TrkSet(trkWordCount, 30,  3); cur.WordCount       = 3;    if (lblWCount    != null) lblWCount.Text    = "3";
                     // Restore MISC defaults that Crawl turned off
-                    if (chkScanlines    != null) { chkScanlines.Checked    = true; cur.ShowScanlines    = true; }
-                    if (chkWatermark    != null) { chkWatermark.Checked    = true; cur.ShowWatermark    = true; }
-                    if (chkVeeam100     != null) { chkVeeam100.Checked     = true; cur.ShowVeeam100     = true; }
-                    if (chkBuiltinTerms != null) { chkBuiltinTerms.Checked = true; cur.UseBuiltinTerms  = true; }
+                    if (chkScanlines    != null) { chkScanlines.Checked    = true; cur.ShowScanlines   = true; }
+                    if (chkWatermark    != null) { chkWatermark.Checked    = true; cur.ShowWatermark   = true; }
+                    if (chkVeeam100     != null) { chkVeeam100.Checked     = true; cur.ShowVeeam100    = true; }
+                    if (chkBuiltinTerms != null) { chkBuiltinTerms.Checked = true; cur.UseBuiltinTerms = true; }
                     if (chkCrawlHideRain != null) { chkCrawlHideRain.Checked = false; cur.CrawlHideRain = cur.PopupHideRain = false; }
                 }
             }
