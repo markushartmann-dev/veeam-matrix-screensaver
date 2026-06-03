@@ -1,4 +1,4 @@
-﻿// VeeaMatrix.cs  –  Windows Screensaver v1.58
+﻿// VeeaMatrix.cs  –  Windows Screensaver v1.59
 // Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
@@ -1854,9 +1854,9 @@ namespace VeeaMatrix
             int yL = y, yM = y, yR = y;   // independent column y cursors
 
             // ═══════════════════════════════════════════════════════════════════
-            // LEFT COLUMN — RAIN
+            // LEFT COLUMN — GENERAL (background rain + global settings)
             // ═══════════════════════════════════════════════════════════════════
-            Section(T("RAIN", "REGEN"), c1, yL, cW1); yL += 26;
+            Section(T("GENERAL", "ALLGEMEIN"), c1, yL, cW1); yL += 26;
             DLbl(T("Characters:", "Zeichen:"), c1, yL+5); yL += 20;
             btnRainColor = ColBtn(T("Characters","Zeichen"),  cur.RainColor, c1,     yL);
             btnHeadColor = ColBtn(T("Head (bright)","Kopf (hell)"), cur.HeadColor, c1+136, yL);
@@ -1915,69 +1915,13 @@ namespace VeeaMatrix
             yL += 12;
 
             // ═══════════════════════════════════════════════════════════════════
-            // LEFT COLUMN — CRAWL  (visible only when Crawl style is active)
+            // LEFT COLUMN — FONT  (shared by all word modes)
             // ═══════════════════════════════════════════════════════════════════
             HSep(yL, c1, div2-c1); yL += 12;
-            _crawlSectionPnl = new Panel { Location=new Point(c1, yL), Size=new Size(cW1, 20), BackColor=_panelBg };
-            _crawlSectionPnl.Controls.Add(new Label { Text=T("CRAWL","CRAWL"), Location=new Point(8,2), AutoSize=true,
-                ForeColor=_secTxt, Font=new Font("Segoe UI",8.5f,FontStyle.Bold) });
-            Controls.Add(_crawlSectionPnl);
-            _crawlControls.Add(_crawlSectionPnl);
-            yL += 26;
-            chkCrawlHideRain = Chk(T("Disable RAIN while Crawl active", "REGEN während Crawl ausblenden"),
-                                   cur.CrawlHideRain, c1, yL);
-            chkCrawlHideRain.CheckedChanged += delegate { cur.CrawlHideRain = chkCrawlHideRain.Checked; };
-            Controls.Add(chkCrawlHideRain);
-            _crawlControls.Add(chkCrawlHideRain);
-            yL += 24;
-            chkCrawlStarfield = Chk(T("Star field background", "Sternenhimmel-Hintergrund"),
-                                    cur.CrawlStarfield, c1, yL);
-            chkCrawlStarfield.CheckedChanged += delegate { cur.CrawlStarfield = chkCrawlStarfield.Checked; };
-            Controls.Add(chkCrawlStarfield);
-            _crawlControls.Add(chkCrawlStarfield);
-            yL += 28;
-            _btnCrawlText = new Button {
-                Text      = T("✦ like Star Wars Intro…","✦ wie Star Wars Intro…"),
-                Location  = new Point(c1, yL),
-                Size      = new Size(cW1, 26),
-                BackColor = Color.FromArgb(8, 8, 60),
-                ForeColor = Color.FromArgb(255, 232, 31),
-                FlatStyle = FlatStyle.Flat,
-                Font      = new Font("Segoe UI", 8.5f, FontStyle.Bold)
-            };
-            _btnCrawlText.FlatAppearance.BorderColor = Color.FromArgb(80, 80, 160);
-            _btnCrawlText.Click += delegate { ShowCrawlTextEditor(); };
-            Controls.Add(_btnCrawlText);
-            _crawlControls.Add(_btnCrawlText);
-            yL += 30;
+            Section(T("FONT", "SCHRIFT"), c1, yL, cW1); yL += 26;
 
-            // ── CRAWL-specific sliders: Font Size / Speed / Queue Depth ─────────
-            trkCrawlFont = SlRow(T("Font Size","Schriftgröße"), c1, yL, cW1, 8, 72, cur.WordFontSize, out lblCrawlFont);
-            lblCrawlFont.Text = cur.WordFontSize + " px";
-            trkCrawlFont.ValueChanged += delegate { cur.WordFontSize = trkCrawlFont.Value; lblCrawlFont.Text = cur.WordFontSize + " px"; MarkDirty(); };
-            _crawlControls.Add(trkCrawlFont); _crawlControls.Add(lblCrawlFont);
-            yL += SL;
-
-            trkCrawlSpeed = SlRow(T("Speed","Geschwindigkeit"), c1, yL, cW1, 1, 120, (int)(cur.WordSpeedFactor * 10), out lblCrawlSpeed);
-            lblCrawlSpeed.Text = cur.WordSpeedFactor.ToString("F1") + "x";
-            trkCrawlSpeed.ValueChanged += delegate { cur.WordSpeedFactor = trkCrawlSpeed.Value / 10f; lblCrawlSpeed.Text = cur.WordSpeedFactor.ToString("F1") + "x"; MarkDirty(); };
-            _crawlControls.Add(trkCrawlSpeed); _crawlControls.Add(lblCrawlSpeed);
-            yL += SL;
-
-            trkCrawlCount = SlRow(T("Queue Depth","Warteschlange"), c1, yL, cW1, 1, 30, cur.WordCount, out lblCrawlCount);
-            lblCrawlCount.Text = cur.WordCount.ToString();
-            trkCrawlCount.ValueChanged += delegate { cur.WordCount = trkCrawlCount.Value; lblCrawlCount.Text = cur.WordCount.ToString(); MarkDirty(); };
-            _crawlControls.Add(trkCrawlCount); _crawlControls.Add(lblCrawlCount);
-            yL += SL;
-
-            // ═══════════════════════════════════════════════════════════════════
-            // MIDDLE COLUMN — GENERAL (Font — shared by all word modes)
-            // ═══════════════════════════════════════════════════════════════════
-            Section(T("GENERAL  –  Font", "ALLGEMEIN  –  Schrift"), c2, yM, cW2); yM += 26;
-
-            // Font picker row
-            DLbl(T("Font:", "Schriftart:"), c2, yM+5, 80);
-            cboWordFontName = new ComboBox { Location=new Point(c2+84, yM), Size=new Size(200, 24),
+            DLbl(T("Font:", "Schriftart:"), c1, yL+5, 80);
+            cboWordFontName = new ComboBox { Location=new Point(c1+84, yL), Size=new Size(200, 24),
                 DropDownStyle=ComboBoxStyle.DropDownList,
                 BackColor=_inputBg, ForeColor=_inputFg };
             using (var ifc = new System.Drawing.Text.InstalledFontCollection())
@@ -1989,28 +1933,24 @@ namespace VeeaMatrix
             int selIdx = cboWordFontName.Items.IndexOf(cur.WordFontName);
             cboWordFontName.SelectedIndex = selIdx >= 0 ? selIdx : 0;
             Controls.Add(cboWordFontName);
-
-            txtFontPreviewText = new TextBox { Location=new Point(c2+292, yM), Size=new Size(cW2-292-4, 24),
-                Text="VEEAM", BackColor=_inputBg,
-                ForeColor=_inputFg, BorderStyle=BorderStyle.FixedSingle };
+            txtFontPreviewText = new TextBox { Location=new Point(c1+292, yL), Size=new Size(cW1-292-4, 24),
+                Text="VEEAM", BackColor=_inputBg, ForeColor=_inputFg, BorderStyle=BorderStyle.FixedSingle };
             Controls.Add(txtFontPreviewText);
-            yM += 30;
+            yL += 30;
 
-            // Font style checkboxes
-            chkWordFontBold   = Chk(T("Bold","Fett"),       cur.WordFontBold,   c2,     yM);
-            chkWordFontItalic = Chk(T("Italic","Kursiv"),   cur.WordFontItalic, c2+68,  yM);
+            chkWordFontBold   = Chk(T("Bold","Fett"),     cur.WordFontBold,   c1,    yL);
+            chkWordFontItalic = Chk(T("Italic","Kursiv"), cur.WordFontItalic, c1+68, yL);
             chkWordFontBold.CheckedChanged   += delegate { cur.WordFontBold   = chkWordFontBold.Checked;   UpdateFontPreview(); MarkDirty(); };
             chkWordFontItalic.CheckedChanged += delegate { cur.WordFontItalic = chkWordFontItalic.Checked; UpdateFontPreview(); MarkDirty(); };
-            // NOT in _streamControls — font applies to all modes
-            yM += 26;
+            yL += 26;
 
-            picFontPreview = new PictureBox { Location=new Point(c2, yM), Size=new Size(cW2-4, 44),
+            picFontPreview = new PictureBox { Location=new Point(c1, yL), Size=new Size(cW1-4, 44),
                 BackColor=Color.Black, BorderStyle=BorderStyle.FixedSingle };
             Controls.Add(picFontPreview);
             UpdateFontPreview();
             cboWordFontName.SelectedIndexChanged += delegate { UpdateFontPreview(); MarkDirty(); };
             txtFontPreviewText.TextChanged       += delegate { UpdateFontPreview(); };
-            yM += 54;
+            yL += 54;
 
             // ═══════════════════════════════════════════════════════════════════
             // MIDDLE COLUMN — WORD STREAMS
@@ -2038,9 +1978,12 @@ namespace VeeaMatrix
                     Location  = new Point(c2 + wi * (WS_W + WS_GAP), yM),
                     Size      = new Size(WS_W, 26),
                     FlatStyle = FlatStyle.Flat,
-                    Tag       = capturedWS
+                    Tag       = capturedWS,
+                    BackColor = Color.FromArgb(90, 90, 90),
+                    ForeColor = Color.White
                 };
-                wsBtn.FlatAppearance.BorderSize = 1;
+                wsBtn.FlatAppearance.BorderSize  = 1;
+                wsBtn.FlatAppearance.BorderColor = Color.FromArgb(115, 115, 115);
                 wsBtn.Click += delegate { SetWordStyle(capturedWS, applyStyleDefaults: true); MarkDirty(); };
                 Controls.Add(wsBtn);
                 btnWordStyles[wi] = wsBtn;
@@ -2075,6 +2018,61 @@ namespace VeeaMatrix
             lblWCount.Text = cur.WordCount.ToString();
             trkWordCount.ValueChanged += delegate { cur.WordCount=trkWordCount.Value; lblWCount.Text=cur.WordCount.ToString(); };
             _streamControls.Add(trkWordCount); _streamControls.Add(lblWCount);
+            yM += SL;
+
+            // ═══════════════════════════════════════════════════════════════════
+            // MIDDLE COLUMN — CRAWL  (moved from left column)
+            // ═══════════════════════════════════════════════════════════════════
+            HSep(yM, div2, div3-div2+1); yM += 12;
+            _crawlSectionPnl = new Panel { Location=new Point(c2, yM), Size=new Size(cW2, 20), BackColor=_panelBg };
+            _crawlSectionPnl.Controls.Add(new Label { Text=T("CRAWL","CRAWL"), Location=new Point(8,2), AutoSize=true,
+                ForeColor=_secTxt, Font=new Font("Segoe UI",8.5f,FontStyle.Bold) });
+            Controls.Add(_crawlSectionPnl);
+            _crawlControls.Add(_crawlSectionPnl);
+            yM += 26;
+            chkCrawlHideRain = Chk(T("Disable RAIN while Crawl active", "REGEN während Crawl ausblenden"),
+                                   cur.CrawlHideRain, c2, yM);
+            chkCrawlHideRain.CheckedChanged += delegate { cur.CrawlHideRain = chkCrawlHideRain.Checked; };
+            Controls.Add(chkCrawlHideRain);
+            _crawlControls.Add(chkCrawlHideRain);
+            yM += 24;
+            chkCrawlStarfield = Chk(T("Star field background", "Sternenhimmel-Hintergrund"),
+                                    cur.CrawlStarfield, c2, yM);
+            chkCrawlStarfield.CheckedChanged += delegate { cur.CrawlStarfield = chkCrawlStarfield.Checked; };
+            Controls.Add(chkCrawlStarfield);
+            _crawlControls.Add(chkCrawlStarfield);
+            yM += 28;
+            _btnCrawlText = new Button {
+                Text      = T("✦ like Star Wars Intro… (select Text)","✦ wie Star Wars Intro… (Text wählen)"),
+                Location  = new Point(c2, yM),
+                Size      = new Size(cW2, 26),
+                BackColor = Color.FromArgb(8, 8, 60),
+                ForeColor = Color.FromArgb(255, 232, 31),
+                FlatStyle = FlatStyle.Flat,
+                Font      = new Font("Segoe UI", 8.5f, FontStyle.Bold)
+            };
+            _btnCrawlText.FlatAppearance.BorderColor = Color.FromArgb(80, 80, 160);
+            _btnCrawlText.Click += delegate { ShowCrawlTextEditor(); };
+            Controls.Add(_btnCrawlText);
+            _crawlControls.Add(_btnCrawlText);
+            yM += 30;
+
+            trkCrawlFont = SlRow(T("Font Size","Schriftgröße"), c2, yM, cW2, 8, 72, cur.WordFontSize, out lblCrawlFont);
+            lblCrawlFont.Text = cur.WordFontSize + " px";
+            trkCrawlFont.ValueChanged += delegate { cur.WordFontSize = trkCrawlFont.Value; lblCrawlFont.Text = cur.WordFontSize + " px"; MarkDirty(); };
+            _crawlControls.Add(trkCrawlFont); _crawlControls.Add(lblCrawlFont);
+            yM += SL;
+
+            trkCrawlSpeed = SlRow(T("Speed","Geschwindigkeit"), c2, yM, cW2, 1, 120, (int)(cur.WordSpeedFactor * 10), out lblCrawlSpeed);
+            lblCrawlSpeed.Text = cur.WordSpeedFactor.ToString("F1") + "x";
+            trkCrawlSpeed.ValueChanged += delegate { cur.WordSpeedFactor = trkCrawlSpeed.Value / 10f; lblCrawlSpeed.Text = cur.WordSpeedFactor.ToString("F1") + "x"; MarkDirty(); };
+            _crawlControls.Add(trkCrawlSpeed); _crawlControls.Add(lblCrawlSpeed);
+            yM += SL;
+
+            trkCrawlCount = SlRow(T("Queue Depth","Warteschlange"), c2, yM, cW2, 1, 30, cur.WordCount, out lblCrawlCount);
+            lblCrawlCount.Text = cur.WordCount.ToString();
+            trkCrawlCount.ValueChanged += delegate { cur.WordCount = trkCrawlCount.Value; lblCrawlCount.Text = cur.WordCount.ToString(); MarkDirty(); };
+            _crawlControls.Add(trkCrawlCount); _crawlControls.Add(lblCrawlCount);
             yM += SL;
 
             yM += 12;
@@ -2115,9 +2113,12 @@ namespace VeeaMatrix
                     Location  = new Point(c2 + fi * (FX_W + FX_GAP), yM),
                     Size      = new Size(FX_W, 26),
                     FlatStyle = FlatStyle.Flat,
-                    Tag       = capturedName
+                    Tag       = capturedName,
+                    BackColor = Color.FromArgb(90, 90, 90),
+                    ForeColor = Color.White
                 };
-                fxBtn.FlatAppearance.BorderSize = 1;
+                fxBtn.FlatAppearance.BorderSize  = 1;
+                fxBtn.FlatAppearance.BorderColor = Color.FromArgb(115, 115, 115);
                 fxBtn.Click += delegate { SetPopupEffect(capturedName); MarkDirty(); };
                 Controls.Add(fxBtn);
                 btnFxEffects[fi] = fxBtn;
@@ -2264,6 +2265,7 @@ namespace VeeaMatrix
             Section(T("CHANGE LOG","ÄNDERUNGSPROTOKOLL"), c3, yR, cW3); yR += 26;
             {
                 string changelog =
+                    "v1.59  Layout: GENERAL(left)+FONT(left); WORD STREAMS+CRAWL+POPUP in middle; all buttons grey/white inactive\r\n" +
                     "v1.58  Font/Bold/Italic moved to GENERAL section; Word Mode buttons grey/white inactive, green/white active\r\n" +
                     "v1.57  CRAWL section always visible (greyed when inactive); own Font/Speed/Queue sliders; CrawlText independent\r\n" +
                     "v1.56  Word Mode: 3-way exclusive selector (CRAWL / WORD STREAM Rain / POPUP WORDS); no more 'Both'\r\n" +
@@ -2594,9 +2596,9 @@ namespace VeeaMatrix
             foreach (Button b in btnFxEffects)
             {
                 bool active = ((string)b.Tag == name);
-                b.BackColor = active ? Color.FromArgb(0,100,28) : _btnIna;
-                b.ForeColor = active ? Color.White               : _btnInaFg;
-                b.FlatAppearance.BorderColor = active ? Color.FromArgb(0,185,55) : _btnInaBdr;
+                b.BackColor = active ? Color.FromArgb(0, 100, 28) : Color.FromArgb(90, 90, 90);
+                b.ForeColor = Color.White;
+                b.FlatAppearance.BorderColor = active ? Color.FromArgb(0, 185, 55) : Color.FromArgb(115, 115, 115);
             }
         }
 
@@ -2613,9 +2615,9 @@ namespace VeeaMatrix
             foreach (Button b in btnWordStyles)
             {
                 bool active = ((string)b.Tag == name);
-                b.BackColor = active ? Color.FromArgb(0,100,28) : _btnIna;
-                b.ForeColor = active ? Color.White               : _btnInaFg;
-                b.FlatAppearance.BorderColor = active ? Color.FromArgb(0,185,55) : _btnInaBdr;
+                b.BackColor = active ? Color.FromArgb(0, 100, 28) : Color.FromArgb(90, 90, 90);
+                b.ForeColor = Color.White;
+                b.FlatAppearance.BorderColor = active ? Color.FromArgb(0, 185, 55) : Color.FromArgb(115, 115, 115);
             }
             // Apply Crawl-specific defaults when user switches to Crawl
             if (applyStyleDefaults && name == "Crawl")
