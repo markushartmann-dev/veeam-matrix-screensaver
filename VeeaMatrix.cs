@@ -1,4 +1,4 @@
-﻿// VeeaMatrix.cs  –  Windows Screensaver v1.57
+﻿// VeeaMatrix.cs  –  Windows Screensaver v1.58
 // Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
@@ -1900,9 +1900,12 @@ namespace VeeaMatrix
                     Size      = new Size(_wmWidths[wmi], 26),
                     FlatStyle = FlatStyle.Flat,
                     Tag       = capturedKey,
-                    Font      = new Font("Segoe UI", 8f, FontStyle.Bold)
+                    Font      = new Font("Segoe UI", 8f, FontStyle.Bold),
+                    BackColor = Color.FromArgb(90, 90, 90),  // start grey; SetWordModeButton() sets the active one
+                    ForeColor = Color.White
                 };
-                wmBtn.FlatAppearance.BorderSize = 1;
+                wmBtn.FlatAppearance.BorderSize  = 1;
+                wmBtn.FlatAppearance.BorderColor = Color.FromArgb(115, 115, 115);
                 wmBtn.Click += delegate { SetWordMode(capturedKey); MarkDirty(); };
                 Controls.Add(wmBtn);
                 btnWordModes[wmi] = wmBtn;
@@ -1968,16 +1971,9 @@ namespace VeeaMatrix
             yL += SL;
 
             // ═══════════════════════════════════════════════════════════════════
-            // MIDDLE COLUMN — WORD STREAMS
+            // MIDDLE COLUMN — GENERAL (Font — shared by all word modes)
             // ═══════════════════════════════════════════════════════════════════
-            Section(T("WORD STREAMS", "WORT-STREAMS"), c2, yM, cW2); yM += 26;
-            _streamControls.Add(DLbl(T("Colors:", "Farben:"), c2, yM+5)); yM += 20;
-            btnWordColor     = ColBtn(T("Words","Wörter"),      cur.WordColor,     c2,     yM, 130);
-            btnWordHeadColor = ColBtn(T("Head (bright)","Kopf (hell)"), cur.WordHeadColor, c2+136, yM, 130);
-            btnWordColor.Click     += delegate { Pick(ref cur.WordColor,     btnWordColor); };
-            btnWordHeadColor.Click += delegate { Pick(ref cur.WordHeadColor, btnWordHeadColor); };
-            _streamControls.Add(btnWordColor); _streamControls.Add(btnWordHeadColor);
-            yM += 32;
+            Section(T("GENERAL  –  Font", "ALLGEMEIN  –  Schrift"), c2, yM, cW2); yM += 26;
 
             // Font picker row
             DLbl(T("Font:", "Schriftart:"), c2, yM+5, 80);
@@ -2005,17 +2001,28 @@ namespace VeeaMatrix
             chkWordFontItalic = Chk(T("Italic","Kursiv"),   cur.WordFontItalic, c2+68,  yM);
             chkWordFontBold.CheckedChanged   += delegate { cur.WordFontBold   = chkWordFontBold.Checked;   UpdateFontPreview(); MarkDirty(); };
             chkWordFontItalic.CheckedChanged += delegate { cur.WordFontItalic = chkWordFontItalic.Checked; UpdateFontPreview(); MarkDirty(); };
-            _streamControls.Add(chkWordFontBold);
-            _streamControls.Add(chkWordFontItalic);
+            // NOT in _streamControls — font applies to all modes
             yM += 26;
 
             picFontPreview = new PictureBox { Location=new Point(c2, yM), Size=new Size(cW2-4, 44),
                 BackColor=Color.Black, BorderStyle=BorderStyle.FixedSingle };
             Controls.Add(picFontPreview);
             UpdateFontPreview();
-            cboWordFontName.SelectedIndexChanged += delegate { UpdateFontPreview(); };
+            cboWordFontName.SelectedIndexChanged += delegate { UpdateFontPreview(); MarkDirty(); };
             txtFontPreviewText.TextChanged       += delegate { UpdateFontPreview(); };
-            yM += 50;
+            yM += 54;
+
+            // ═══════════════════════════════════════════════════════════════════
+            // MIDDLE COLUMN — WORD STREAMS
+            // ═══════════════════════════════════════════════════════════════════
+            Section(T("WORD STREAMS", "WORT-STREAMS"), c2, yM, cW2); yM += 26;
+            _streamControls.Add(DLbl(T("Colors:", "Farben:"), c2, yM+5)); yM += 20;
+            btnWordColor     = ColBtn(T("Words","Wörter"),      cur.WordColor,     c2,     yM, 130);
+            btnWordHeadColor = ColBtn(T("Head (bright)","Kopf (hell)"), cur.WordHeadColor, c2+136, yM, 130);
+            btnWordColor.Click     += delegate { Pick(ref cur.WordColor,     btnWordColor); };
+            btnWordHeadColor.Click += delegate { Pick(ref cur.WordHeadColor, btnWordHeadColor); };
+            _streamControls.Add(btnWordColor); _streamControls.Add(btnWordHeadColor);
+            yM += 32;
 
             // ── Word Style single-select buttons ──────────────────────────────
             _streamControls.Add(DLbl(T("Style:","Stil:"), c2, yM+5));
@@ -2257,6 +2264,7 @@ namespace VeeaMatrix
             Section(T("CHANGE LOG","ÄNDERUNGSPROTOKOLL"), c3, yR, cW3); yR += 26;
             {
                 string changelog =
+                    "v1.58  Font/Bold/Italic moved to GENERAL section; Word Mode buttons grey/white inactive, green/white active\r\n" +
                     "v1.57  CRAWL section always visible (greyed when inactive); own Font/Speed/Queue sliders; CrawlText independent\r\n" +
                     "v1.56  Word Mode: 3-way exclusive selector (CRAWL / WORD STREAM Rain / POPUP WORDS); no more 'Both'\r\n" +
                     "v1.46  Crawl ×3 scale, horizon at 15%, t^0.65 power curve, no-jitter fade; separator geometry fix\r\n" +
@@ -2482,13 +2490,14 @@ namespace VeeaMatrix
                 tip(btnWordModes[1], "WORD STREAM Rain — keywords scroll across the screen",               "WORT-STREAM Regen — Keywords scrollen über den Bildschirm");
                 tip(btnWordModes[2], "POPUP WORDS — words appear as blips in random positions",            "POPUP-WÖRTER — Wörter erscheinen als Blips an zufälligen Positionen");
             }
-            // Words section
-            tip(btnWordColor,    "Color of the keyword stream characters",                                   "Farbe der Keyword-Stream-Zeichen");
-            tip(btnWordHeadColor,"Color of the leading (head) character in keyword streams",                 "Farbe des Kopfzeichens in Keyword-Streams");
+            // General / Font section
             tip(cboWordFontName,    "Font used for keyword streams, popups and watermark",                    "Schriftart für Keyword-Streams, Popups und Wasserzeichen");
             tip(txtFontPreviewText, "Edit the sample text shown in the font preview box",                    "Vorschautext für die Schriftart-Vorschau ändern");
             tip(chkWordFontBold,    "Render keyword streams and popups in bold weight",                      "Keyword-Streams und Popups fett darstellen");
             tip(chkWordFontItalic,  "Render keyword streams and popups in italic",                           "Keyword-Streams und Popups kursiv darstellen");
+            // Word Streams section
+            tip(btnWordColor,    "Color of the keyword stream characters",                                   "Farbe der Keyword-Stream-Zeichen");
+            tip(btnWordHeadColor,"Color of the leading (head) character in keyword streams",                 "Farbe des Kopfzeichens in Keyword-Streams");
             if (btnWordStyles != null && btnWordStyles.Length == 5)
             {
                 tip(btnWordStyles[0], "Scroll — keyword scrolls across the screen",                         "Scroll — Keyword scrollt über den Bildschirm");
@@ -2705,6 +2714,7 @@ namespace VeeaMatrix
         }
 
         // Highlight the matching Word Mode button
+        // Active = green / white   Inactive = grey / white
         private void SetWordModeButton(string key)
         {
             if (btnWordModes == null) return;
@@ -2712,9 +2722,13 @@ namespace VeeaMatrix
             for (int i = 0; i < btnWordModes.Length; i++)
             {
                 bool active = (tags[i] == key);
-                btnWordModes[i].BackColor = active ? Color.FromArgb(0, 100, 28) : _btnIna;
-                btnWordModes[i].ForeColor = active ? Color.White                 : _btnInaFg;
-                btnWordModes[i].FlatAppearance.BorderColor = active ? Color.FromArgb(0, 185, 55) : _btnInaBdr;
+                btnWordModes[i].BackColor = active
+                    ? Color.FromArgb(0, 105, 30)           // green
+                    : Color.FromArgb(90, 90, 90);          // grey
+                btnWordModes[i].ForeColor = Color.White;   // always white
+                btnWordModes[i].FlatAppearance.BorderColor = active
+                    ? Color.FromArgb(0, 185, 55)           // bright green border
+                    : Color.FromArgb(115, 115, 115);       // grey border
             }
         }
 
