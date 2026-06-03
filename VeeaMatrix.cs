@@ -1,4 +1,4 @@
-﻿// VeeaMatrix.cs  –  Windows Screensaver v1.56
+﻿// VeeaMatrix.cs  –  Windows Screensaver v1.57
 // Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
@@ -629,7 +629,7 @@ namespace VeeaMatrix
                 if (!string.IsNullOrEmpty(s.CrawlText))
                     foreach (string p in s.CrawlText.Split(new char[]{'|','\r','\n'}, StringSplitOptions.RemoveEmptyEntries))
                     { string t = p.Trim().ToUpper(); if (t.Length > 0) ct.Add(t); }
-                _crawlTerms = ct.Count > 0 ? ct.ToArray() : allTerms;
+                _crawlTerms = ct.ToArray();  // CRAWL uses only CrawlText — no fallback to ExtraWords/allTerms
             }
             wdrops.Clear();
             // Crawl uses the perspective engine (DrawCrawlPerspective) — no wdrops needed
@@ -1488,7 +1488,9 @@ namespace VeeaMatrix
         private Settings   cur;
         private Button     btnRainColor, btnHeadColor, btnWordColor, btnWordHeadColor, btnPopupColor;
         private TrackBar   trkFade, trkFont, trkSpeed, trkWordCount, trkWordFont, trkPopupCount, trkPopupFont, trkWordSpeed, trkPopupSpeed;
+        private TrackBar   trkCrawlFont, trkCrawlSpeed, trkCrawlCount;
         private Label      lblFade, lblFont, lblSpeed, lblWCount, lblWFont, lblPCount, lblPFont, lblWordSpeed, lblPopupSpeed;
+        private Label      lblCrawlFont, lblCrawlSpeed, lblCrawlCount;
         private ComboBox   cboOrient, cboWordOrient;
         private Button[]   btnWordModes;   // 3-way single-select: Crawl / Rain / Popup
         private Button[]   btnWordStyles;  // single-select word style buttons [Scroll, Fade, Build, Scramble, Glitch]
@@ -1522,6 +1524,7 @@ namespace VeeaMatrix
         // Controls grouped by word-mode layer — toggled by SyncWordModeVisibility()
         private List<Control> _streamControls = new List<Control>();
         private List<Control> _popupControls  = new List<Control>();
+        private List<Control> _crawlControls  = new List<Control>();
         private Label         lblPopupHeader;
 
         public Settings Result { get; private set; }
@@ -1683,6 +1686,8 @@ namespace VeeaMatrix
             chkScanlines = chkWatermark = chkVeeam100 = chkBuiltinTerms = null;
             chkWordFontBold = chkWordFontItalic = null;
             chkCrawlHideRain = null; chkCrawlStarfield = null; chkOrderedTerms = null; _btnCrawlText = null; _crawlSectionPnl = null;
+            trkCrawlFont = trkCrawlSpeed = trkCrawlCount = null;
+            lblCrawlFont = lblCrawlSpeed = lblCrawlCount = null;
             cboProfiles = cboWordFontName = null;
             picFontPreview = null; txtFontPreviewText = null; picPreview = null;
             _previewDirty = true;
@@ -1779,6 +1784,7 @@ namespace VeeaMatrix
         {
             _streamControls = new List<Control>();
             _popupControls  = new List<Control>();
+            _crawlControls  = new List<Control>();
 
             // ── Theme setup ──────────────────────────────────────────────────
             _dark     = cur.DarkMode;
@@ -1913,16 +1919,19 @@ namespace VeeaMatrix
             _crawlSectionPnl.Controls.Add(new Label { Text=T("CRAWL","CRAWL"), Location=new Point(8,2), AutoSize=true,
                 ForeColor=_secTxt, Font=new Font("Segoe UI",8.5f,FontStyle.Bold) });
             Controls.Add(_crawlSectionPnl);
+            _crawlControls.Add(_crawlSectionPnl);
             yL += 26;
             chkCrawlHideRain = Chk(T("Disable RAIN while Crawl active", "REGEN während Crawl ausblenden"),
                                    cur.CrawlHideRain, c1, yL);
             chkCrawlHideRain.CheckedChanged += delegate { cur.CrawlHideRain = chkCrawlHideRain.Checked; };
             Controls.Add(chkCrawlHideRain);
+            _crawlControls.Add(chkCrawlHideRain);
             yL += 24;
             chkCrawlStarfield = Chk(T("Star field background", "Sternenhimmel-Hintergrund"),
                                     cur.CrawlStarfield, c1, yL);
             chkCrawlStarfield.CheckedChanged += delegate { cur.CrawlStarfield = chkCrawlStarfield.Checked; };
             Controls.Add(chkCrawlStarfield);
+            _crawlControls.Add(chkCrawlStarfield);
             yL += 28;
             _btnCrawlText = new Button {
                 Text      = T("✦ like Star Wars Intro…","✦ wie Star Wars Intro…"),
@@ -1936,7 +1945,27 @@ namespace VeeaMatrix
             _btnCrawlText.FlatAppearance.BorderColor = Color.FromArgb(80, 80, 160);
             _btnCrawlText.Click += delegate { ShowCrawlTextEditor(); };
             Controls.Add(_btnCrawlText);
+            _crawlControls.Add(_btnCrawlText);
             yL += 30;
+
+            // ── CRAWL-specific sliders: Font Size / Speed / Queue Depth ─────────
+            trkCrawlFont = SlRow(T("Font Size","Schriftgröße"), c1, yL, cW1, 8, 72, cur.WordFontSize, out lblCrawlFont);
+            lblCrawlFont.Text = cur.WordFontSize + " px";
+            trkCrawlFont.ValueChanged += delegate { cur.WordFontSize = trkCrawlFont.Value; lblCrawlFont.Text = cur.WordFontSize + " px"; MarkDirty(); };
+            _crawlControls.Add(trkCrawlFont); _crawlControls.Add(lblCrawlFont);
+            yL += SL;
+
+            trkCrawlSpeed = SlRow(T("Speed","Geschwindigkeit"), c1, yL, cW1, 1, 120, (int)(cur.WordSpeedFactor * 10), out lblCrawlSpeed);
+            lblCrawlSpeed.Text = cur.WordSpeedFactor.ToString("F1") + "x";
+            trkCrawlSpeed.ValueChanged += delegate { cur.WordSpeedFactor = trkCrawlSpeed.Value / 10f; lblCrawlSpeed.Text = cur.WordSpeedFactor.ToString("F1") + "x"; MarkDirty(); };
+            _crawlControls.Add(trkCrawlSpeed); _crawlControls.Add(lblCrawlSpeed);
+            yL += SL;
+
+            trkCrawlCount = SlRow(T("Queue Depth","Warteschlange"), c1, yL, cW1, 1, 30, cur.WordCount, out lblCrawlCount);
+            lblCrawlCount.Text = cur.WordCount.ToString();
+            trkCrawlCount.ValueChanged += delegate { cur.WordCount = trkCrawlCount.Value; lblCrawlCount.Text = cur.WordCount.ToString(); MarkDirty(); };
+            _crawlControls.Add(trkCrawlCount); _crawlControls.Add(lblCrawlCount);
+            yL += SL;
 
             // ═══════════════════════════════════════════════════════════════════
             // MIDDLE COLUMN — WORD STREAMS
@@ -2228,6 +2257,7 @@ namespace VeeaMatrix
             Section(T("CHANGE LOG","ÄNDERUNGSPROTOKOLL"), c3, yR, cW3); yR += 26;
             {
                 string changelog =
+                    "v1.57  CRAWL section always visible (greyed when inactive); own Font/Speed/Queue sliders; CrawlText independent\r\n" +
                     "v1.56  Word Mode: 3-way exclusive selector (CRAWL / WORD STREAM Rain / POPUP WORDS); no more 'Both'\r\n" +
                     "v1.46  Crawl ×3 scale, horizon at 15%, t^0.65 power curve, no-jitter fade; separator geometry fix\r\n" +
                     "v1.45  Crawl horizon perspective (HORIZON_FRAC 0.35); star field option; BACKUP+CHANGELOG → right col\r\n" +
@@ -2585,6 +2615,10 @@ namespace VeeaMatrix
                 if (trkWordCount != null) { trkWordCount.Value = 30; cur.WordCount = 30; if (lblWCount != null) lblWCount.Text = "30"; }
                 if (trkWordFont  != null) { trkWordFont.Value  = 36; cur.WordFontSize = 36; if (lblWFont != null) lblWFont.Text = "36 px"; }
                 if (trkWordSpeed != null) { trkWordSpeed.Value = 20; cur.WordSpeedFactor = 2.0f; if (lblWordSpeed != null) lblWordSpeed.Text = "2.0x"; }
+                // Sync the dedicated CRAWL sliders too
+                if (trkCrawlFont  != null) { trkCrawlFont.Value  = 36; if (lblCrawlFont  != null) lblCrawlFont.Text  = "36 px"; }
+                if (trkCrawlSpeed != null) { trkCrawlSpeed.Value = 20; if (lblCrawlSpeed != null) lblCrawlSpeed.Text = "2.0x"; }
+                if (trkCrawlCount != null) { trkCrawlCount.Value = 30; if (lblCrawlCount != null) lblCrawlCount.Text = "30"; }
                 // Sequential order is always mandatory for Crawl (enforced in engine)
                 cur.OrderedTerms = true;
                 // Disable background rain, enable star field
@@ -2615,13 +2649,9 @@ namespace VeeaMatrix
             bool streamActive = (GetActiveWordModeKey() == "Rain");
             if (cboWordOrient     != null) { cboWordOrient.Visible     = !hideDir; cboWordOrient.Enabled     = !hideDir && streamActive; }
             if (_lblWordOrient   != null) { _lblWordOrient.Visible   = !hideDir; _lblWordOrient.Enabled   = !hideDir && streamActive; }
-            // CrawlHideRain checkbox: only relevant when Crawl style is active
-            bool isCrawl = (cur.WordStyle == "Crawl");
-            if (_crawlSectionPnl  != null) { _crawlSectionPnl.Visible  = isCrawl; }
-            if (chkCrawlHideRain  != null) { chkCrawlHideRain.Visible  = isCrawl; }
-            if (chkCrawlStarfield != null) { chkCrawlStarfield.Visible = isCrawl; }
-            if (_btnCrawlText     != null) { _btnCrawlText.Visible      = isCrawl; }
+            // CRAWL section enable/disable is handled by SyncWordModeVisibility() via _crawlControls
             // chkOrderedTerms removed — Crawl always uses sequential order internally
+            bool isCrawl = (cur.WordStyle == "Crawl");
             // Speed slider: Crawl gets 4× the range (max 120 = 12.0× vs normal 30 = 3.0×)
             if (trkWordSpeed != null)
             {
@@ -2721,8 +2751,10 @@ namespace VeeaMatrix
         private void SyncWordModeVisibility()
         {
             string key = GetActiveWordModeKey();
+            bool isCrawl   = (key == "Crawl");
             bool hasStream = (key == "Rain");
             bool hasPopup  = (key == "Popup");
+            foreach (var c in _crawlControls)  c.Enabled = isCrawl;
             foreach (var c in _streamControls) c.Enabled = hasStream;
             foreach (var c in _popupControls)  c.Enabled = hasPopup;
         }
@@ -2742,9 +2774,19 @@ namespace VeeaMatrix
             if (trkFont         != null) s.FontSize         = trkFont.Value;
             if (trkSpeed        != null) s.SpeedFactor      = trkSpeed.Value / 10f;
             if (trkFade         != null) s.FadeAlpha        = trkFade.Value;
-            if (trkWordFont     != null) s.WordFontSize     = trkWordFont.Value;
-            if (trkWordSpeed    != null) s.WordSpeedFactor  = trkWordSpeed.Value / 10f;
-            if (trkWordCount    != null) s.WordCount        = trkWordCount.Value;
+            // Use CRAWL sliders when in Crawl mode, stream sliders otherwise
+            if (GetActiveWordModeKey() == "Crawl")
+            {
+                if (trkCrawlFont  != null) s.WordFontSize    = trkCrawlFont.Value;
+                if (trkCrawlSpeed != null) s.WordSpeedFactor = trkCrawlSpeed.Value / 10f;
+                if (trkCrawlCount != null) s.WordCount       = trkCrawlCount.Value;
+            }
+            else
+            {
+                if (trkWordFont  != null) s.WordFontSize    = trkWordFont.Value;
+                if (trkWordSpeed != null) s.WordSpeedFactor = trkWordSpeed.Value / 10f;
+                if (trkWordCount != null) s.WordCount       = trkWordCount.Value;
+            }
             if (trkPopupFont    != null) s.PopupFontSize    = trkPopupFont.Value;
             if (trkPopupCount   != null) s.PopupCount       = trkPopupCount.Value;
             if (trkPopupSpeed   != null) s.PopupSpeedFactor = trkPopupSpeed.Value / 10f;
