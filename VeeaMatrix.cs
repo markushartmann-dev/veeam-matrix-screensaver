@@ -1,4 +1,4 @@
-﻿// VeeaMatrix.cs  –  Windows Screensaver v1.60
+﻿// VeeaMatrix.cs  –  Windows Screensaver v1.61
 // Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
@@ -199,6 +199,7 @@ namespace VeeaMatrix
         public string WordStyle        = "Glitch";
         public float  WordSpeedFactor  = 0.5f;
         public bool   CrawlHideRain    = false;   // suppress background rain while Crawl is active
+        public bool   PopupHideRain    = false;   // suppress background rain while Popup is active
         public bool   CrawlStarfield   = false;   // draw star field behind Crawl words
         public bool   OrderedTerms     = false;   // use terms in sequential order, no random
         public string CrawlText        = "";      // text used exclusively by the Crawl effect (independent of ExtraWords)
@@ -263,6 +264,7 @@ namespace VeeaMatrix
             sb.AppendLine("WordStyle="        + WordStyle);
             sb.AppendLine("WordSpeedFactor="  + WordSpeedFactor.ToString("F2", System.Globalization.CultureInfo.InvariantCulture));
             sb.AppendLine("CrawlHideRain="    + CrawlHideRain);
+            sb.AppendLine("PopupHideRain="    + PopupHideRain);
             sb.AppendLine("CrawlStarfield="   + CrawlStarfield);
             sb.AppendLine("OrderedTerms="     + OrderedTerms);
             sb.AppendLine("CrawlText="        + CrawlText);
@@ -321,6 +323,7 @@ namespace VeeaMatrix
                         case "WordStyle":        s.WordStyle        = v; break;
                         case "WordSpeedFactor":  s.WordSpeedFactor  = float.Parse(v, ic); break;
                         case "CrawlHideRain":    s.CrawlHideRain    = bool.Parse(v); break;
+                        case "PopupHideRain":    s.PopupHideRain    = bool.Parse(v); break;
                         case "CrawlStarfield":   s.CrawlStarfield   = bool.Parse(v); break;
                         case "OrderedTerms":     s.OrderedTerms     = bool.Parse(v); break;
                         case "CrawlText":        s.CrawlText        = v;            break;
@@ -1036,7 +1039,8 @@ namespace VeeaMatrix
 
         public void Tick()
         {
-            bool suppressRain = (s.WordStyle == "Crawl" && s.CrawlHideRain);
+            bool suppressRain = (s.WordStyle == "Crawl" && s.CrawlHideRain) ||
+                                (s.WordMode == "Popup"  && s.PopupHideRain);
             if (suppressRain)
                 bg.FillRectangle(Brushes.Black, 0, 0, W, H);  // pure black — no trail on Crawl words
             else
@@ -1507,7 +1511,7 @@ namespace VeeaMatrix
         private Button[]   btnFxEffects;   // single-select popup effect buttons [Fade, Glitch, Scan, Zoom]
         private CheckBox   chkScanlines, chkWatermark, chkVeeam100, chkBuiltinTerms;
         private CheckBox   chkWordFontBold, chkWordFontItalic;
-        private CheckBox   chkCrawlHideRain;
+        private CheckBox   chkCrawlHideRain, chkPopupHideRain;
         private CheckBox   chkCrawlStarfield;
         private CheckBox   chkOrderedTerms;
         private Button     _btnCrawlText;
@@ -1693,7 +1697,7 @@ namespace VeeaMatrix
             btnFxEffects = null; btnWordStyles = null; _lblWordOrient = null;
             chkScanlines = chkWatermark = chkVeeam100 = chkBuiltinTerms = null;
             chkWordFontBold = chkWordFontItalic = null;
-            chkCrawlHideRain = null; chkCrawlStarfield = null; chkOrderedTerms = null; _btnCrawlText = null;
+            chkCrawlHideRain = null; chkPopupHideRain = null; chkCrawlStarfield = null; chkOrderedTerms = null; _btnCrawlText = null;
             _crawlSectionPnl = null; _streamSectionPnl = null; _popupSectionPnl = null;
             trkCrawlFont = trkCrawlSpeed = trkCrawlCount = null;
             lblCrawlFont = lblCrawlSpeed = lblCrawlCount = null;
@@ -1713,7 +1717,7 @@ namespace VeeaMatrix
                 WordColor=s.WordColor, WordHeadColor=s.WordHeadColor, GlowChance=s.GlowChance,
                 PopupEffects=s.PopupEffects, PopupCount=s.PopupCount, PopupFontSize=s.PopupFontSize,
                 PopupColor=s.PopupColor, Orientation=s.Orientation, WordOrientation=s.WordOrientation,
-                WordStyle=s.WordStyle, WordSpeedFactor=s.WordSpeedFactor, CrawlHideRain=s.CrawlHideRain, CrawlStarfield=s.CrawlStarfield, OrderedTerms=s.OrderedTerms, CrawlText=s.CrawlText,
+                WordStyle=s.WordStyle, WordSpeedFactor=s.WordSpeedFactor, CrawlHideRain=s.CrawlHideRain, CrawlStarfield=s.CrawlStarfield, OrderedTerms=s.OrderedTerms, CrawlText=s.CrawlText, PopupHideRain=s.PopupHideRain,
                 ShowVeeam100=s.ShowVeeam100,
                 WatermarkText=s.WatermarkText, WatermarkSubText=s.WatermarkSubText, ExtraWords=s.ExtraWords,
                 WordFontName=s.WordFontName, WordFontBold=s.WordFontBold, WordFontItalic=s.WordFontItalic,
@@ -1865,12 +1869,24 @@ namespace VeeaMatrix
             // ═══════════════════════════════════════════════════════════════════
             // LEFT COLUMN — GENERAL (background rain + global settings)
             // ═══════════════════════════════════════════════════════════════════
-            Section(T("GENERAL", "ALLGEMEIN"), c1, yL, cW1); yL += 26;
-            DLbl(T("Characters:", "Zeichen:"), c1, yL+5); yL += 20;
+            Section(T("GENERAL  (Background / Rain Effect)", "ALLGEMEIN  (Hintergrund / Regeneffekt)"), c1, yL, cW1); yL += 26;
+            DLbl(T("Rain Characters:", "Regen-Zeichen:"), c1, yL+5); yL += 20;
             btnRainColor = ColBtn(T("Characters","Zeichen"),  cur.RainColor, c1,     yL);
             btnHeadColor = ColBtn(T("Head (bright)","Kopf (hell)"), cur.HeadColor, c1+136, yL);
             btnRainColor.Click += delegate { Pick(ref cur.RainColor, btnRainColor); };
             btnHeadColor.Click += delegate { Pick(ref cur.HeadColor, btnHeadColor); };
+            yL += 32;
+
+            DLbl(T("Words / Stream:", "Wörter / Stream:"), c1, yL+5); yL += 20;
+            btnWordColor     = ColBtn(T("Words","Wörter"),           cur.WordColor,     c1,     yL, 130);
+            btnWordHeadColor = ColBtn(T("Head (bright)","Kopf (hell)"), cur.WordHeadColor, c1+136, yL, 130);
+            btnWordColor.Click     += delegate { Pick(ref cur.WordColor,     btnWordColor); };
+            btnWordHeadColor.Click += delegate { Pick(ref cur.WordHeadColor, btnWordHeadColor); };
+            yL += 32;
+
+            DLbl(T("Popup:", "Popup:"), c1, yL+5); yL += 20;
+            btnPopupColor = ColBtn(T("Popup Color","Popup-Farbe"), cur.PopupColor, c1, yL, 130);
+            btnPopupColor.Click += delegate { Pick(ref cur.PopupColor, btnPopupColor); };
             yL += 32;
 
             trkFont = SlRow(T("Font Size","Schriftgröße"), c1,yL,cW1, 8,36, cur.FontSize, out lblFont);
@@ -1895,9 +1911,9 @@ namespace VeeaMatrix
 
             // Word Mode — 3 exclusive buttons: CRAWL / WORD STREAM Rain / POPUP WORDS
             DLbl(T("Word Mode:","Wortmodus:"), c1, yL+5, 76);
-            string[] _wmLabels = new string[]{ "CRAWL", "WORD STREAM Rain", "POPUP WORDS" };
-            string[] _wmKeys   = new string[]{ "Crawl", "Rain", "Popup" };
-            int[]    _wmWidths = new int[]   { 100,     156,    138 };   // 100+4+156+4+138 = 402; 76+4+402 = 482 ≤ cW1
+            string[] _wmLabels = new string[]{ "WORD STREAM Rain", "CRAWL", "POPUP WORDS" };
+            string[] _wmKeys   = new string[]{ "Rain", "Crawl", "Popup" };
+            int[]    _wmWidths = new int[]   { 156,    100,     138 };   // 156+4+100+4+138 = 402; 76+4+402 = 482 ≤ cW1
             btnWordModes = new Button[3];
             int wmX = c1 + 80;
             for (int wmi = 0; wmi < 3; wmi++)
@@ -1970,13 +1986,6 @@ namespace VeeaMatrix
             Controls.Add(_streamSectionPnl);
             _streamControls.Add(_streamSectionPnl);
             yM += 26;
-            _streamControls.Add(DLbl(T("Colors:", "Farben:"), c2, yM+5)); yM += 20;
-            btnWordColor     = ColBtn(T("Words","Wörter"),      cur.WordColor,     c2,     yM, 130);
-            btnWordHeadColor = ColBtn(T("Head (bright)","Kopf (hell)"), cur.WordHeadColor, c2+136, yM, 130);
-            btnWordColor.Click     += delegate { Pick(ref cur.WordColor,     btnWordColor); };
-            btnWordHeadColor.Click += delegate { Pick(ref cur.WordHeadColor, btnWordHeadColor); };
-            _streamControls.Add(btnWordColor); _streamControls.Add(btnWordHeadColor);
-            yM += 32;
 
             // ── Word Style single-select buttons ──────────────────────────────
             _streamControls.Add(DLbl(T("Style:","Stil:"), c2, yM+5));
@@ -2039,7 +2048,7 @@ namespace VeeaMatrix
             // ═══════════════════════════════════════════════════════════════════
             HSep(yM, div2, div3-div2+1); yM += 12;
             _crawlSectionPnl = new Panel { Location=new Point(c2, yM), Size=new Size(cW2, 20), BackColor=_panelBg };
-            _crawlSectionPnl.Controls.Add(new Label { Text=T("CRAWL","CRAWL"), Location=new Point(8,2), AutoSize=true,
+            _crawlSectionPnl.Controls.Add(new Label { Text=T("CRAWL  (like Star Wars Intro…)","CRAWL  (wie Star Wars Intro…)"), Location=new Point(8,2), AutoSize=true,
                 ForeColor=_secTxt, Font=new Font("Segoe UI",8.5f,FontStyle.Bold) });
             Controls.Add(_crawlSectionPnl);
             _crawlControls.Add(_crawlSectionPnl);
@@ -2057,7 +2066,7 @@ namespace VeeaMatrix
             _crawlControls.Add(chkCrawlStarfield);
             yM += 28;
             _btnCrawlText = new Button {
-                Text      = T("✦ like Star Wars Intro… (select Text)","✦ wie Star Wars Intro… (Text wählen)"),
+                Text      = T("✦ Select Text","✦ Text wählen"),
                 Location  = new Point(c2, yM),
                 Size      = new Size(cW2, 26),
                 BackColor = Color.FromArgb(8, 8, 60),
@@ -2108,11 +2117,12 @@ namespace VeeaMatrix
             }
             yM += 26;
 
-            _popupControls.Add(DLbl(T("Color:","Farbe:"), c2, yM+5, 50));
-            btnPopupColor = ColBtn(T("Popup Color","Popup-Farbe"), cur.PopupColor, c2+54, yM, 148);
-            btnPopupColor.Click += delegate { Pick(ref cur.PopupColor, btnPopupColor); };
-            _popupControls.Add(btnPopupColor);
-            yM += 32;
+            chkPopupHideRain = Chk(T("Disable RAIN while Popup active", "REGEN während Popup ausblenden"),
+                                   cur.PopupHideRain, c2, yM);
+            chkPopupHideRain.CheckedChanged += delegate { cur.PopupHideRain = chkPopupHideRain.Checked; };
+            Controls.Add(chkPopupHideRain);
+            _popupControls.Add(chkPopupHideRain);
+            yM += 28;
 
             // Single-select effect buttons (Fade / Glitch / Scan / Zoom / Scramble)
             _popupControls.Add(DLbl(T("Effect:","Effekt:"), c2, yM+5));
@@ -2148,25 +2158,25 @@ namespace VeeaMatrix
             _popupControls.Add(trkPopupFont); _popupControls.Add(lblPFont);
             yM += SL;
 
+            trkPopupSpeed = SlRow(T("Speed","Geschwindigkeit"), c2,yM,cW2, 1,30, (int)(cur.PopupSpeedFactor*10), out lblPopupSpeed);
+            lblPopupSpeed.Text = cur.PopupSpeedFactor.ToString("F1")+"x";
+            trkPopupSpeed.ValueChanged += delegate { cur.PopupSpeedFactor=trkPopupSpeed.Value/10f; lblPopupSpeed.Text=cur.PopupSpeedFactor.ToString("F1")+"x"; };
+            _popupControls.Add(trkPopupSpeed); _popupControls.Add(lblPopupSpeed);
+            yM += SL;
+
             trkPopupCount = SlRow(T("Simultaneous","Gleichzeitig"), c2,yM,cW2, 1,20, cur.PopupCount, out lblPCount);
             lblPCount.Text = cur.PopupCount.ToString();
             trkPopupCount.ValueChanged += delegate { cur.PopupCount=trkPopupCount.Value; lblPCount.Text=cur.PopupCount.ToString(); };
             _popupControls.Add(trkPopupCount); _popupControls.Add(lblPCount);
             yM += SL;
 
-            trkPopupSpeed = SlRow(T("Popup Speed","Popup-Geschwindigkeit"), c2,yM,cW2, 1,30, (int)(cur.PopupSpeedFactor*10), out lblPopupSpeed);
-            lblPopupSpeed.Text = cur.PopupSpeedFactor.ToString("F1")+"x";
-            trkPopupSpeed.ValueChanged += delegate { cur.PopupSpeedFactor=trkPopupSpeed.Value/10f; lblPopupSpeed.Text=cur.PopupSpeedFactor.ToString("F1")+"x"; };
-            _popupControls.Add(trkPopupSpeed); _popupControls.Add(lblPopupSpeed);
-            yM += SL;
-
             yM += 12;
 
             // ═══════════════════════════════════════════════════════════════════
-            // MIDDLE COLUMN — GENERAL
+            // MIDDLE COLUMN — MISCELLANEOUS
             // ═══════════════════════════════════════════════════════════════════
             HSep(yM, div2, div3-div2+1); yM += 12;
-            Section(T("GENERAL","ALLGEMEIN"), c2, yM, cW2); yM += 26;
+            Section(T("MISCELLANEOUS","SONSTIGES"), c2, yM, cW2); yM += 26;
             chkScanlines = Chk("CRT Scanlines",   cur.ShowScanlines, c2,     yM);
             chkWatermark = Chk(T("Watermark","Wasserzeichen"), cur.ShowWatermark, c2+130, yM);
             chkVeeam100  = Chk(T("Veeam 100 Names","Veeam 100 Namen"), cur.ShowVeeam100, c2+260, yM);
@@ -2294,6 +2304,7 @@ namespace VeeaMatrix
             Section(T("CHANGE LOG","ÄNDERUNGSPROTOKOLL"), c3, yR, cW3); yR += 26;
             {
                 string changelog =
+                    "v1.61  PopupHideRain; Word Mode order Rain/Crawl/Popup; colors in GENERAL; Miscellaneous; slider order\r\n" +
                     "v1.60  Section headers grey when inactive; Clear button for Custom Terms; ExtraWords CRAWL migration\r\n" +
                     "v1.59  Layout: GENERAL(left)+FONT(left); WORD STREAMS+CRAWL+POPUP in middle; all buttons grey/white inactive\r\n" +
                     "v1.58  Font/Bold/Italic moved to GENERAL section; Word Mode buttons grey/white inactive, green/white active\r\n" +
@@ -2416,6 +2427,7 @@ namespace VeeaMatrix
                 if (chkWordFontItalic != null) cur.WordFontItalic = chkWordFontItalic.Checked;
                 if (chkCrawlHideRain  != null) cur.CrawlHideRain  = chkCrawlHideRain.Checked;
                 if (chkCrawlStarfield != null) cur.CrawlStarfield = chkCrawlStarfield.Checked;
+                if (chkPopupHideRain  != null) cur.PopupHideRain  = chkPopupHideRain.Checked;
                 if (chkOrderedTerms   != null) cur.OrderedTerms   = chkOrderedTerms.Checked;
                 // cur.PopupEffects already in sync via SetPopupEffect()
                 Result=cur; Result.Save();
@@ -2750,7 +2762,7 @@ namespace VeeaMatrix
         private void SetWordModeButton(string key)
         {
             if (btnWordModes == null) return;
-            string[] tags = new string[]{ "Crawl", "Rain", "Popup" };
+            string[] tags = new string[]{ "Rain", "Crawl", "Popup" };  // must match _wmKeys order
             for (int i = 0; i < btnWordModes.Length; i++)
             {
                 bool active = (tags[i] == key);
@@ -2779,15 +2791,21 @@ namespace VeeaMatrix
             }
             else if (key == "Popup")
             {
-                if (cur.WordStyle == "Crawl") SetWordStyle("Glitch");
+                bool wasCrawl = (cur.WordStyle == "Crawl");
+                if (wasCrawl) SetWordStyle("Glitch");
                 cur.WordMode = "Popup";
                 SetWordModeButton("Popup");
+                // Restore Veeam100 that Crawl auto-defaults turned off
+                if (wasCrawl && chkVeeam100 != null) { chkVeeam100.Checked = true; cur.ShowVeeam100 = true; }
             }
             else  // Rain
             {
-                if (cur.WordStyle == "Crawl") SetWordStyle("Glitch");
+                bool wasCrawl = (cur.WordStyle == "Crawl");
+                if (wasCrawl) SetWordStyle("Glitch");
                 cur.WordMode = "Rain";
                 SetWordModeButton("Rain");
+                // Restore Veeam100 that Crawl auto-defaults turned off
+                if (wasCrawl && chkVeeam100 != null) { chkVeeam100.Checked = true; cur.ShowVeeam100 = true; }
             }
             SyncWordModeVisibility();
             SyncWordStyleDirection();
@@ -2855,6 +2873,7 @@ namespace VeeaMatrix
             if (chkOrderedTerms  != null) s.OrderedTerms   = chkOrderedTerms.Checked;
             if (chkCrawlHideRain != null) s.CrawlHideRain  = chkCrawlHideRain.Checked;
             if (chkCrawlStarfield!= null) s.CrawlStarfield = chkCrawlStarfield.Checked;
+            if (chkPopupHideRain != null) s.PopupHideRain  = chkPopupHideRain.Checked;
 
             if (_prevEngine != null) { _prevEngine.Dispose(); _prevEngine = null; }
             if (picPreview != null && picPreview.Width > 8 && picPreview.Height > 8)
