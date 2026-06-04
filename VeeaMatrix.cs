@@ -1083,7 +1083,7 @@ namespace VeeaMatrix
             float lineH    = baseSize * 1.75f;
             float paraH    = baseSize * 1.50f;   // EXTRA space added for blank paragraph separators
             float stageW   = W * 0.74f;
-            FontStyle crawlFs = FontStyle.Bold | FontStyle.Italic;
+            FontStyle crawlFs = (s.WordFontBold ? FontStyle.Bold : FontStyle.Regular) | (s.WordFontItalic ? FontStyle.Italic : FontStyle.Regular);
 
             // ── Intro phase ──────────────────────────────────────────────────────
             bool hasIntro   = (_crawlIntro != null && _crawlIntro.Length > 0);
@@ -1265,7 +1265,7 @@ namespace VeeaMatrix
                     // t^0.65: text stays large most of the journey, shrinks gradually near horizon
                     float tP         = (float)Math.Pow(t, 0.65);
                     float scaledSize = Math.Max(8f, fs * CRAWL_SCALE * tP);
-                    FontStyle crawlFs = FontStyle.Bold | FontStyle.Italic;
+                    FontStyle crawlFs = (s.WordFontBold ? FontStyle.Bold : FontStyle.Regular) | (s.WordFontItalic ? FontStyle.Italic : FontStyle.Regular);
                     bool gone = w.Y < (float)H * (HORIZON_FRAC - 0.05f);
                     if (!gone)
                     {
