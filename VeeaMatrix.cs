@@ -1581,6 +1581,7 @@ namespace VeeaMatrix
         private PictureBox _bannerPic;         // banner in left column — swapped on CRAWL toggle
         private Image      _bannerDefault;     // standard banner (Word Stream / Popup mode)
         private Image      _bannerCrawl;       // Jedi banner (CRAWL mode)
+        private bool       _showCrawlBanner;  // true when CRAWL mode is active (controls which banner paints)
         private Panel      _crawlSectionPnl, _streamSectionPnl, _popupSectionPnl;
         private bool       _syncingOrient;
         // Theme colours — initialised at the top of Build() from cur.DarkMode
@@ -2611,6 +2612,7 @@ namespace VeeaMatrix
             {
                 _bannerDefault = LoadBannerImage();
                 _bannerCrawl   = LoadCrawlBannerImage();
+                _showCrawlBanner  = (cur.WordStyle == "Crawl");
                 Image _bannerImgUnused = null;
                 int bannerY   = yL + 8;
                 int bannerH   = (yBot - 12) - bannerY - 8;  // yBot-12 = separator position (before += 12)
@@ -2626,7 +2628,7 @@ namespace VeeaMatrix
                     // Show Jedi banner during CRAWL, standard banner otherwise.
                     _bannerPic.Paint += delegate(object bps, PaintEventArgs bpe)
                     {
-                        Image img = (cur.WordStyle == "Crawl" && _bannerCrawl != null) ? _bannerCrawl : _bannerDefault;
+                        Image img = (_showCrawlBanner && _bannerCrawl != null) ? _bannerCrawl : _bannerDefault;
                         if (img == null || img.Width == 0) return;
                         var pb   = (PictureBox)bps;
                         double srcAR = (double)img.Width / img.Height;
@@ -2816,6 +2818,8 @@ namespace VeeaMatrix
                 b.FlatAppearance.BorderColor = active ? Color.FromArgb(0, 185, 55) : Color.FromArgb(115, 115, 115);
             }
             SyncWordStyleDirection();
+            _showCrawlBanner = (cur.WordStyle == "Crawl");
+            if (_bannerPic != null) _bannerPic.Refresh();
         }
 
         // Single-select: highlight chosen word style button and update cur.WordStyle
@@ -2989,6 +2993,8 @@ namespace VeeaMatrix
             }
             SyncWordModeVisibility();
             SyncWordStyleDirection();
+            _showCrawlBanner = (cur.WordStyle == "Crawl");
+            if (_bannerPic != null) _bannerPic.Refresh();
         }
 
         // Enable / disable controls depending on which layers are active
