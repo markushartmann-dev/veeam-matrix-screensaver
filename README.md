@@ -2,7 +2,17 @@
 
 A fully-functional Windows screensaver (`.scr`) where the Matrix digital rain spells out Veeam product names, features, and buzzwords. `IMMUTABILITY`, `ZERO-TRUST RESILIENCE`, `VBR V13`, `VEEAM DATA CLOUD VAULT` — 70+ terms cascading down your screen in glowing green (or violet, or teal, or crawl-yellow…).
 
-![VeeaMatrix Screensaver](.github/preview.jpg)
+![VeeaMatrix Screensaver](PNGs/banner.png)
+
+## Screenshots
+
+| Matrix Rain | Star Wars CRAWL Intro |
+|---|---|
+| ![Settings – Matrix Rain](PNGs/settings-matrix.png) | ![Settings – CRAWL Mode](PNGs/settings-crawl.png) |
+
+![CRAWL Intro Phase](PNGs/crawl-intro.png)
+
+---
 
 ## Download
 
