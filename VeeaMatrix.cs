@@ -2536,7 +2536,7 @@ namespace VeeaMatrix
                     };
                     Controls.Add(eb);
                 }
-                yR += 8;
+                yR += 36;
                 // ── Settings Profiles row (within BACKUP OPERATIONS) ───────────
                 string profDir = Settings.SettingsProfilesDir;
                 var cboProf = new ComboBox {
