@@ -71,6 +71,7 @@ This removes the "downloaded from internet" flag and prevents the Defender warni
 |---|---|
 | **Matrix Rain** | 7 word effects: Scroll, Fade, Build, Scramble, Scan, Zoom, Glitch |
 | **Star Wars Intro** | Star Wars–style perspective scroll with static intro phase |
+| **CRAWL templates** | Episode IV, Spaceballs, Veeam Edition — fully editable |
 | **Dual banner** | Matrix-style banner in Word Stream mode, Jedi banner in CRAWL mode — both hard-embedded |
 | **Color profiles** | 7 built-ins: Veeam, Cyberpunk, Amber CRT, Deep Space, Aurora, Star Wars, Hello Kitty |
 | **Color picker** | 2 consolidated buttons — Color + Head (bright) — apply to all layers at once |
@@ -82,7 +83,6 @@ This removes the "downloaded from internet" flag and prevents the Defender warni
 | **Multi-monitor** | One render surface per screen; primary drives the app lifecycle |
 | **Font control** | System font picker, size, Bold, Italic — shared across all word effects |
 | **Custom terms** | Edit the built-in catalog per session or save to `%APPDATA%\VeeaMatrix\` |
-| **CRAWL templates** | Episode IV, Spaceballs, Veeam Edition — fully editable |
 | **Zero install** | Single `.scr` file; right-click → Install, or copy to `System32` |
 
 ---
