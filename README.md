@@ -30,14 +30,6 @@ Single `.scr` file — no installer, no dependencies. .NET Framework 4.x ships w
 
 ---
 
-### 🔴 Unblock via file Properties — always do this before first run
-
-> Right-click `VeeaMatrix.scr` → **Eigenschaften / Properties** → tick **Zulassen / Unblock** → **OK**
-
-This removes the "downloaded from internet" flag and prevents the Defender warning.
-
----
-
 ### 🔴 Browser blocks the .scr download (Edge / Chrome)
 
 You see: *"VeeaMatrix.scr wird häufig nicht heruntergeladen"*
@@ -45,7 +37,15 @@ You see: *"VeeaMatrix.scr wird häufig nicht heruntergeladen"*
 - **Edge:** Click **`…`** next to the file → **Beibehalten** → **Trotzdem beibehalten**
 - **Chrome:** Click the **arrow ▾** → **Keep** / **Trotzdem behalten**
 
-➡️ Then unblock the file via Properties (see above) before running.
+➡️ Then unblock the file via Properties (see below) before running.
+
+---
+
+### 🔴 Unblock via file Properties — always do this before first run
+
+> Right-click `VeeaMatrix.scr` → **Eigenschaften / Properties** → tick **Zulassen / Unblock** → **OK**
+
+This removes the "downloaded from internet" flag and prevents the Defender warning.
 
 ---
 
