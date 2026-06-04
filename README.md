@@ -32,6 +32,14 @@ Single `.scr` file — no installer, no dependencies. .NET Framework 4.x ships w
 
 ---
 
+### 🔴 Unblock via file Properties — always do this before first run
+
+> Right-click `VeeaMatrix.scr` → **Eigenschaften / Properties** → tick **Zulassen / Unblock** → **OK**
+
+This removes the "downloaded from internet" flag and prevents the Defender warning.
+
+---
+
 ### ✅ Best solution — PowerShell Installer (no SmartScreen at all)
 
 1. Download **[Install-VeeaMatrix.ps1](../../releases/latest/download/Install-VeeaMatrix.ps1)** and **[VeeaMatrix.scr](../../releases/latest/download/VeeaMatrix.scr)** into the same folder
@@ -42,21 +50,6 @@ Single `.scr` file — no installer, no dependencies. .NET Framework 4.x ships w
 
 ---
 
-### 💡 Manual fix — PowerShell Unblock (works 100%)
-
-Open **PowerShell** in the folder containing `VeeaMatrix.scr` and run:
-
-```powershell
-Unblock-File -Path .\VeeaMatrix.scr
-```
-
-This permanently removes the internet-download flag from the file. After that it runs without any warnings.
-
-> **How to open PowerShell in the right folder:**
-> Hold `Shift` and right-click in the folder → **"PowerShell-Fenster hier öffnen"** / **"Open PowerShell window here"**
-
----
-
 ### 🔴 Browser blocks the .scr download (Edge / Chrome)
 
 You see: *"VeeaMatrix.scr wird häufig nicht heruntergeladen"*
@@ -64,26 +57,7 @@ You see: *"VeeaMatrix.scr wird häufig nicht heruntergeladen"*
 - **Edge:** Click **`…`** next to the file → **Beibehalten** → **Trotzdem beibehalten**
 - **Chrome:** Click the **arrow ▾** → **Keep** / **Trotzdem behalten**
 
-➡️ Then unblock the file via Properties (see below) before running.
-
----
-
-### 🔴 Unblock via file Properties — always do this before first run
-
-> Right-click `VeeaMatrix.scr` → **Eigenschaften / Properties** → tick **Zulassen / Unblock** → **OK**
-
-This removes the "downloaded from internet" flag and prevents the Defender warning.
-
----
-
-### 🔴 Windows Defender shows *"Ein Teil dieser App wurde blockiert"*
-
-> **Note:** "Weitere Informationen" in this dialog opens a website — there is **no "Run anyway" button** here.
-
-Fix: Make sure you completed the **Properties → Unblock** step above, then try again.
-
-If it still appears after unblocking:
-> **Windows Security** → **App- & Browsersteuerung** → **Reputationsbasierter Schutz** → temporarily disable *"Potenziell unerwünschte Apps blockieren"*, run the file, re-enable.
+➡️ Then unblock the file via Properties (see above) before running.
 
 ---
 
