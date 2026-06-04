@@ -27,19 +27,25 @@ When downloading you may see *"VeeaMatrix.scr wird häufig nicht heruntergeladen
 
 ---
 
-### 🔴 Step 2 — Windows Defender blocks the file on launch
-
-You may see: *"Ein Teil dieser App wurde blockiert"* / *"Windows protected your PC"*
-
-> Click **"Weitere Informationen"** (More info) → **"Trotzdem ausführen"** (Run anyway)
-
----
-
-### 🔴 Step 3 — Unblock via file Properties (recommended before running)
+### 🔴 Step 2 — Unblock via file Properties (do this FIRST — prevents all other warnings)
 
 > Right-click `VeeaMatrix.scr` → **Eigenschaften / Properties** → tick **Zulassen / Unblock** at the bottom → **OK**
 
-Doing Step 3 first prevents Steps 1 & 2 from appearing at all.
+**This is the most important step.** Doing this before running prevents the Defender warning entirely.
+
+---
+
+### 🔴 Step 3 — Windows Defender still blocks after running
+
+You may see: *"Ein Teil dieser App wurde blockiert"* — **"Weitere Informationen" opens a website, not a bypass option.**
+
+The correct fix is to go back to **Step 2** (Properties → Unblock) and make sure the checkmark was saved. Then try running again.
+
+If it still appears:
+> **Windows Security** → **App- & Browsersteuerung** → **Reputationsbasierter Schutz** → turn off *"Potenziell unerwünschte Apps blockieren"* temporarily, run the file, then re-enable.
+
+Or:
+> **Windows Security** → **Viren- & Bedrohungsschutz** → **Ransomware-Schutz verwalten** → **App durch überwachten Ordnerzugriff zulassen** → add `VeeaMatrix.scr`
 
 ---
 
