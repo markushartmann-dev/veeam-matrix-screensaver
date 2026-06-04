@@ -144,6 +144,7 @@ Runs on **all connected monitors simultaneously**. The primary monitor drives th
 
 | Version | Highlights |
 |---|---|
+| **v1.82** | Settings Profiles merged into BACKUP OPERATIONS; full button labels; UI 5% shorter |
 | **v1.81** | BACKUP OPERATIONS: Settings Profiles — save/load full settings as named `.ini` files |
 | **v1.80** | Narrower cinema bars (86%); Credits white text; Crawl button grey/white |
 | **v1.79** | Cinema letterbox — both banners fill-width, 72% height, equal bars top+bottom |

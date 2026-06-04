@@ -1,4 +1,4 @@
-// VeeaMatrix.cs  -  Windows Screensaver v1.81
+// VeeaMatrix.cs  -  Windows Screensaver v1.82
 // Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
@@ -2536,17 +2536,11 @@ namespace VeeaMatrix
                     };
                     Controls.Add(eb);
                 }
-                yR += 36;
-            }
-
-            // ── Settings Profiles — Save / Load full settings as named profiles ──
-            HSep(yR, div3, fw-div3-14); yR += 12;
-            Section(T("SETTINGS PROFILES","EINSTELLUNGSPROFILE"), c3, yR, cW3); yR += 26;
-            {
+                yR += 8;
+                // ── Settings Profiles row (within BACKUP OPERATIONS) ───────────
                 string profDir = Settings.SettingsProfilesDir;
-                // Profile dropdown
                 var cboProf = new ComboBox {
-                    Location = new Point(c3, yR), Size = new Size(cW3 - 176, 24),
+                    Location = new Point(c3, yR), Size = new Size(cW3 - 215, 24),
                     FlatStyle = FlatStyle.Flat, DropDownStyle = ComboBoxStyle.DropDownList,
                     BackColor = _dark ? Color.FromArgb(18,30,18) : Color.FromArgb(240,250,240),
                     ForeColor = ForeColor,  Font = new Font("Segoe UI", 8.5f)
@@ -2559,11 +2553,11 @@ namespace VeeaMatrix
                 };
                 refreshProfiles();
                 Controls.Add(cboProf);
-                int bpx = c3 + cW3 - 168;  // x for profile buttons
+                int bpx = c3 + cW3 - 207;  // x for profile buttons
                 // Save As button
                 var btnPSave = new Button {
                     Text = T("Save As","Speichern"),
-                    Location = new Point(bpx, yR - 1), Size = new Size(80, 26),
+                    Location = new Point(bpx, yR - 1), Size = new Size(85, 26),
                     FlatStyle = FlatStyle.Flat,
                     BackColor = Color.FromArgb(0,80,22), ForeColor = Color.White
                 };
@@ -2587,7 +2581,7 @@ namespace VeeaMatrix
                 // Load button
                 var btnPLoad = new Button {
                     Text = T("Load","Laden"),
-                    Location = new Point(bpx + 84, yR - 1), Size = new Size(40, 26),
+                    Location = new Point(bpx + 89, yR - 1), Size = new Size(57, 26),
                     FlatStyle = FlatStyle.Flat,
                     BackColor = Color.FromArgb(0,60,90), ForeColor = Color.White
                 };
@@ -2605,8 +2599,8 @@ namespace VeeaMatrix
                 Controls.Add(btnPLoad);
                 // Delete button
                 var btnPDel = new Button {
-                    Text = T("Del","Löschen"),
-                    Location = new Point(bpx + 128, yR - 1), Size = new Size(40, 26),
+                    Text = T("Delete","Löschen"),
+                    Location = new Point(bpx + 150, yR - 1), Size = new Size(57, 26),
                     FlatStyle = FlatStyle.Flat,
                     BackColor = Color.FromArgb(60,10,10), ForeColor = Color.White
                 };
@@ -2625,8 +2619,9 @@ namespace VeeaMatrix
             Section(T("CHANGE LOG","ÄNDERUNGSPROTOKOLL"), c3, yR, cW3); yR += 26;
             {
                 string changelog =
-                    "v1.80  Narrower cinema bars (86%, was 72%); Credits white text; Crawl button grey/white\r\n" +
+                    "v1.82  Settings Profiles inside BACKUP OPERATIONS; wider Load/Delete buttons; UI 5% shorter\r\n" +
                     "v1.81  BACKUP OPERATIONS: Settings Profiles - save/load full settings as named .ini files\r\n" +
+                    "v1.80  Narrower cinema bars (86%, was 72%); Credits white text; Crawl button grey/white\r\n" +
                     "v1.79  Cinema letterbox: both banners fill-width, 72% height, equal bars top+bottom\r\n" +
                     "v1.78  Credits popup respects Light/Dark mode; Matrix banner fills full width, bars on top\r\n" +
                     "v1.77  Credits popup: OK button; Term Catalog smaller (560x540) + Light/Dark mode\r\n" +
@@ -2702,7 +2697,7 @@ namespace VeeaMatrix
                     "v1.0   Initial release — Matrix rain + word drops + popups";
                 var txtLog = new TextBox {
                     Location    = new Point(c3, yR),
-                    Size        = new Size(cW3, 240),
+                    Size        = new Size(cW3, 155),
                     Text        = changelog,
                     BackColor   = _dark ? Color.FromArgb(4,10,4) : Color.FromArgb(235,245,235),
                     ForeColor   = _dark ? Color.FromArgb(0,190,55) : Color.FromArgb(0,120,35),
@@ -2714,7 +2709,7 @@ namespace VeeaMatrix
                     WordWrap    = false
                 };
                 Controls.Add(txtLog);
-                yR += 246;
+                yR += 161;
             }
 
             // Wire all controls to mark preview dirty (exclude cboLanguage and txtFontPreviewText)
@@ -2867,7 +2862,7 @@ namespace VeeaMatrix
                         if (img == null || img.Width == 0) return;
                         var pb   = (PictureBox)bps;
                         int dw = pb.Width;
-                        int dh = (int)(pb.Height * 0.86);  // cinema letterbox: ~7% bars top + bottom
+                        int dh = (int)(pb.Height * 0.84);  // cinema letterbox: ~8% bars top + bottom
                         int dx = 0;
                         int dy = (pb.Height - dh) / 2;
                         bpe.Graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
