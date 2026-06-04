@@ -18,7 +18,7 @@ A fully-functional Windows screensaver (`.scr`) where the Matrix digital rain sp
 
 | Option | When to use |
 |---|---|
-| 👉 **[VeeaMatrix.scr](../../releases/latest/download/VeeaMatrix.scr)** | Direct download |
+| 👉 **[VeeaMatrix.scr](https://github.com/markushartmann-dev/veeam-matrix-screensaver/raw/main/VeeaMatrix.scr)** | Direct download |
 
 Single `.scr` file — no installer, no dependencies. .NET Framework 4.x ships with every Windows 10/11 system.
 
