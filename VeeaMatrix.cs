@@ -1,4 +1,4 @@
-// VeeaMatrix.cs  -  Windows Screensaver v1.80
+// VeeaMatrix.cs  -  Windows Screensaver v1.81
 // Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
@@ -279,6 +279,109 @@ namespace VeeaMatrix
             sb.AppendLine("Language="         + Language);
             sb.AppendLine("DarkMode="         + DarkMode);
             File.WriteAllText(ConfigFile, sb.ToString(), Encoding.UTF8);
+        }
+
+        internal static string SettingsProfilesDir
+        { get { return Path.Combine(ConfigDir, "settings_profiles"); } }
+
+        public void SaveToFile(string filePath)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(filePath));
+            var sb = new StringBuilder();
+            sb.AppendLine("[VeeaMatrix]");
+            sb.AppendLine("RainColor="     + ToHex(RainColor));
+            sb.AppendLine("HeadColor="     + ToHex(HeadColor));
+            sb.AppendLine("FadeAlpha="     + FadeAlpha);
+            sb.AppendLine("FontSize="      + FontSize);
+            sb.AppendLine("SpeedFactor="   + SpeedFactor.ToString("F2", System.Globalization.CultureInfo.InvariantCulture));
+            sb.AppendLine("ShowScanlines=" + ShowScanlines);
+            sb.AppendLine("ShowWatermark=" + ShowWatermark);
+            sb.AppendLine("WordMode="      + WordMode);
+            sb.AppendLine("WordCount="     + WordCount);
+            sb.AppendLine("WordFontSize="  + WordFontSize);
+            sb.AppendLine("WordColor="     + ToHex(WordColor));
+            sb.AppendLine("WordHeadColor=" + ToHex(WordHeadColor));
+            sb.AppendLine("GlowChance="    + GlowChance.ToString("F2", System.Globalization.CultureInfo.InvariantCulture));
+            sb.AppendLine("PopupEffects="     + PopupEffects);
+            sb.AppendLine("PopupCount="       + PopupCount);
+            sb.AppendLine("PopupFontSize="    + PopupFontSize);
+            sb.AppendLine("PopupColor="       + ToHex(PopupColor));
+            sb.AppendLine("PopupSpeedFactor=" + PopupSpeedFactor.ToString("F2", System.Globalization.CultureInfo.InvariantCulture));
+            sb.AppendLine("Orientation="      + Orientation);
+            sb.AppendLine("WordOrientation="  + WordOrientation);
+            sb.AppendLine("WordStyle="        + WordStyle);
+            sb.AppendLine("WordSpeedFactor="  + WordSpeedFactor.ToString("F2", System.Globalization.CultureInfo.InvariantCulture));
+            sb.AppendLine("CrawlHideRain="    + CrawlHideRain);
+            sb.AppendLine("PopupHideRain="    + PopupHideRain);
+            sb.AppendLine("CrawlStarfield="   + CrawlStarfield);
+            sb.AppendLine("OrderedTerms="     + OrderedTerms);
+            sb.AppendLine("CrawlText="        + CrawlText);
+            sb.AppendLine("ShowVeeam100="     + ShowVeeam100);
+            sb.AppendLine("UseBuiltinTerms="  + UseBuiltinTerms);
+            sb.AppendLine("WatermarkText="    + WatermarkText);
+            sb.AppendLine("WatermarkSubText=" + WatermarkSubText);
+            sb.AppendLine("ExtraWords="       + ExtraWords);
+            sb.AppendLine("WordFontName="     + WordFontName);
+            sb.AppendLine("WordFontBold="     + WordFontBold);
+            sb.AppendLine("WordFontItalic="   + WordFontItalic);
+            sb.AppendLine("Language="         + Language);
+            sb.AppendLine("DarkMode="         + DarkMode);
+            File.WriteAllText(filePath, sb.ToString(), Encoding.UTF8);
+        }
+
+        public static Settings LoadFromFile(string filePath)
+        {
+            var s = new Settings();
+            if (!File.Exists(filePath)) return s;
+            var ic = System.Globalization.CultureInfo.InvariantCulture;
+            foreach (string raw in File.ReadAllLines(filePath, Encoding.UTF8))
+            {
+                string ln = raw.Trim();
+                if (ln.StartsWith("#") || ln.StartsWith("[") || !ln.Contains("=")) continue;
+                int eq = ln.IndexOf('=');
+                string k = ln.Substring(0, eq).Trim();
+                string v = ln.Substring(eq + 1).Trim();
+                try { switch (k) {
+                    case "RainColor":       s.RainColor       = FromHex(v); break;
+                    case "HeadColor":       s.HeadColor       = FromHex(v); break;
+                    case "FadeAlpha":       s.FadeAlpha       = int.Parse(v); break;
+                    case "FontSize":        s.FontSize        = int.Parse(v); break;
+                    case "SpeedFactor":     s.SpeedFactor     = float.Parse(v, ic); break;
+                    case "ShowScanlines":   s.ShowScanlines   = bool.Parse(v); break;
+                    case "ShowWatermark":   s.ShowWatermark   = bool.Parse(v); break;
+                    case "WordMode":        s.WordMode        = v; break;
+                    case "WordCount":       s.WordCount       = int.Parse(v); break;
+                    case "WordFontSize":    s.WordFontSize    = int.Parse(v); break;
+                    case "WordColor":       s.WordColor       = FromHex(v); break;
+                    case "WordHeadColor":   s.WordHeadColor   = FromHex(v); break;
+                    case "GlowChance":      s.GlowChance      = float.Parse(v, ic); break;
+                    case "PopupEffects":    s.PopupEffects    = v; break;
+                    case "PopupCount":      s.PopupCount      = int.Parse(v); break;
+                    case "PopupFontSize":   s.PopupFontSize   = int.Parse(v); break;
+                    case "PopupColor":      s.PopupColor      = FromHex(v); break;
+                    case "PopupSpeedFactor": s.PopupSpeedFactor = float.Parse(v, ic); break;
+                    case "Orientation":     s.Orientation     = v; break;
+                    case "WordOrientation": s.WordOrientation = v; break;
+                    case "WordStyle":       s.WordStyle       = v; break;
+                    case "WordSpeedFactor": s.WordSpeedFactor = float.Parse(v, ic); break;
+                    case "CrawlHideRain":   s.CrawlHideRain   = bool.Parse(v); break;
+                    case "PopupHideRain":   s.PopupHideRain   = bool.Parse(v); break;
+                    case "CrawlStarfield":  s.CrawlStarfield  = bool.Parse(v); break;
+                    case "OrderedTerms":    s.OrderedTerms    = bool.Parse(v); break;
+                    case "CrawlText":       s.CrawlText       = v; break;
+                    case "ShowVeeam100":    s.ShowVeeam100    = bool.Parse(v); break;
+                    case "UseBuiltinTerms": s.UseBuiltinTerms = bool.Parse(v); break;
+                    case "WatermarkText":   s.WatermarkText   = v; break;
+                    case "WatermarkSubText": s.WatermarkSubText = v; break;
+                    case "ExtraWords":      s.ExtraWords      = v; break;
+                    case "WordFontName":    s.WordFontName    = v; break;
+                    case "WordFontBold":    s.WordFontBold    = bool.Parse(v); break;
+                    case "WordFontItalic":  s.WordFontItalic  = bool.Parse(v); break;
+                    case "Language":        s.Language        = v; break;
+                    case "DarkMode":        s.DarkMode        = bool.Parse(v); break;
+                } } catch { }
+            }
+            return s;
         }
 
         public static Settings Load()
@@ -2436,12 +2539,94 @@ namespace VeeaMatrix
                 yR += 36;
             }
 
+            // ── Settings Profiles — Save / Load full settings as named profiles ──
+            HSep(yR, div3, fw-div3-14); yR += 12;
+            Section(T("SETTINGS PROFILES","EINSTELLUNGSPROFILE"), c3, yR, cW3); yR += 26;
+            {
+                string profDir = Settings.SettingsProfilesDir;
+                // Profile dropdown
+                var cboProf = new ComboBox {
+                    Location = new Point(c3, yR), Size = new Size(cW3 - 176, 24),
+                    FlatStyle = FlatStyle.Flat, DropDownStyle = ComboBoxStyle.DropDownList,
+                    BackColor = _dark ? Color.FromArgb(18,30,18) : Color.FromArgb(240,250,240),
+                    ForeColor = ForeColor,  Font = new Font("Segoe UI", 8.5f)
+                };
+                Action refreshProfiles = delegate {
+                    cboProf.Items.Clear();
+                    if (Directory.Exists(profDir))
+                        foreach (string f in Directory.GetFiles(profDir, "*.ini"))
+                            cboProf.Items.Add(Path.GetFileNameWithoutExtension(f));
+                };
+                refreshProfiles();
+                Controls.Add(cboProf);
+                int bpx = c3 + cW3 - 168;  // x for profile buttons
+                // Save As button
+                var btnPSave = new Button {
+                    Text = T("Save As","Speichern"),
+                    Location = new Point(bpx, yR - 1), Size = new Size(80, 26),
+                    FlatStyle = FlatStyle.Flat,
+                    BackColor = Color.FromArgb(0,80,22), ForeColor = Color.White
+                };
+                btnPSave.FlatAppearance.BorderColor = Color.FromArgb(0,170,55);
+                btnPSave.Click += delegate {
+                    string name = Microsoft.VisualBasic.Interaction.InputBox(
+                        T("Profile name:","Profilname:"),
+                        T("Save Settings Profile","Einstellungsprofil speichern"), "");
+                    name = name.Trim();
+                    if (name.Length == 0) return;
+                    foreach (char ch in Path.GetInvalidFileNameChars()) name = name.Replace(ch.ToString(), "");
+                    if (name.Length == 0) return;
+                    try {
+                        Directory.CreateDirectory(profDir);
+                        cur.SaveToFile(Path.Combine(profDir, name + ".ini"));
+                        refreshProfiles();
+                        cboProf.SelectedItem = name;
+                    } catch (Exception ex) { MessageBox.Show(ex.Message); }
+                };
+                Controls.Add(btnPSave);
+                // Load button
+                var btnPLoad = new Button {
+                    Text = T("Load","Laden"),
+                    Location = new Point(bpx + 84, yR - 1), Size = new Size(40, 26),
+                    FlatStyle = FlatStyle.Flat,
+                    BackColor = Color.FromArgb(0,60,90), ForeColor = Color.White
+                };
+                btnPLoad.FlatAppearance.BorderColor = Color.FromArgb(0,140,200);
+                btnPLoad.Click += delegate {
+                    if (cboProf.SelectedItem == null) return;
+                    string fp = Path.Combine(profDir, cboProf.SelectedItem.ToString() + ".ini");
+                    try {
+                        var loaded = Settings.LoadFromFile(fp);
+                        loaded.Language = cur.Language;  // keep UI language
+                        cur = loaded;
+                        RebuildUI();
+                    } catch (Exception ex) { MessageBox.Show(ex.Message); }
+                };
+                Controls.Add(btnPLoad);
+                // Delete button
+                var btnPDel = new Button {
+                    Text = T("Del","Löschen"),
+                    Location = new Point(bpx + 128, yR - 1), Size = new Size(40, 26),
+                    FlatStyle = FlatStyle.Flat,
+                    BackColor = Color.FromArgb(60,10,10), ForeColor = Color.White
+                };
+                btnPDel.FlatAppearance.BorderColor = Color.FromArgb(140,30,30);
+                btnPDel.Click += delegate {
+                    if (cboProf.SelectedItem == null) return;
+                    string fp = Path.Combine(profDir, cboProf.SelectedItem.ToString() + ".ini");
+                    try { File.Delete(fp); refreshProfiles(); } catch { }
+                };
+                Controls.Add(btnPDel);
+                yR += 32;
+            }
+
             // ── CHANGE LOG — right column ─────────────────────────────────────
             HSep(yR, div3, fw-div3-14); yR += 12;
             Section(T("CHANGE LOG","ÄNDERUNGSPROTOKOLL"), c3, yR, cW3); yR += 26;
             {
                 string changelog =
                     "v1.80  Narrower cinema bars (86%, was 72%); Credits white text; Crawl button grey/white\r\n" +
+                    "v1.81  BACKUP OPERATIONS: Settings Profiles - save/load full settings as named .ini files\r\n" +
                     "v1.79  Cinema letterbox: both banners fill-width, 72% height, equal bars top+bottom\r\n" +
                     "v1.78  Credits popup respects Light/Dark mode; Matrix banner fills full width, bars on top\r\n" +
                     "v1.77  Credits popup: OK button; Term Catalog smaller (560x540) + Light/Dark mode\r\n" +
