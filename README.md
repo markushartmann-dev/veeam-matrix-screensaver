@@ -12,20 +12,30 @@ Single `.scr` file — no installer, no dependencies. .NET Framework 4.x ships w
 
 ---
 
+## ⚠️ First Run — Unblock the file
+
+Because `VeeaMatrix.scr` is not commercially code-signed, **Windows will block it on first download.** Fix it in 3 seconds:
+
+**Step 1 — Before running:**
+> Right-click `VeeaMatrix.scr` → **Properties** → tick **Unblock** (bottom of dialog) → **OK**
+
+**Step 2 — If SmartScreen still appears:**
+> Click **"More info"** → **"Run anyway"**
+> *(German: "Weitere Informationen" → "Trotzdem ausführen")*
+
+This is a one-time step. The file is safe — full source code is in this repo.
+
+---
+
 ## Installation
 
-1. **Download** `VeeaMatrix.scr`
+1. **Download** `VeeaMatrix.scr` and **unblock it** (see above)
 2. **Right-click** the file:
    - **Install** — registers as system screensaver (requires admin)
    - **Test** — runs fullscreen immediately
    - **Configure** — opens the settings dialog
 
    Or double-click to run it directly.
-
-> **⚠️ Windows SmartScreen warning?**
-> Because this file is not commercially code-signed, Windows Defender SmartScreen may block it on first run.
-> **Fix:** Right-click `VeeaMatrix.scr` → **Properties** → tick **Unblock** at the bottom → **OK** — then run normally.
-> Alternatively click **"Weitere Informationen"** (More info) in the SmartScreen dialog → **"Trotzdem ausführen"** (Run anyway).
 
 ---
 
