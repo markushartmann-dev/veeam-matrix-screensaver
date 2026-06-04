@@ -2603,25 +2603,39 @@ namespace VeeaMatrix
                 RebuildUI();
             };
 
-            // Tribute label — bottom-left
-            var lnkTribute = new LinkLabel {
-                Text      = T("a tribute to the veeam community\nby Markus Hartmann\nvisit markushartmann.blog",
-                               "Ein Dank an die Veeam Community\nvon Markus Hartmann\nmarkushartmann.blog besuchen"),
-                Location  = new Point(c1, yBot + 2),
-                Size      = new Size(360, 48),
-                ForeColor = Color.FromArgb(100, 160, 100),
-                Font      = new Font("Segoe UI", 7.5f),
-                LinkColor = Color.FromArgb(0, 200, 80),
-                ActiveLinkColor = Color.FromArgb(0, 255, 100),
-                BackColor = Color.Transparent,
-                AutoSize  = false
+            // Credits button
+            var btnCredits = new Button {
+                Text = T("Credits","Credits"),
+                Location = new Point(c1, yBot), Size = new Size(80, 32),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(20, 40, 20), ForeColor = Color.FromArgb(0, 200, 80)
             };
-            int blogStart = lnkTribute.Text.LastIndexOf("markushartmann.blog");
-            lnkTribute.Links.Add(new LinkLabel.Link(blogStart, "markushartmann.blog".Length, "https://markushartmann.blog"));
-            lnkTribute.LinkClicked += delegate(object ls, LinkLabelLinkClickedEventArgs le) {
-                try { System.Diagnostics.Process.Start((string)le.Link.LinkData); } catch {}
+            btnCredits.FlatAppearance.BorderColor = Color.FromArgb(0, 160, 60);
+            btnCredits.Click += delegate {
+                var dC = new Form { Text = T("Credits","Credits"), Size = new Size(420,210),
+                    StartPosition = FormStartPosition.CenterParent,
+                    FormBorderStyle = FormBorderStyle.FixedDialog,
+                    MaximizeBox = false, MinimizeBox = false,
+                    BackColor = Color.FromArgb(10,18,10) };
+                var lC = new LinkLabel {
+                    Text = T("a tribute to the veeam community\nby Markus Hartmann\nmarkushartmann.blog",
+                             "Ein Dank an die Veeam Community\nvon Markus Hartmann\nmarkushartmann.blog"),
+                    Location = new Point(20,20), Size = new Size(370,90),
+                    ForeColor = Color.FromArgb(160,220,160),
+                    Font = new Font("Segoe UI", 10f),
+                    LinkColor = Color.FromArgb(0,210,90),
+                    ActiveLinkColor = Color.FromArgb(0,255,110),
+                    BackColor = Color.Transparent, AutoSize = false };
+                int p1 = lC.Text.IndexOf("Markus Hartmann");
+                int p2 = lC.Text.LastIndexOf("markushartmann.blog");
+                lC.Links.Add(new LinkLabel.Link(p1, "Markus Hartmann".Length,    "https://www.linkedin.com/in/markus-hartmann-28311232/"));
+                lC.Links.Add(new LinkLabel.Link(p2, "markushartmann.blog".Length, "https://markushartmann.blog"));
+                lC.LinkClicked += delegate(object s2, LinkLabelLinkClickedEventArgs e2) {
+                    try { System.Diagnostics.Process.Start((string)e2.Link.LinkData); } catch {}
+                };
+                dC.Controls.Add(lC); dC.ShowDialog(this);
             };
-            Controls.Add(lnkTribute);
+            Controls.Add(btnCredits);
             Controls.Add(btnReset); Controls.Add(btnOK); Controls.Add(btnCancel);
             AcceptButton=btnOK; CancelButton=btnCancel;
 
@@ -2653,7 +2667,8 @@ namespace VeeaMatrix
                         double srcAR = (double)img.Width / img.Height;
                         int dw = pb.Width;
                         int dh = (int)(dw / srcAR);
-                        if (dh > pb.Height) { dh = pb.Height; dw = (int)(dh * srcAR); }
+                        int maxDh = (int)(pb.Height * 0.88);
+                        if (dh > maxDh) { dh = maxDh; dw = (int)(dh * srcAR); }
                         int dx = (pb.Width - dw) / 2;
                         int dy = (pb.Height - dh) / 2;
                         bpe.Graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
