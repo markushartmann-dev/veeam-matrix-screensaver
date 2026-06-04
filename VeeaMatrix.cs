@@ -1105,7 +1105,8 @@ namespace VeeaMatrix
                 float totalIntroH   = _crawlIntro.Length * introLineH;
                 float introY        = (H - totalIntroH) / 2f;
                 int ca = Clamp((int)(alpha * 255));
-                using (Font iFont = new Font(s.WordFontName, introFontSize, FontStyle.Italic, GraphicsUnit.Point))
+                FontStyle introFs = (s.WordFontBold ? FontStyle.Bold : FontStyle.Regular) | (s.WordFontItalic ? FontStyle.Italic : FontStyle.Regular);
+                using (Font iFont = new Font(s.WordFontName, introFontSize, introFs, GraphicsUnit.Point))
                 {
                     foreach (string line in _crawlIntro)
                     {
