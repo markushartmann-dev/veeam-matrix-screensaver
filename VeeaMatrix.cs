@@ -1,4 +1,4 @@
-// VeeaMatrix.cs  -  Windows Screensaver v1.82
+// VeeaMatrix.cs  -  Windows Screensaver v1.83
 // Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
@@ -2512,8 +2512,8 @@ namespace VeeaMatrix
                     T("License",              "Lizenz")
                 };
                 string[] btnMsgs = new string[] {
-                    T("For that you should use\nVeeam Backup & Replication!",
-                      "Dafuer solltest du besser\nVeeam Backup & Replication verwenden!"),
+                    T("For that you should use\nVeeam Backup & Replication!\n\nTo save your VeeaMatrix settings,\nplease use the Save As function.",
+                      "Dafuer solltest du Veeam Backup & Replication verwenden!\n\nZum Speichern der VeeaMatrix-Einstellungen\nbitte die 'Save As'-Funktion nutzen."),
                     T("You already have the Premium features.",
                       "Du hast bereits die Premium-Features.")
                 };
@@ -2570,6 +2570,23 @@ namespace VeeaMatrix
                     if (name.Length == 0) return;
                     foreach (char ch in Path.GetInvalidFileNameChars()) name = name.Replace(ch.ToString(), "");
                     if (name.Length == 0) return;
+                    // Sync all UI controls to cur before saving (same as OK handler)
+                    cur.Orientation      = cboOrient.Text;
+                    cur.WordOrientation  = cboWordOrient.Text;
+                    cur.ShowScanlines    = chkScanlines != null && chkScanlines.Checked;
+                    cur.ShowWatermark    = chkWatermark != null && chkWatermark.Checked;
+                    cur.ShowVeeam100     = chkVeeam100  != null && chkVeeam100.Checked;
+                    if (chkBuiltinTerms  != null) cur.UseBuiltinTerms  = chkBuiltinTerms.Checked;
+                    if (txtWatermark     != null) cur.WatermarkText    = txtWatermark.Text.Trim();
+                    if (txtWatermarkSub  != null) cur.WatermarkSubText = txtWatermarkSub.Text.Trim();
+                    if (txtExtra         != null) cur.ExtraWords       = txtExtra.Text.Trim();
+                    if (trkPopupSpeed    != null) cur.PopupSpeedFactor = trkPopupSpeed.Value / 10f;
+                    if (cboWordFontName  != null && cboWordFontName.SelectedItem != null) cur.WordFontName = cboWordFontName.SelectedItem.ToString();
+                    if (chkWordFontBold  != null) cur.WordFontBold   = chkWordFontBold.Checked;
+                    if (chkWordFontItalic != null) cur.WordFontItalic = chkWordFontItalic.Checked;
+                    if (chkCrawlHideRain != null) { cur.CrawlHideRain = cur.PopupHideRain = chkCrawlHideRain.Checked; }
+                    if (chkCrawlStarfield != null) cur.CrawlStarfield = chkCrawlStarfield.Checked;
+                    if (chkOrderedTerms  != null) cur.OrderedTerms   = chkOrderedTerms.Checked;
                     try {
                         Directory.CreateDirectory(profDir);
                         cur.SaveToFile(Path.Combine(profDir, name + ".ini"));
@@ -2619,6 +2636,7 @@ namespace VeeaMatrix
             Section(T("CHANGE LOG","ÄNDERUNGSPROTOKOLL"), c3, yR, cW3); yR += 26;
             {
                 string changelog =
+                    "v1.83  Save As syncs all UI fields before saving; Config Backup hints about Save As\r\n" +
                     "v1.82  Settings Profiles inside BACKUP OPERATIONS; wider Load/Delete buttons; UI 5% shorter\r\n" +
                     "v1.81  BACKUP OPERATIONS: Settings Profiles - save/load full settings as named .ini files\r\n" +
                     "v1.80  Narrower cinema bars (86%, was 72%); Credits white text; Crawl button grey/white\r\n" +

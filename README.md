@@ -144,6 +144,7 @@ Runs on **all connected monitors simultaneously**. The primary monitor drives th
 
 | Version | Highlights |
 |---|---|
+| **v1.83** | Save As fully syncs all UI fields; Config Backup button hints about Save As |
 | **v1.82** | Settings Profiles merged into BACKUP OPERATIONS; full button labels; UI 5% shorter |
 | **v1.81** | BACKUP OPERATIONS: Settings Profiles — save/load full settings as named `.ini` files |
 | **v1.80** | Narrower cinema bars (86%); Credits white text; Crawl button grey/white |
