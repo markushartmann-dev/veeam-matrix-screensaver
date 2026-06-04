@@ -1,4 +1,4 @@
-// VeeaMatrix.cs  -  Windows Screensaver v1.83
+// VeeaMatrix.cs  -  Windows Screensaver v1.84
 // Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
@@ -2636,6 +2636,7 @@ namespace VeeaMatrix
             Section(T("CHANGE LOG","ÄNDERUNGSPROTOKOLL"), c3, yR, cW3); yR += 26;
             {
                 string changelog =
+                    "v1.84  Credits: DE Hommage text; Blog/GitHub prefixes; blank line; links only on URLs\r\n" +
                     "v1.83  Save As syncs all UI fields before saving; Config Backup hints about Save As\r\n" +
                     "v1.82  Settings Profiles inside BACKUP OPERATIONS; wider Load/Delete buttons; UI 5% shorter\r\n" +
                     "v1.81  BACKUP OPERATIONS: Settings Profiles - save/load full settings as named .ini files\r\n" +
@@ -2828,7 +2829,7 @@ namespace VeeaMatrix
                     BackColor = dmC ? Color.FromArgb(10,18,10) : Color.FromArgb(240,248,240) };
                 var lC = new LinkLabel {
                     Text = T("a tribute to the veeam community\nby Markus Hartmann\n\nLinkedIn: linkedin.com/in/markus-hartmann-28311232\nBlog: markushartmann.blog\nGitHub: github.com/markushartmann-dev",
-                             "Ein Dank an die Veeam Community\nvon Markus Hartmann\n\nLinkedIn: linkedin.com/in/markus-hartmann-28311232\nBlog: markushartmann.blog\nGitHub: github.com/markushartmann-dev"),
+                             "Eine Hommage an die Veeam Community\nvon Markus Hartmann\n\nLinkedIn: linkedin.com/in/markus-hartmann-28311232\nBlog: markushartmann.blog\nGitHub: github.com/markushartmann-dev"),
                     Location = new Point(16,10), Size = new Size(330,130),
                     ForeColor = dmC ? Color.FromArgb(160,220,160) : Color.FromArgb(20,70,20),
                     Font = new Font("Segoe UI", 9.5f),
