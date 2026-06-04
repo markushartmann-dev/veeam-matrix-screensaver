@@ -1991,7 +1991,7 @@ namespace VeeaMatrix
             _btnInaBdr= _dark ? Color.FromArgb(55,55,55)    : Color.FromArgb(148,158,148);
 
             // ── Layout constants ─────────────────────────────────────────────
-            const int div2  = 506, div3  = 938;       // vertical divider x positions (1px lines)
+            const int div2  = 445, div3  = 878;       // vertical divider x positions (1px lines)
             const int c1    = 14,  cW1   = 420;       // left column — RAIN + banner
             const int c2    = 456, cW2   = 412;       // middle column: 10px from div2 left, 10px from div3 right
             const int PREV_W = 640, PREV_H = 360;     // 16:9 live preview
@@ -2081,9 +2081,9 @@ namespace VeeaMatrix
 
             // Word Mode — 2 exclusive buttons: WORD STREAM / POPUP and CRAWL
             DLbl(T("Word Mode:","Wortmodus:"), c1, yL+5, 76);
-            string[] _wmLabels = new string[]{ "WORD STREAM / POPUP", "CRAWL" };
+            string[] _wmLabels = new string[]{ T("[ MATRIX RAIN ]","[ MATRIX REGEN ]"), T("* STAR WARS INTRO","* STAR WARS INTRO") };
             string[] _wmKeys   = new string[]{ "Rain",                "Crawl" };
-            int[]    _wmWidths = new int[]   { 196,                   196     };  // 76+4+196+4+196 = 476 ≤ cW1(480)
+            int[]    _wmWidths = new int[]   { 164,                                           164                                         };  // 80+4+164+4+164 = 416 <= cW1(420)
             btnWordModes = new Button[_wmLabels.Length];
             int wmX = c1 + 80;
             for (int wmi = 0; wmi < _wmLabels.Length; wmi++)
