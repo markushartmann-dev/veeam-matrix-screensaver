@@ -2821,15 +2821,15 @@ namespace VeeaMatrix
             btnCredits.FlatAppearance.BorderColor = Color.FromArgb(0, 160, 60);
             btnCredits.Click += delegate {
                 bool dmC = cur.DarkMode;
-                var dC = new Form { Text = T("Credits","Credits"), Size = new Size(420,210),
+                var dC = new Form { Text = T("Credits","Credits"), Size = new Size(420,230),
                     StartPosition = FormStartPosition.CenterParent,
                     FormBorderStyle = FormBorderStyle.FixedDialog,
                     MaximizeBox = false, MinimizeBox = false,
                     BackColor = dmC ? Color.FromArgb(10,18,10) : Color.FromArgb(240,248,240) };
                 var lC = new LinkLabel {
-                    Text = T("a tribute to the veeam community\nby Markus Hartmann\nmarkushartmann.blog",
-                             "Ein Dank an die Veeam Community\nvon Markus Hartmann\nmarkushartmann.blog"),
-                    Location = new Point(20,20), Size = new Size(370,90),
+                    Text = T("a tribute to the veeam community\nby Markus Hartmann\nmarkushartmann.blog\ngithub.com/markushartmann-dev",
+                             "Ein Dank an die Veeam Community\nvon Markus Hartmann\nmarkushartmann.blog\ngithub.com/markushartmann-dev"),
+                    Location = new Point(20,16), Size = new Size(330,100),
                     ForeColor = dmC ? Color.FromArgb(160,220,160) : Color.FromArgb(20,70,20),
                     Font = new Font("Segoe UI", 10f),
                     LinkColor = dmC ? Color.FromArgb(0,210,90) : Color.FromArgb(0,140,50),
@@ -2837,13 +2837,15 @@ namespace VeeaMatrix
                     BackColor = Color.Transparent, AutoSize = false };
                 int p1 = lC.Text.IndexOf("Markus Hartmann");
                 int p2 = lC.Text.LastIndexOf("markushartmann.blog");
-                lC.Links.Add(new LinkLabel.Link(p1, "Markus Hartmann".Length,    "https://www.linkedin.com/in/markus-hartmann-28311232/"));
-                lC.Links.Add(new LinkLabel.Link(p2, "markushartmann.blog".Length, "https://markushartmann.blog"));
+                int p3 = lC.Text.LastIndexOf("github.com/markushartmann-dev");
+                lC.Links.Add(new LinkLabel.Link(p1, "Markus Hartmann".Length,              "https://www.linkedin.com/in/markus-hartmann-28311232/"));
+                lC.Links.Add(new LinkLabel.Link(p2, "markushartmann.blog".Length,           "https://markushartmann.blog"));
+                lC.Links.Add(new LinkLabel.Link(p3, "github.com/markushartmann-dev".Length, "https://github.com/markushartmann-dev"));
                 lC.LinkClicked += delegate(object s2, LinkLabelLinkClickedEventArgs e2) {
                     try { System.Diagnostics.Process.Start((string)e2.Link.LinkData); } catch {}
                 };
                 var bOkC = new Button { Text = "OK", DialogResult = DialogResult.OK,
-                    Location = new Point(270,120), Size = new Size(80,28),
+                    Location = new Point(270,130), Size = new Size(80,28),
                     FlatStyle = FlatStyle.Flat,
                     BackColor = Color.FromArgb(0,100,28), ForeColor = Color.White };
                 bOkC.FlatAppearance.BorderColor = Color.FromArgb(0,185,55);
