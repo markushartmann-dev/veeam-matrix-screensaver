@@ -21,12 +21,27 @@ Single `.scr` file — no installer, no dependencies. .NET Framework 4.x ships w
 
 ---
 
-### 💡 Easiest path — download the ZIP instead
+### 💡 Most reliable fix — PowerShell Unblock (works 100%)
+
+Open **PowerShell** in the folder containing `VeeaMatrix.scr` and run:
+
+```powershell
+Unblock-File -Path .\VeeaMatrix.scr
+```
+
+This permanently removes the internet-download flag from the file. After that it runs without any warnings.
+
+> **How to open PowerShell in the right folder:**
+> Hold `Shift` and right-click in the folder → **"PowerShell-Fenster hier öffnen"** / **"Open PowerShell window here"**
+
+---
+
+### 💡 Alternative — download the ZIP and extract with 7-Zip
 
 1. Download **VeeaMatrix.zip**
 2. Extract with **[7-Zip](https://www.7-zip.org)** or **WinRAR** *(not Windows built-in — it keeps the block)*
 3. Right-click `VeeaMatrix.scr` → **Eigenschaften / Properties** → tick **Zulassen / Unblock** → **OK**
-4. Done — run normally
+4. If the Defender dialog still appears, use the PowerShell command above
 
 ---
 
