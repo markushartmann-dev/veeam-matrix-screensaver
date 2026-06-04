@@ -18,8 +18,7 @@ A fully-functional Windows screensaver (`.scr`) where the Matrix digital rain sp
 
 | Option | When to use |
 |---|---|
-| 👉 **[Install-VeeaMatrix.ps1](../../releases/latest/download/Install-VeeaMatrix.ps1)** + **[VeeaMatrix.scr](../../releases/latest/download/VeeaMatrix.scr)** | **Recommended — installs to System32, no SmartScreen issues** |
-| 👉 **[VeeaMatrix.scr](../../releases/latest/download/VeeaMatrix.scr)** | Direct download — manual install |
+| 👉 **[VeeaMatrix.scr](../../releases/latest/download/VeeaMatrix.scr)** | Direct download |
 
 Single `.scr` file — no installer, no dependencies. .NET Framework 4.x ships with every Windows 10/11 system.
 
@@ -36,16 +35,6 @@ Single `.scr` file — no installer, no dependencies. .NET Framework 4.x ships w
 > Right-click `VeeaMatrix.scr` → **Eigenschaften / Properties** → tick **Zulassen / Unblock** → **OK**
 
 This removes the "downloaded from internet" flag and prevents the Defender warning.
-
----
-
-### ✅ Best solution — PowerShell Installer (no SmartScreen at all)
-
-1. Download **[Install-VeeaMatrix.ps1](../../releases/latest/download/Install-VeeaMatrix.ps1)** and **[VeeaMatrix.scr](../../releases/latest/download/VeeaMatrix.scr)** into the same folder
-2. Right-click `Install-VeeaMatrix.ps1` → **"Mit PowerShell ausführen" / "Run with PowerShell"**
-3. The script requests Admin rights, copies the `.scr` directly to `System32` (no MOTW), and optionally sets it as active screensaver
-
-**Why this works:** Files copied programmatically to System32 never get the "downloaded from internet" flag — Windows doesn't block them.
 
 ---
 
