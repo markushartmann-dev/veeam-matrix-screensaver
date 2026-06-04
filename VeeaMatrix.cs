@@ -2612,18 +2612,19 @@ namespace VeeaMatrix
             };
             btnCredits.FlatAppearance.BorderColor = Color.FromArgb(0, 160, 60);
             btnCredits.Click += delegate {
+                bool dmC = cur.DarkMode;
                 var dC = new Form { Text = T("Credits","Credits"), Size = new Size(420,210),
                     StartPosition = FormStartPosition.CenterParent,
                     FormBorderStyle = FormBorderStyle.FixedDialog,
                     MaximizeBox = false, MinimizeBox = false,
-                    BackColor = Color.FromArgb(10,18,10) };
+                    BackColor = dmC ? Color.FromArgb(10,18,10) : Color.FromArgb(240,248,240) };
                 var lC = new LinkLabel {
                     Text = T("a tribute to the veeam community\nby Markus Hartmann\nmarkushartmann.blog",
                              "Ein Dank an die Veeam Community\nvon Markus Hartmann\nmarkushartmann.blog"),
                     Location = new Point(20,20), Size = new Size(370,90),
-                    ForeColor = Color.FromArgb(160,220,160),
+                    ForeColor = dmC ? Color.FromArgb(160,220,160) : Color.FromArgb(20,70,20),
                     Font = new Font("Segoe UI", 10f),
-                    LinkColor = Color.FromArgb(0,210,90),
+                    LinkColor = dmC ? Color.FromArgb(0,210,90) : Color.FromArgb(0,140,50),
                     ActiveLinkColor = Color.FromArgb(0,255,110),
                     BackColor = Color.Transparent, AutoSize = false };
                 int p1 = lC.Text.IndexOf("Markus Hartmann");
@@ -2673,10 +2674,9 @@ namespace VeeaMatrix
                         double srcAR = (double)img.Width / img.Height;
                         int dw = pb.Width;
                         int dh = (int)(dw / srcAR);
-                        int maxDh = (int)(pb.Height * 0.88);
-                        if (dh > maxDh) { dh = maxDh; dw = (int)(dh * srcAR); }
-                        int dx = (pb.Width - dw) / 2;
-                        int dy = (pb.Height - dh) / 2;
+                        if (dh > pb.Height) dh = pb.Height;  // safety: no clip
+                        int dx = 0;
+                        int dy = Math.Max(0, pb.Height - dh);  // bars on TOP
                         bpe.Graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
                         bpe.Graphics.DrawImage(img,
                             new Rectangle(dx, dy, dw, dh),

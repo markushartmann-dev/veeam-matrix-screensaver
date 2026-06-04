@@ -34,14 +34,16 @@ Single `.scr` file — no installer, no dependencies. .NET Framework 4.x ships w
 | Feature | Details |
 |---|---|
 | **Matrix rain** | GDI+ double-buffered, per-column speed variation, glyph scramble |
-| **Word Stream / POPUP** | 7 effects: Scroll, Fade, Build, Scramble, Scan, Zoom, Glitch |
-| **CRAWL mode** | Star Wars–style perspective scroll with static intro phase |
+| **`* MATRIX RAIN *`** | 7 word effects: Scroll, Fade, Build, Scramble, Scan, Zoom, Glitch |
+| **`* STAR WARS INTRO *`** | Star Wars–style perspective scroll with static intro phase |
+| **Dual banner** | Matrix-style banner in Word Stream mode, Jedi banner in CRAWL mode — both hard-embedded |
 | **Color profiles** | 7 built-ins: Veeam, Cyberpunk, Amber CRT, Deep Space, Aurora, Star Wars, Hello Kitty |
 | **Color picker** | 2 consolidated buttons — Color + Head (bright) — apply to all layers at once |
 | **No RAIN** | Suppress background rain during word effects or CRAWL |
 | **Watermark** | Logo + subtitle, bottom-right, optional |
-| **Settings UI** | Three-column, 1616 px wide, live preview, Light/Dark mode toggle |
-| **Banner image** | Compiled directly into the `.scr` — no sidecar file at runtime |
+| **Settings UI** | Three-column, 1556 px wide, live preview, Light/Dark mode toggle |
+| **Banner image** | Two banners hard-embedded as Base64 — switches automatically with mode |
+| **Credits button** | Clickable tribute with LinkedIn + blog links |
 | **Multi-monitor** | One render surface per screen; primary drives the app lifecycle |
 | **Font control** | System font picker, size, Bold, Italic — shared across all word effects |
 | **Custom terms** | Edit the built-in catalog per session or save to `%APPDATA%\VeeaMatrix\` |
@@ -142,6 +144,14 @@ Runs on **all connected monitors simultaneously**. The primary monitor drives th
 
 | Version | Highlights |
 |---|---|
+| **v1.78** | Credits Light mode fix; full-width Matrix banner, bars on top; Term Catalog dark/light |
+| **v1.77** | Credits OK button; Term Catalog smaller + dark/light mode |
+| **v1.76** | Credits button (LinkedIn + blog links); dual-banner black bars |
+| **v1.75** | `* MATRIX RAIN *` / `* STAR WARS INTRO *` button labels; tribute in Credits popup |
+| **v1.74** | Fix column alignment (div2/div3); DE/EN button labels |
+| **v1.73** | Recompress Jedi banner (87 KB) — `.scr` shrinks from 1.9 MB to 758 KB |
+| **v1.72** | Narrower left column (420 px), fill-width banner rendering |
+| **v1.71** | Dual banner — Jedi image in CRAWL mode, Matrix image in Word Stream mode |
 | **v1.70c** | Fix DE UI overlaps in MISCELLANEOUS section |
 | **v1.70b** | Word Stream defaults restored on Crawl exit; `TrkSet` handles max reduction |
 | **v1.70** | Major UX overhaul — Star Wars CRAWL intro phase, consolidated UI, bug fixes |
