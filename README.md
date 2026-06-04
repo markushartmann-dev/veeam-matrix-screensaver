@@ -6,66 +6,73 @@ A fully-functional Windows screensaver (`.scr`) where the Matrix digital rain sp
 
 ## Download
 
-👉 **[VeeaMatrix.scr](../../releases/latest/download/VeeaMatrix.scr)** — direct download
-
-👉 **[VeeaMatrix.zip](../../releases/latest/download/VeeaMatrix.zip)** — if the `.scr` download gets blocked by your browser
+| Option | When to use |
+|---|---|
+| 👉 **[VeeaMatrix.scr](../../releases/latest/download/VeeaMatrix.scr)** | Direct download — fastest |
+| 👉 **[VeeaMatrix.zip](../../releases/latest/download/VeeaMatrix.zip)** | **Recommended if browser blocks the .scr** |
 
 Single `.scr` file — no installer, no dependencies. .NET Framework 4.x ships with every Windows 10/11 system.
 
-> **ZIP download:** Extract with **7-Zip** or **WinRAR** for best results — Windows built-in extraction may still trigger SmartScreen. After extracting, right-click the `.scr` → **Properties** → tick **Unblock** → **OK**.
+---
+
+## ⚠️ Windows / Browser blocks the file — step-by-step fix
+
+`VeeaMatrix.scr` is not commercially code-signed. Windows and browsers will flag it — here is exactly what to do in each situation:
 
 ---
 
-## ⚠️ Windows blocks the download — here's how to fix it
+### 💡 Easiest path — download the ZIP instead
 
-`VeeaMatrix.scr` is not commercially code-signed, so Windows and browsers may flag it at three different points. All three are easy to bypass:
-
----
-
-### 🔴 Step 1 — Browser blocks the download (Edge / Chrome)
-
-When downloading you may see *"VeeaMatrix.scr wird häufig nicht heruntergeladen"* or a similar warning.
-
-**Edge:** Click the **`…`** menu next to the file → **Beibehalten** → **Trotzdem beibehalten**
-**Chrome:** Click the **arrow ▾** next to the file → **Keep** (or **Trotzdem behalten**)
+1. Download **VeeaMatrix.zip**
+2. Extract with **[7-Zip](https://www.7-zip.org)** or **WinRAR** *(not Windows built-in — it keeps the block)*
+3. Right-click `VeeaMatrix.scr` → **Eigenschaften / Properties** → tick **Zulassen / Unblock** → **OK**
+4. Done — run normally
 
 ---
 
-### 🔴 Step 2 — Unblock via file Properties (do this FIRST — prevents all other warnings)
+### 🔴 Browser blocks the .scr download (Edge / Chrome)
 
-> Right-click `VeeaMatrix.scr` → **Eigenschaften / Properties** → tick **Zulassen / Unblock** at the bottom → **OK**
+You see: *"VeeaMatrix.scr wird häufig nicht heruntergeladen"*
 
-**This is the most important step.** Doing this before running prevents the Defender warning entirely.
+- **Edge:** Click **`…`** next to the file → **Beibehalten** → **Trotzdem beibehalten**
+- **Chrome:** Click the **arrow ▾** → **Keep** / **Trotzdem behalten**
 
----
-
-### 🔴 Step 3 — Windows Defender still blocks after running
-
-You may see: *"Ein Teil dieser App wurde blockiert"* — **"Weitere Informationen" opens a website, not a bypass option.**
-
-The correct fix is to go back to **Step 2** (Properties → Unblock) and make sure the checkmark was saved. Then try running again.
-
-If it still appears:
-> **Windows Security** → **App- & Browsersteuerung** → **Reputationsbasierter Schutz** → turn off *"Potenziell unerwünschte Apps blockieren"* temporarily, run the file, then re-enable.
-
-Or:
-> **Windows Security** → **Viren- & Bedrohungsschutz** → **Ransomware-Schutz verwalten** → **App durch überwachten Ordnerzugriff zulassen** → add `VeeaMatrix.scr`
+➡️ Then unblock the file via Properties (see below) before running.
 
 ---
 
-> 🔍 **Why does this happen?** Windows SmartScreen blocks unsigned `.exe` / `.scr` files downloaded from the internet. The full source code of VeeaMatrix is publicly available in this repository — nothing is hidden.
+### 🔴 Unblock via file Properties — always do this before first run
+
+> Right-click `VeeaMatrix.scr` → **Eigenschaften / Properties** → tick **Zulassen / Unblock** → **OK**
+
+This removes the "downloaded from internet" flag and prevents the Defender warning.
+
+---
+
+### 🔴 Windows Defender shows *"Ein Teil dieser App wurde blockiert"*
+
+> **Note:** "Weitere Informationen" in this dialog opens a website — there is **no "Run anyway" button** here.
+
+Fix: Make sure you completed the **Properties → Unblock** step above, then try again.
+
+If it still appears after unblocking:
+> **Windows Security** → **App- & Browsersteuerung** → **Reputationsbasierter Schutz** → temporarily disable *"Potenziell unerwünschte Apps blockieren"*, run the file, re-enable.
+
+---
+
+> 🔍 **Why does this happen?** Windows SmartScreen blocks unsigned `.scr` / `.exe` files from the internet. The full source code of VeeaMatrix is publicly available in this repo — nothing is hidden.
 
 ---
 
 ## Installation
 
-1. **Download** `VeeaMatrix.scr` and **unblock it** (see above)
-2. **Right-click** the file:
-   - **Install** — registers as system screensaver (requires admin)
-   - **Test** — runs fullscreen immediately
-   - **Configure** — opens the settings dialog
+1. **Download** (see options above) and **unblock** the `.scr` file
+2. **Right-click** `VeeaMatrix.scr`:
+   - **Installieren / Install** — registers as system screensaver (requires admin)
+   - **Testen / Test** — runs fullscreen immediately
+   - **Konfigurieren / Configure** — opens the settings dialog
 
-   Or double-click to run it directly.
+   Or double-click to run immediately.
 
 ---
 
