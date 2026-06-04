@@ -1,4 +1,4 @@
-// VeeaMatrix.cs  –  Windows Screensaver v1.70
+// VeeaMatrix.cs  -  Windows Screensaver v1.78
 // Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
@@ -2441,6 +2441,14 @@ namespace VeeaMatrix
             Section(T("CHANGE LOG","ÄNDERUNGSPROTOKOLL"), c3, yR, cW3); yR += 26;
             {
                 string changelog =
+                    "v1.78  Credits popup respects Light/Dark mode; Matrix banner fills full width, bars on top\r\n" +
+                    "v1.77  Credits popup: OK button; Term Catalog smaller (560x540) + Light/Dark mode\r\n" +
+                    "v1.76  Credits button (LinkedIn + markushartmann.blog links); dual-banner black bars\r\n" +
+                    "v1.75  Button labels: * MATRIX RAIN * / * STAR WARS INTRO * (DE+EN)\r\n" +
+                    "v1.74  Column alignment fixed (div2/div3 corrected); button widths adjusted\r\n" +
+                    "v1.73  Jedi banner recompressed 1200px/q67 (87 KB); .scr shrinks 1.9 MB -> 758 KB\r\n" +
+                    "v1.72  Left column narrower (420 px, fw=1556); fill-width banner rendering\r\n" +
+                    "v1.71  Dual banner: Jedi image in CRAWL mode, Matrix image in Word Stream mode\r\n" +
                     "v1.70  Star Wars CRAWL intro phase; blank-line paragraph spacing; Veeam template expanded; Queue Depth removed\r\n" +
                     "       Persistence fix (init no longer overwrites cur); TrkSet helper prevents slider exceptions\r\n" +
                     "       No RAIN consolidated to one checkbox; CRAWL auto-disables all MISC; Word Stream defaults on mode switch\r\n" +
