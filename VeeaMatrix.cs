@@ -2513,7 +2513,7 @@ namespace VeeaMatrix
                 };
                 string[] btnMsgs = new string[] {
                     T("For that you should use\nVeeam Backup & Replication!\n\nTo save your VeeaMatrix settings,\nplease use the Save As function.",
-                      "Dafuer solltest du Veeam Backup & Replication verwenden!\n\nZum Speichern der VeeaMatrix-Einstellungen\nbitte die 'Save As'-Funktion nutzen."),
+                      "Dafuer solltest du Veeam Backup & Replication verwenden!\n\nZum Speichern der VeeaMatrix-Einstellungen\nbitte die 'Speichern'-Funktion nutzen."),
                     T("You already have the Premium features.",
                       "Du hast bereits die Premium-Features.")
                 };
@@ -2540,7 +2540,7 @@ namespace VeeaMatrix
                 // ── Settings Profiles row (within BACKUP OPERATIONS) ───────────
                 string profDir = Settings.SettingsProfilesDir;
                 var cboProf = new ComboBox {
-                    Location = new Point(c3, yR), Size = new Size(cW3 - 215, 24),
+                    Location = new Point(c3, yR), Size = new Size(cW3 - 223, 24),
                     FlatStyle = FlatStyle.Flat, DropDownStyle = ComboBoxStyle.DropDownList,
                     BackColor = _dark ? Color.FromArgb(18,30,18) : Color.FromArgb(240,250,240),
                     ForeColor = ForeColor,  Font = new Font("Segoe UI", 8.5f)
@@ -2553,7 +2553,7 @@ namespace VeeaMatrix
                 };
                 refreshProfiles();
                 Controls.Add(cboProf);
-                int bpx = c3 + cW3 - 207;  // x for profile buttons
+                int bpx = c3 + cW3 - 215;  // x for profile buttons (85+4+57+4+65=215)
                 // Save As button
                 var btnPSave = new Button {
                     Text = T("Save As","Speichern"),
@@ -2617,7 +2617,7 @@ namespace VeeaMatrix
                 // Delete button
                 var btnPDel = new Button {
                     Text = T("Delete","Löschen"),
-                    Location = new Point(bpx + 150, yR - 1), Size = new Size(57, 26),
+                    Location = new Point(bpx + 150, yR - 1), Size = new Size(65, 26),
                     FlatStyle = FlatStyle.Flat,
                     BackColor = Color.FromArgb(60,10,10), ForeColor = Color.White
                 };
