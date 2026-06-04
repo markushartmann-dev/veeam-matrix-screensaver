@@ -2679,12 +2679,10 @@ namespace VeeaMatrix
                         Image img = (_showCrawlBanner && _bannerCrawl != null) ? _bannerCrawl : _bannerDefault;
                         if (img == null || img.Width == 0) return;
                         var pb   = (PictureBox)bps;
-                        double srcAR = (double)img.Width / img.Height;
                         int dw = pb.Width;
-                        int dh = (int)(dw / srcAR);
-                        if (dh > pb.Height) dh = pb.Height;  // safety: no clip
+                        int dh = (int)(pb.Height * 0.72);  // cinema letterbox: ~14% bars top + bottom
                         int dx = 0;
-                        int dy = Math.Max(0, pb.Height - dh);  // bars on TOP
+                        int dy = (pb.Height - dh) / 2;
                         bpe.Graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
                         bpe.Graphics.DrawImage(img,
                             new Rectangle(dx, dy, dw, dh),
