@@ -2821,7 +2821,7 @@ namespace VeeaMatrix
             btnCredits.FlatAppearance.BorderColor = Color.FromArgb(0, 160, 60);
             btnCredits.Click += delegate {
                 bool dmC = cur.DarkMode;
-                var dC = new Form { Text = T("Credits","Credits"), Size = new Size(420,230),
+                var dC = new Form { Text = T("Credits","Credits"), Size = new Size(360,205),
                     StartPosition = FormStartPosition.CenterParent,
                     FormBorderStyle = FormBorderStyle.FixedDialog,
                     MaximizeBox = false, MinimizeBox = false,
@@ -2829,7 +2829,7 @@ namespace VeeaMatrix
                 var lC = new LinkLabel {
                     Text = T("a tribute to the veeam community\nby Markus Hartmann\nmarkushartmann.blog\ngithub.com/markushartmann-dev",
                              "Ein Dank an die Veeam Community\nvon Markus Hartmann\nmarkushartmann.blog\ngithub.com/markushartmann-dev"),
-                    Location = new Point(20,16), Size = new Size(330,100),
+                    Location = new Point(16,12), Size = new Size(318,100),
                     ForeColor = dmC ? Color.FromArgb(160,220,160) : Color.FromArgb(20,70,20),
                     Font = new Font("Segoe UI", 10f),
                     LinkColor = dmC ? Color.FromArgb(0,210,90) : Color.FromArgb(0,140,50),
@@ -2845,7 +2845,7 @@ namespace VeeaMatrix
                     try { System.Diagnostics.Process.Start((string)e2.Link.LinkData); } catch {}
                 };
                 var bOkC = new Button { Text = "OK", DialogResult = DialogResult.OK,
-                    Location = new Point(270,130), Size = new Size(80,28),
+                    Location = new Point(250,120), Size = new Size(80,28),
                     FlatStyle = FlatStyle.Flat,
                     BackColor = Color.FromArgb(0,100,28), ForeColor = Color.White };
                 bOkC.FlatAppearance.BorderColor = Color.FromArgb(0,185,55);
