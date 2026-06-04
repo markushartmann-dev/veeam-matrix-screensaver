@@ -69,9 +69,8 @@ This removes the "downloaded from internet" flag and prevents the Defender warni
 
 | Feature | Details |
 |---|---|
-| **Matrix rain** | GDI+ double-buffered, per-column speed variation, glyph scramble |
-| **`* MATRIX RAIN *`** | 7 word effects: Scroll, Fade, Build, Scramble, Scan, Zoom, Glitch |
-| **`* STAR WARS INTRO *`** | Star Wars–style perspective scroll with static intro phase |
+| **Matrix Rain** | 7 word effects: Scroll, Fade, Build, Scramble, Scan, Zoom, Glitch |
+| **Star Wars Intro** | Star Wars–style perspective scroll with static intro phase |
 | **Dual banner** | Matrix-style banner in Word Stream mode, Jedi banner in CRAWL mode — both hard-embedded |
 | **Color profiles** | 7 built-ins: Veeam, Cyberpunk, Amber CRT, Deep Space, Aurora, Star Wars, Hello Kitty |
 | **Color picker** | 2 consolidated buttons — Color + Head (bright) — apply to all layers at once |
