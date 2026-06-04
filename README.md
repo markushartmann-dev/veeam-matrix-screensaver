@@ -2,7 +2,7 @@
 
 A fully-functional Windows screensaver (`.scr`) where the Matrix digital rain spells out Veeam product names, features, and buzzwords. `IMMUTABILITY`, `ZERO-TRUST RESILIENCE`, `VBR V13`, `VEEAM DATA CLOUD VAULT` — 70+ terms cascading down your screen in glowing green (or violet, or teal, or crawl-yellow…).
 
-![VeeaMatrix Screensaver](.github/preview.png)
+![VeeaMatrix Screensaver](.github/preview.jpg)
 
 ## Download
 
