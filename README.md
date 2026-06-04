@@ -154,36 +154,14 @@ Runs on **all connected monitors simultaneously**. The primary monitor drives th
 
 | Version | Highlights |
 |---|---|
-| **v1.84** | Credits: DE "Hommage" text; Blog/GitHub prefixes; blank line; links only on URLs |
-| **v1.83** | Save As fully syncs all UI fields; Config Backup button hints about Save As |
-| **v1.82** | Settings Profiles merged into BACKUP OPERATIONS; full button labels; UI 5% shorter |
-| **v1.81** | BACKUP OPERATIONS: Settings Profiles — save/load full settings as named `.ini` files |
-| **v1.80** | Narrower cinema bars (86%); Credits white text; Crawl button grey/white |
-| **v1.79** | Cinema letterbox — both banners fill-width, 72% height, equal bars top+bottom |
-| **v1.78** | Credits Light mode fix; full-width Matrix banner, bars on top; Term Catalog dark/light |
-| **v1.77** | Credits OK button; Term Catalog smaller + dark/light mode |
-| **v1.76** | Credits button (LinkedIn + blog links); dual-banner black bars |
-| **v1.75** | `* MATRIX RAIN *` / `* STAR WARS INTRO *` button labels; tribute in Credits popup |
-| **v1.74** | Fix column alignment (div2/div3); DE/EN button labels |
-| **v1.73** | Recompress Jedi banner (87 KB) — `.scr` shrinks from 1.9 MB to 758 KB |
-| **v1.72** | Narrower left column (420 px), fill-width banner rendering |
-| **v1.71** | Dual banner — Jedi image in CRAWL mode, Matrix image in Word Stream mode |
-| **v1.70c** | Fix DE UI overlaps in MISCELLANEOUS section |
-| **v1.70b** | Word Stream defaults restored on Crawl exit; `TrkSet` handles max reduction |
-| **v1.70** | Major UX overhaul — Star Wars CRAWL intro phase, consolidated UI, bug fixes |
-| **v1.61** | PopupHideRain + layout/UX polish |
-| **v1.60** | Section headers grey when inactive; Custom Terms fixes; full layout restructure |
-| **v1.56** | Word Mode 3-way exclusive selector (CRAWL / WORD STREAM Rain / POPUP WORDS) |
-| **v1.50** | **Star Wars** color profile; CRAWL perspective projection; blank-line paragraph spacing |
-| **v1.36** | Color picker consolidated to 2 buttons (Color + Head bright) |
-| **v1.35** | CRAWL mode — Star Wars–style perspective scroll, Veeam Edition template |
-| **v1.28** | New **Aurora** color profile (emerald teal / icy blue) |
-| **v1.27** | Banner always visible — hardcoded Base64 fallback; GDI+ stream/GC bug fixed |
-| **v1.26** | Content isolation: disabling all Veeam sources produces pure matrix rain |
-| **v1.25** | Expanded term catalog (VBR V13, HA, VDP tiers, RECON SCANNER, AI TRiSM…); Bold/Italic flags |
-| **v1.22** | Light/Dark theme toggle in settings; banner embedded in `.scr` via build script |
-| **v1.19** | Three-column settings UI with live preview (640×360, 16:9) |
-| **v1.16** | Multi-monitor support; five popup animation modes |
+| **v1.85** | CRAWL font now respects Bold / Italic settings (was hardcoded) |
+| **v1.81–v1.84** | **Settings Profiles** (save/load full settings as `.ini`); Credits popup with LinkedIn, Blog & GitHub links; cinema letterbox bars on both banners; `* MATRIX RAIN *` / `* STAR WARS INTRO *` mode buttons (DE+EN); UI 5% shorter; Term Catalog dark/light mode |
+| **v1.71–v1.80** | **Dual banner** (Matrix ↔ Jedi depending on mode, hard-embedded); left column narrower (420 px, fw=1556 px); `.scr` compressed from 1.9 MB → 766 KB; column alignment fixes; DE/EN labels throughout |
+| **v1.70** | Major UX overhaul — Star Wars CRAWL intro phase; 7-effect unified selector; consolidated No RAIN checkbox; persistence fixes; Light mode as default |
+| **v1.60–v1.69** | CRAWL perspective scroll; full layout restructure; PopupHideRain; 3-column settings UI polish |
+| **v1.35–v1.56** | CRAWL mode (Star Wars–style scroll + Veeam Edition template); **Star Wars** color profile; color picker consolidated to 2 buttons; Word Mode selector |
+| **v1.19–v1.28** | Three-column settings UI with live 16:9 preview; Light/Dark toggle; **Aurora** profile; banner hard-embedded as Base64; multi-monitor support; content isolation |
+| **v1.0–v1.18** | Initial release — Matrix rain + word drops + popups; font controls; color profiles; five popup animation modes |
 
 ---
 
