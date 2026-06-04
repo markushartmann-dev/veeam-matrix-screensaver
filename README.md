@@ -1,6 +1,6 @@
 # VeeaMatrix — The Veeam-Themed Matrix Screensaver
 
-A fully-functional Windows screensaver (`.scr`) where the Matrix digital rain spells out Veeam product names, features, and buzzwords. `IMMUTABILITY`, `ZERO-TRUST RESILIENCE`, `VBR V13`, `VEEAM DATA CLOUD VAULT` — 60+ terms cascading down your screen in glowing green (or violet, or teal, or amber…).
+A fully-functional Windows screensaver (`.scr`) where the Matrix digital rain spells out Veeam product names, features, and buzzwords. `IMMUTABILITY`, `ZERO-TRUST RESILIENCE`, `VBR V13`, `VEEAM DATA CLOUD VAULT` — 70+ terms cascading down your screen in glowing green (or violet, or teal, or crawl-yellow…).
 
 ![VeeaMatrix Screensaver](.github/preview.png)
 
@@ -34,82 +34,87 @@ Single `.scr` file — no installer, no dependencies. .NET Framework 4.x ships w
 | Feature | Details |
 |---|---|
 | **Matrix rain** | GDI+ double-buffered, per-column speed variation, glyph scramble |
-| **Veeam terms** | 60+ terms: products, features, buzzwords — proportionally sized |
-| **Popup modes** | Fade · Glitch · Scan · Zoom · Scramble — randomly selected |
-| **Color profiles** | 6 built-ins + unlimited custom profiles |
+| **Word Stream / POPUP** | 7 effects: Scroll, Fade, Build, Scramble, Scan, Zoom, Glitch |
+| **CRAWL mode** | Star Wars–style perspective scroll with static intro phase |
+| **Color profiles** | 7 built-ins: Veeam, Cyberpunk, Amber CRT, Deep Space, Aurora, Star Wars, Hello Kitty |
+| **Color picker** | 2 consolidated buttons — Color + Head (bright) — apply to all layers at once |
+| **No RAIN** | Suppress background rain during word effects or CRAWL |
 | **Watermark** | Logo + subtitle, bottom-right, optional |
-| **Settings UI** | Three-column, 1836 px wide, live preview, Light/Dark mode toggle |
-| **Banner image** | Hardcoded into the `.scr` — always visible, no sidecar file needed |
-| **Multi-monitor** | One render surface per screen |
-| **Font control** | Rain / word / popup font — size, face, Bold, Italic |
-| **Veeam 100 Names** | Stream Vanguard / Legend / MVP 2026 member names |
-| **Custom terms** | Edit `%APPDATA%\VeeaMatrix\terms.txt` — one term per line |
-| **Zero install** | Single `.scr` — right-click → Install, or copy to `System32` |
+| **Settings UI** | Three-column, 1616 px wide, live preview, Light/Dark mode toggle |
+| **Banner image** | Compiled directly into the `.scr` — no sidecar file at runtime |
+| **Multi-monitor** | One render surface per screen; primary drives the app lifecycle |
+| **Font control** | System font picker, size, Bold, Italic — shared across all word effects |
+| **Custom terms** | Edit the built-in catalog per session or save to `%APPDATA%\VeeaMatrix\` |
+| **CRAWL templates** | Episode IV, Spaceballs, Veeam Edition — fully editable |
+| **Zero install** | Single `.scr` file; right-click → Install, or copy to `System32` |
 
 ---
 
 ## Color Profiles
 
-Six built-in profiles — pick your mood:
+Seven built-in profiles — pick your mood:
 
-| Profile | Rain | Popups | Vibe |
+| Profile | Rain | Head | Vibe |
 |---|---|---|---|
-| **Veeam** | Veeam green `#00B336` | Bright green | The official look |
-| **Hello Kitty** | Hot pink | Gold | Unhinged office energy |
-| **Cyberpunk** | Electric cyan | Hot magenta | Blade Runner |
-| **Amber CRT** | Warm amber | Orange-yellow | Retro terminal |
-| **Deep Space** | Vivid violet | Gold / bright violet | Galaxy brain |
-| **Aurora** | Emerald teal | Neon mint | Northern lights |
+| **Veeam** | Veeam green | White | The original |
+| **Cyberpunk** | Electric cyan | Yellow | Blade Runner energy |
+| **Amber CRT** | Warm amber | Pale yellow | Old-school terminal |
+| **Deep Space** | Vivid violet | Pale lavender | Galaxy brain, literally |
+| **Aurora** | Emerald-teal | Icy blue | Nordic lights |
+| **Star Wars** | Crawl yellow | Pale yellow-white | May the Schwartz be with you |
+| **Hello Kitty** | Hot pink | Gold | Chaos |
 
-Custom profiles are saved to `%APPDATA%\VeeaMatrix\profiles.ini`.
+Custom profiles are stored in `%APPDATA%\VeeaMatrix\profiles.ini`.
 
 ---
 
-## Settings
+## Word Effects
 
-Right-click → **Configure**:
+Seven distinct effects in a single unified selector:
 
-| Setting | Description |
-|---|---|
-| **Language** | EN / DE toggle |
-| **Color profile** | Built-in or saved custom profile |
-| **Rain / Word / Popup colors** | Per-layer color control |
-| **Font** | Any installed font, with live preview |
-| **Font sizes** | Rain (8–36 px) · Words (8–36 px) · Popup (10–72 px) |
-| **Speed** | Global (0.1× – 3.0×) plus separate word and popup multipliers |
-| **Trail length** | How long characters glow before fading |
-| **Direction** | TopDown / BottomUp / LeftRight / RightLeft, independently for rain and words |
-| **Word style** | Scroll · Fade · Build · Scramble · Blink |
-| **Word mode** | Rain only · Popup only · Both |
-| **Word / Popup count** | 1–30 streams, 1–20 popups |
-| **Popup effects** | Enable/disable Fade · Glitch · Scan · Zoom · Scramble individually |
-| **Scanlines** | Subtle CRT overlay |
-| **Watermark** | Customisable logo text + subtitle line |
-| **Veeam 100 Names** | Toggle Vanguard / Legend / MVP names in streams |
-| **Built-in terms** | Toggle the default 60+ Veeam term catalog |
-| **Custom words** | Comma-separated extra terms |
+| Effect | Mode | Direction |
+|---|---|---|
+| **Scroll** | Word Stream | All 4 directions |
+| **Fade** | Stream + Popup | — |
+| **Build** | Word Stream | Left / Right |
+| **Scramble** | Stream + Popup | Left / Right |
+| **Scan** | Popup-style | Left / Right |
+| **Zoom** | Popup-style | — |
+| **Glitch** | Stream + Popup | — |
 
-> When all Veeam sources (Built-in terms, Veeam 100 Names, Custom words) are disabled, the screen shows pure matrix rain — no Veeam content at all.
+---
 
-Settings are saved to `%APPDATA%\VeeaMatrix\config.ini`.
+## CRAWL Mode
+
+A fully perspective-projected Star Wars–style text crawl with:
+
+- **Static intro** — first paragraph fades in centered on screen, just like *"A long time ago…"*
+- **Perspective scroll** — remaining text with full 3D projection (tilt, focal length, per-line scale + color gradient)
+- **Star-field background** — optional starfield behind the crawl text
+- **No RAIN** — background rain automatically suppressed when CRAWL is active
+
+Three built-in templates: **Episode IV**, **Spaceballs**, and **Veeam Edition** (*Episode XIII: The Rise of Cyber Resilience*). All fully editable with Save/Load support.
 
 ---
 
 ## Term Catalog
 
-60+ Veeam-specific terms ship with the screensaver. A selection:
+70+ Veeam-specific terms ship with the screensaver. A selection:
 
 ```
 VEEAM DATA PLATFORM · VEEAM DATA CLOUD · VEEAM DATA CLOUD VAULT
 BACKUP & REPLICATION · VBR · VBR V13 · VEEAM ONE
-VEEAM RECOVERY ORCHESTRATOR · VEEAM SERVICE PROVIDER CONSOLE
-HARDENED REPOSITORY · IMMUTABLE BACKUPS · AIR-GAPPED REPOSITORY
-ZERO TRUST · ZERO-TRUST RESILIENCE · CYBER VAULT
-RANSOMWARE RECOVERY · MALWARE DETECTION · RECON SCANNER
-3-2-1-1-0 RULE · RPO · RTO · SLA
+VEEAM RECOVERY ORCHESTRATOR · KASTEN BY VEEAM · COVEWARE BY VEEAM
+HIGH AVAILABILITY · HARDENED REPOSITORY · IMMUTABLE BACKUPS
+AIR-GAPPED REPOSITORY · ZERO TRUST · CYBER VAULT
+RANSOMWARE RECOVERY · MALWARE DETECTION · THREAT HUNTING
+RECON SCANNER · AGENT COMMANDER · SECURITI AI
+DSPM, DSP & AI TRISM · VEEAM'S DATA COMMAND GRAPH
+VDP PREMIUM · VDP ADVANCED · VDP ESSENTIALS
+3-2-1-1-0 RULE · RPO · RTO · SLA · ALWAYS-ON DATA
 ```
 
-Customise: edit `%APPDATA%\VeeaMatrix\terms.txt` — one term per line.
+Customize via **Adjust catalog with built-in terms** in the MISCELLANEOUS section — edit inline per session, or save permanently to `%APPDATA%\VeeaMatrix\terms.txt`.
 
 ---
 
@@ -137,15 +142,22 @@ Runs on **all connected monitors simultaneously**. The primary monitor drives th
 
 | Version | Highlights |
 |---|---|
-| **v1.28** | New **Aurora** color profile (emerald teal / neon mint northern-lights look) |
-| **v1.27** | Banner always visible — hardcoded Base64 fallback in source + embedded resource + sidecar file; GDI+ stream/GC bug fixed; settings UI shows placeholder when no banner found; build script warns if no banner image present |
-| **v1.26** | Content isolation: disabling all Veeam sources now produces pure matrix rain with zero Veeam terms |
-| **v1.25** | Expanded term catalog (VBR V13, HA, VDP tiers, RECON SCANNER, AI TRiSM, …); Bold/Italic flags applied to word streams, popups and watermark; **Deep Space** profile replaces earlier duplicate |
-| **v1.24** | Wider banner column, watermark font style control |
-| **v1.23** | Font Bold/Italic style option |
-| **v1.22** | Light/Dark theme toggle in settings, banner embedded in `.scr` via build script |
-| **v1.19** | Three-column settings UI with live preview (880×495), banner fill-crop |
-| **v1.16** | Multi-monitor support, five popup animation modes |
+| **v1.70c** | Fix DE UI overlaps in MISCELLANEOUS section |
+| **v1.70b** | Word Stream defaults restored on Crawl exit; `TrkSet` handles max reduction |
+| **v1.70** | Major UX overhaul — Star Wars CRAWL intro phase, consolidated UI, bug fixes |
+| **v1.61** | PopupHideRain + layout/UX polish |
+| **v1.60** | Section headers grey when inactive; Custom Terms fixes; full layout restructure |
+| **v1.56** | Word Mode 3-way exclusive selector (CRAWL / WORD STREAM Rain / POPUP WORDS) |
+| **v1.50** | **Star Wars** color profile; CRAWL perspective projection; blank-line paragraph spacing |
+| **v1.36** | Color picker consolidated to 2 buttons (Color + Head bright) |
+| **v1.35** | CRAWL mode — Star Wars–style perspective scroll, Veeam Edition template |
+| **v1.28** | New **Aurora** color profile (emerald teal / icy blue) |
+| **v1.27** | Banner always visible — hardcoded Base64 fallback; GDI+ stream/GC bug fixed |
+| **v1.26** | Content isolation: disabling all Veeam sources produces pure matrix rain |
+| **v1.25** | Expanded term catalog (VBR V13, HA, VDP tiers, RECON SCANNER, AI TRiSM…); Bold/Italic flags |
+| **v1.22** | Light/Dark theme toggle in settings; banner embedded in `.scr` via build script |
+| **v1.19** | Three-column settings UI with live preview (640×360, 16:9) |
+| **v1.16** | Multi-monitor support; five popup animation modes |
 
 ---
 
