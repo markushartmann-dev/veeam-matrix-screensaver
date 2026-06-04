@@ -1,4 +1,4 @@
-// VeeaMatrix.cs  -  Windows Screensaver v1.84
+// VeeaMatrix.cs  -  Windows Screensaver v1.86
 // Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
@@ -2637,6 +2637,8 @@ namespace VeeaMatrix
             Section(T("CHANGE LOG","ÄNDERUNGSPROTOKOLL"), c3, yR, cW3); yR += 26;
             {
                 string changelog =
+                    "v1.86  CRAWL intro phase respects Bold/Italic settings (was hardcoded Italic)\r\n" +
+                    "v1.85  CRAWL font respects Bold/Italic settings (was hardcoded Bold+Italic)\r\n" +
                     "v1.84  Credits: DE Hommage text; Blog/GitHub prefixes; blank line; links only on URLs\r\n" +
                     "v1.83  Save As syncs all UI fields before saving; Config Backup hints about Save As\r\n" +
                     "v1.82  Settings Profiles inside BACKUP OPERATIONS; wider Load/Delete buttons; UI 5% shorter\r\n" +

@@ -179,7 +179,8 @@ Runs on **all connected monitors simultaneously**. The primary monitor drives th
 
 | Version | Highlights |
 |---|---|
-| **v1.85** | CRAWL font now respects Bold / Italic settings (was hardcoded) |
+| **v1.86** | CRAWL intro phase also respects Bold / Italic settings (was hardcoded Italic) |
+| **v1.85** | CRAWL font respects Bold / Italic settings (was hardcoded Bold+Italic) |
 | **v1.81–v1.84** | **Settings Profiles** (save/load full settings as `.ini`); Credits popup with LinkedIn, Blog & GitHub links; cinema letterbox bars on both banners; `* MATRIX RAIN *` / `* STAR WARS INTRO *` mode buttons (DE+EN); UI 5% shorter; Term Catalog dark/light mode |
 | **v1.71–v1.80** | **Dual banner** (Matrix ↔ Jedi depending on mode, hard-embedded); left column narrower (420 px, fw=1556 px); `.scr` compressed from 1.9 MB → 766 KB; column alignment fixes; DE/EN labels throughout |
 | **v1.70** | Major UX overhaul — Star Wars CRAWL intro phase; 7-effect unified selector; consolidated No RAIN checkbox; persistence fixes; Light mode as default |
