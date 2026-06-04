@@ -1,4 +1,4 @@
-// VeeaMatrix.cs  -  Windows Screensaver v1.78
+// VeeaMatrix.cs  -  Windows Screensaver v1.80
 // Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
@@ -2441,6 +2441,8 @@ namespace VeeaMatrix
             Section(T("CHANGE LOG","ÄNDERUNGSPROTOKOLL"), c3, yR, cW3); yR += 26;
             {
                 string changelog =
+                    "v1.80  Narrower cinema bars (86%, was 72%); Credits white text; Crawl button grey/white\r\n" +
+                    "v1.79  Cinema letterbox: both banners fill-width, 72% height, equal bars top+bottom\r\n" +
                     "v1.78  Credits popup respects Light/Dark mode; Matrix banner fills full width, bars on top\r\n" +
                     "v1.77  Credits popup: OK button; Term Catalog smaller (560x540) + Light/Dark mode\r\n" +
                     "v1.76  Credits button (LinkedIn + markushartmann.blog links); dual-banner black bars\r\n" +

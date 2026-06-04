@@ -144,6 +144,8 @@ Runs on **all connected monitors simultaneously**. The primary monitor drives th
 
 | Version | Highlights |
 |---|---|
+| **v1.80** | Narrower cinema bars (86%); Credits white text; Crawl button grey/white |
+| **v1.79** | Cinema letterbox — both banners fill-width, 72% height, equal bars top+bottom |
 | **v1.78** | Credits Light mode fix; full-width Matrix banner, bars on top; Term Catalog dark/light |
 | **v1.77** | Credits OK button; Term Catalog smaller + dark/light mode |
 | **v1.76** | Credits button (LinkedIn + blog links); dual-banner black bars |
