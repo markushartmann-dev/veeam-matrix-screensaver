@@ -2633,7 +2633,13 @@ namespace VeeaMatrix
                 lC.LinkClicked += delegate(object s2, LinkLabelLinkClickedEventArgs e2) {
                     try { System.Diagnostics.Process.Start((string)e2.Link.LinkData); } catch {}
                 };
-                dC.Controls.Add(lC); dC.ShowDialog(this);
+                var bOkC = new Button { Text = "OK", DialogResult = DialogResult.OK,
+                    Location = new Point(270,120), Size = new Size(80,28),
+                    FlatStyle = FlatStyle.Flat,
+                    BackColor = Color.FromArgb(0,100,28), ForeColor = Color.White };
+                bOkC.FlatAppearance.BorderColor = Color.FromArgb(0,185,55);
+                dC.Controls.Add(lC); dC.Controls.Add(bOkC);
+                dC.AcceptButton = bOkC; dC.ShowDialog(this);
             };
             Controls.Add(btnCredits);
             Controls.Add(btnReset); Controls.Add(btnOK); Controls.Add(btnCancel);
@@ -3396,34 +3402,37 @@ namespace VeeaMatrix
             }
             else { initial = string.Join(Environment.NewLine, MatrixEngine.TERMS); }
 
+            bool dmT = cur.DarkMode;
+            Color tcBg   = dmT ? Color.FromArgb(22, 28, 22)  : Color.FromArgb(245, 250, 245);
+            Color tcTxt  = dmT ? Color.FromArgb(0, 210, 60)  : Color.FromArgb(20, 80, 20);
+            Color tcEdit = dmT ? Color.FromArgb(32, 40, 32)  : Color.White;
+            Color tcMute = dmT ? Color.FromArgb(140,140,140) : Color.FromArgb(80,80,80);
             var dlg = new Form {
                 Text = T("Term Catalog  –  one term per line", "Wort-Katalog  –  ein Begriff pro Zeile"),
-                Size = new Size(680, 640),
+                Size = new Size(560, 540),
                 StartPosition = FormStartPosition.CenterParent,
                 FormBorderStyle = FormBorderStyle.FixedDialog,
                 MaximizeBox = false, MinimizeBox = false,
-                BackColor = Color.FromArgb(34, 36, 34),
-                ForeColor = Color.FromArgb(0, 200, 55)
+                BackColor = tcBg, ForeColor = tcTxt
             };
             var lblInfo = new Label {
                 Text = T("Edit the term list. Each line = one term. Lines starting with # are ignored.",
                          "Begriffsliste bearbeiten. Jede Zeile = ein Begriff. Zeilen mit # werden ignoriert."),
-                Location = new Point(10, 8), Size = new Size(650, 18),
-                ForeColor = Color.FromArgb(160,160,160), Font = new Font("Segoe UI", 8.5f)
+                Location = new Point(10, 8), Size = new Size(530, 18),
+                ForeColor = tcMute, Font = new Font("Segoe UI", 8.5f)
             };
             var txt = new TextBox {
                 Multiline = true, ScrollBars = ScrollBars.Vertical, AcceptsReturn = true,
-                Location = new Point(10, 30), Size = new Size(648, 510),
+                Location = new Point(10, 30), Size = new Size(528, 420),
                 Text = initial,
-                BackColor = Color.FromArgb(44, 46, 44),
-                ForeColor = Color.FromArgb(0, 210, 60),
+                BackColor = tcEdit, ForeColor = tcTxt,
                 Font = new Font("Courier New", 8.5f),
                 BorderStyle = BorderStyle.FixedSingle,
                 WordWrap = false
             };
             var btnReset = new Button {
                 Text = T("Reset to defaults","Auf Standard zurücksetzen"),
-                Location = new Point(10, 548), Size = new Size(186, 30),
+                Location = new Point(10, 460), Size = new Size(186, 30),
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Color.FromArgb(50, 35, 0), ForeColor = Color.White
             };
@@ -3431,13 +3440,13 @@ namespace VeeaMatrix
             btnReset.Click += delegate { txt.Text = string.Join(Environment.NewLine, MatrixEngine.TERMS); };
 
             var btnOK = new Button {
-                Text = "OK", Location = new Point(482, 548), Size = new Size(80, 30),
+                Text = "OK", Location = new Point(362, 460), Size = new Size(80, 30),
                 DialogResult = DialogResult.OK, FlatStyle = FlatStyle.Flat,
                 BackColor = Color.FromArgb(0, 100, 28), ForeColor = Color.White
             };
             btnOK.FlatAppearance.BorderColor = Color.FromArgb(0, 185, 55);
             var btnCancel = new Button {
-                Text = T("Cancel","Abbrechen"), Location = new Point(572, 548), Size = new Size(86, 30),
+                Text = T("Cancel","Abbrechen"), Location = new Point(452, 460), Size = new Size(86, 30),
                 DialogResult = DialogResult.Cancel, FlatStyle = FlatStyle.Flat,
                 BackColor = Color.FromArgb(50, 15, 15), ForeColor = Color.White
             };
