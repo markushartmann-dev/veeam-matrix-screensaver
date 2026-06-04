@@ -2267,12 +2267,12 @@ namespace VeeaMatrix
                 Text      = T("✦ Select Text","✦ Text wählen"),
                 Location  = new Point(c2, yM),
                 Size      = new Size(cW2, 26),
-                BackColor = Color.FromArgb(8, 8, 60),
-                ForeColor = Color.FromArgb(255, 232, 31),
+                BackColor = Color.FromArgb(55, 55, 55),
+                ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
                 Font      = new Font("Segoe UI", 8.5f, FontStyle.Bold)
             };
-            _btnCrawlText.FlatAppearance.BorderColor = Color.FromArgb(80, 80, 160);
+            _btnCrawlText.FlatAppearance.BorderColor = Color.FromArgb(115, 115, 115);
             _btnCrawlText.Click += delegate { ShowCrawlTextEditor(); };
             Controls.Add(_btnCrawlText);
             _crawlControls.Add(_btnCrawlText);
@@ -2616,7 +2616,7 @@ namespace VeeaMatrix
                 Text = T("Credits","Credits"),
                 Location = new Point(c1, yBot), Size = new Size(80, 32),
                 FlatStyle = FlatStyle.Flat,
-                BackColor = Color.FromArgb(20, 40, 20), ForeColor = Color.FromArgb(0, 200, 80)
+                BackColor = Color.FromArgb(20, 40, 20), ForeColor = Color.White
             };
             btnCredits.FlatAppearance.BorderColor = Color.FromArgb(0, 160, 60);
             btnCredits.Click += delegate {
@@ -2680,7 +2680,7 @@ namespace VeeaMatrix
                         if (img == null || img.Width == 0) return;
                         var pb   = (PictureBox)bps;
                         int dw = pb.Width;
-                        int dh = (int)(pb.Height * 0.72);  // cinema letterbox: ~14% bars top + bottom
+                        int dh = (int)(pb.Height * 0.86);  // cinema letterbox: ~7% bars top + bottom
                         int dx = 0;
                         int dy = (pb.Height - dh) / 2;
                         bpe.Graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
