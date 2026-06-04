@@ -12,18 +12,38 @@ Single `.scr` file — no installer, no dependencies. .NET Framework 4.x ships w
 
 ---
 
-## ⚠️ First Run — Unblock the file
+## ⚠️ Windows blocks the download — here's how to fix it
 
-Because `VeeaMatrix.scr` is not commercially code-signed, **Windows will block it on first download.** Fix it in 3 seconds:
+`VeeaMatrix.scr` is not commercially code-signed, so Windows and browsers may flag it at three different points. All three are easy to bypass:
 
-**Step 1 — Before running:**
-> Right-click `VeeaMatrix.scr` → **Properties** → tick **Unblock** (bottom of dialog) → **OK**
+---
 
-**Step 2 — If SmartScreen still appears:**
-> Click **"More info"** → **"Run anyway"**
-> *(German: "Weitere Informationen" → "Trotzdem ausführen")*
+### 🔴 Step 1 — Browser blocks the download (Edge / Chrome)
 
-This is a one-time step. The file is safe — full source code is in this repo.
+When downloading you may see *"VeeaMatrix.scr wird häufig nicht heruntergeladen"* or a similar warning.
+
+**Edge:** Click the **`…`** menu next to the file → **Beibehalten** → **Trotzdem beibehalten**
+**Chrome:** Click the **arrow ▾** next to the file → **Keep** (or **Trotzdem behalten**)
+
+---
+
+### 🔴 Step 2 — Windows Defender blocks the file on launch
+
+You may see: *"Ein Teil dieser App wurde blockiert"* / *"Windows protected your PC"*
+
+> Click **"Weitere Informationen"** (More info) → **"Trotzdem ausführen"** (Run anyway)
+
+---
+
+### 🔴 Step 3 — Unblock via file Properties (recommended before running)
+
+> Right-click `VeeaMatrix.scr` → **Eigenschaften / Properties** → tick **Zulassen / Unblock** at the bottom → **OK**
+
+Doing Step 3 first prevents Steps 1 & 2 from appearing at all.
+
+---
+
+> 🔍 **Why does this happen?** Windows SmartScreen blocks unsigned `.exe` / `.scr` files downloaded from the internet. The full source code of VeeaMatrix is publicly available in this repository — nothing is hidden.
 
 ---
 
