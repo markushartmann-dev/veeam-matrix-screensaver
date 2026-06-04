@@ -1992,11 +1992,11 @@ namespace VeeaMatrix
 
             // ── Layout constants ─────────────────────────────────────────────
             const int div2  = 506, div3  = 938;       // vertical divider x positions (1px lines)
-            const int c1    = 14,  cW1   = 480;       // left column — RAIN + banner
-            const int c2    = 516, cW2   = 412;       // middle column: 10px from div2 left, 10px from div3 right
+            const int c1    = 14,  cW1   = 420;       // left column — RAIN + banner
+            const int c2    = 456, cW2   = 412;       // middle column: 10px from div2 left, 10px from div3 right
             const int PREV_W = 640, PREV_H = 360;     // 16:9 live preview
-            const int c3    = 948, cW3   = PREV_W+2; // right column: 10px from div3; cW3=642
-            const int fw    = 1616;                   // form width (unchanged)
+            const int c3    = 888, cW3   = PREV_W+2; // right column: 10px from div3; cW3=642
+            const int fw    = 1556;                   // form width
             const int SL    = 46;                     // slider row step
             const int CM    = 32;                     // combo row step
 
@@ -2634,8 +2634,7 @@ namespace VeeaMatrix
                         double srcAR = (double)img.Width / img.Height;
                         int dw = pb.Width;
                         int dh = (int)(dw / srcAR);
-                        if (dh > pb.Height) { dh = pb.Height; dw = (int)(dh * srcAR); }
-                        int dx = (pb.Width  - dw) / 2;
+                        int dx = 0;
                         int dy = (pb.Height - dh) / 2;
                         bpe.Graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
                         bpe.Graphics.DrawImage(img,
@@ -2684,8 +2683,8 @@ namespace VeeaMatrix
             tip(cboOrient,       "Direction the rain falls: TopDown / BottomUp / LeftRight / RightLeft",     "Regenrichtung: Von oben / unten / links / rechts");
             if (btnWordModes != null && btnWordModes.Length == 3)
             {
-                tip(btnWordModes[0], "CRAWL — Star Wars perspective scroll (independent mode)",            "CRAWL — Star-Wars-Perspektiv-Scroll (eigenständiger Modus)");
-                tip(btnWordModes[1], "WORD STREAM Rain — keywords scroll across the screen",               "WORT-STREAM Regen — Keywords scrollen über den Bildschirm");
+                tip(btnWordModes[0], "[ MATRIX WORDS ] — keywords rain and popup effects",                 "[ MATRIX WÖRTER ] — Keywords als Regen und Popup-Effekte");
+                tip(btnWordModes[1], "★ STAR WARS INTRO — perspective crawl like the opening credits",     "★ STAR WARS INTRO — Perspektiv-Scroll wie im Vorspann");
                 tip(btnWordModes[2], "POPUP WORDS — words appear as blips in random positions",            "POPUP-WÖRTER — Wörter erscheinen als Blips an zufälligen Positionen");
             }
             // General / Font section
