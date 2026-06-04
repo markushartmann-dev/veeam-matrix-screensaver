@@ -179,7 +179,7 @@ Runs on **all connected monitors simultaneously**. The primary monitor drives th
 
 | Version | Highlights |
 |---|---|
-| **v1.87** | Random seed per screen — each monitor shows different names and terms |
+| **v1.87–v1.88** | Random seed per screen + Fisher-Yates shuffle — fully randomised term order, different on every screen and every start |
 | **v1.81–v1.86** | **Settings Profiles** (save/load full settings as `.ini`); Credits popup with LinkedIn, Blog & GitHub links; cinema letterbox bars on both banners; mode buttons (DE+EN); UI 5% shorter; Term Catalog dark/light mode; CRAWL font and intro phase respect Bold / Italic settings |
 | **v1.71–v1.80** | **Dual banner** (Matrix ↔ Jedi depending on mode, hard-embedded); left column narrower (420 px, fw=1556 px); `.scr` compressed from 1.9 MB → 766 KB; column alignment fixes; DE/EN labels throughout |
 | **v1.70** | Major UX overhaul — Star Wars CRAWL intro phase; 7-effect unified selector; consolidated No RAIN checkbox; persistence fixes; Light mode as default |

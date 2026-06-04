@@ -1,4 +1,4 @@
-// VeeaMatrix.cs  -  Windows Screensaver v1.87
+// VeeaMatrix.cs  -  Windows Screensaver v1.88
 // Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
@@ -679,6 +679,10 @@ namespace VeeaMatrix
             // No fallback to "VEEAM" — if every Veeam source is off and no custom words
             // are defined, allTerms stays empty and no word drops / popups are spawned.
             allTerms = list.ToArray();
+            // Fisher-Yates shuffle — randomise order so built-in terms and V100 names
+            // are interleaved differently on every start and on every screen
+            for (int i = allTerms.Length - 1; i > 0; i--)
+            { int j = rng.Next(i + 1); string tmp = allTerms[i]; allTerms[i] = allTerms[j]; allTerms[j] = tmp; }
 
             var modes = new List<PopupMode>();
             foreach (string part in s.PopupEffects.Split(','))
@@ -2637,6 +2641,7 @@ namespace VeeaMatrix
             Section(T("CHANGE LOG","ÄNDERUNGSPROTOKOLL"), c3, yR, cW3); yR += 26;
             {
                 string changelog =
+                    "v1.88  Fisher-Yates shuffle on allTerms — built-in terms and V100 names fully interleaved\r\n" +
                     "v1.87  Random seed per screen — each monitor shows different names/terms\r\n" +
                     "v1.86  CRAWL intro phase respects Bold/Italic settings (was hardcoded Italic)\r\n" +
                     "v1.85  CRAWL font respects Bold/Italic settings (was hardcoded Bold+Italic)\r\n" +
