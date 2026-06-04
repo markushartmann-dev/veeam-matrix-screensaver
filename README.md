@@ -21,6 +21,7 @@ A fully-functional Windows screensaver (`.scr`) where the Matrix digital rain sp
 | 👉 **[Install-VeeaMatrix.ps1](../../releases/latest/download/Install-VeeaMatrix.ps1)** + **[VeeaMatrix.scr](../../releases/latest/download/VeeaMatrix.scr)** | **Recommended — installs to System32, no SmartScreen issues** |
 | 👉 **[VeeaMatrix.scr](../../releases/latest/download/VeeaMatrix.scr)** | Direct download — manual install |
 | 👉 **[VeeaMatrix.zip](../../releases/latest/download/VeeaMatrix.zip)** | If browser blocks the `.scr` download |
+| 👉 **[Compile from source](#-nuclear-option--compile-from-source-sandbox--locked-down-pc)** | **Sandbox / everything blocked — paste 3 lines into PowerShell** |
 
 Single `.scr` file — no installer, no dependencies. .NET Framework 4.x ships with every Windows 10/11 system.
 
@@ -29,6 +30,24 @@ Single `.scr` file — no installer, no dependencies. .NET Framework 4.x ships w
 ## ⚠️ Windows / Browser blocks the file — step-by-step fix
 
 `VeeaMatrix.scr` is not commercially code-signed. Windows and browsers will flag it — here is exactly what to do in each situation:
+
+---
+
+### ✅ Nuclear option — compile from source (sandbox / locked-down PC)
+
+Everything blocked? `.scr`, `.ps1`, the ZIP — all flagged? Use this.
+
+Open **PowerShell** (Win+R → `powershell`) and paste these three lines:
+
+```powershell
+$cs = "$env:TEMP\VeeaMatrix.cs"
+Invoke-WebRequest "https://raw.githubusercontent.com/markushartmann-dev/veeam-matrix-screensaver/main/VeeaMatrix.cs" -OutFile $cs
+& "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe" /target:winexe /out:"$env:TEMP\VeeaMatrix.scr" /r:System.Windows.Forms.dll,System.Drawing.dll,System.dll,Microsoft.VisualBasic.dll /optimize+ /nologo $cs
+```
+
+**Why this works:** `VeeaMatrix.cs` is plain text — browsers never block source code. The `.scr` is built *on your machine* → no "downloaded from internet" flag → SmartScreen never sees it.
+
+Afterwards: open `%TEMP%` in Explorer, find `VeeaMatrix.scr`, right-click → **Test** / **Install**.
 
 ---
 
