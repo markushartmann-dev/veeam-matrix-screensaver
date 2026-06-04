@@ -2081,7 +2081,7 @@ namespace VeeaMatrix
 
             // Word Mode — 2 exclusive buttons: WORD STREAM / POPUP and CRAWL
             DLbl(T("Word Mode:","Wortmodus:"), c1, yL+5, 76);
-            string[] _wmLabels = new string[]{ T("[ MATRIX RAIN ]","[ MATRIX REGEN ]"), T("* STAR WARS INTRO","* STAR WARS INTRO") };
+            string[] _wmLabels = new string[]{ T("* MATRIX RAIN *","* MATRIX REGEN *"), T("* STAR WARS INTRO *","* STAR WARS INTRO *") };
             string[] _wmKeys   = new string[]{ "Rain",                "Crawl" };
             int[]    _wmWidths = new int[]   { 164,                                           164                                         };  // 80+4+164+4+164 = 416 <= cW1(420)
             btnWordModes = new Button[_wmLabels.Length];
@@ -2603,6 +2603,25 @@ namespace VeeaMatrix
                 RebuildUI();
             };
 
+            // Tribute label — bottom-left
+            var lnkTribute = new LinkLabel {
+                Text      = T("a tribute to the veeam community\nby Markus Hartmann\nvisit markushartmann.blog",
+                               "Ein Dank an die Veeam Community\nvon Markus Hartmann\nmarkushartmann.blog besuchen"),
+                Location  = new Point(c1, yBot + 2),
+                Size      = new Size(360, 48),
+                ForeColor = Color.FromArgb(100, 160, 100),
+                Font      = new Font("Segoe UI", 7.5f),
+                LinkColor = Color.FromArgb(0, 200, 80),
+                ActiveLinkColor = Color.FromArgb(0, 255, 100),
+                BackColor = Color.Transparent,
+                AutoSize  = false
+            };
+            int blogStart = lnkTribute.Text.LastIndexOf("markushartmann.blog");
+            lnkTribute.Links.Add(new LinkLabel.Link(blogStart, "markushartmann.blog".Length, "https://markushartmann.blog"));
+            lnkTribute.LinkClicked += delegate(object ls, LinkLabelLinkClickedEventArgs le) {
+                try { System.Diagnostics.Process.Start((string)le.Link.LinkData); } catch {}
+            };
+            Controls.Add(lnkTribute);
             Controls.Add(btnReset); Controls.Add(btnOK); Controls.Add(btnCancel);
             AcceptButton=btnOK; CancelButton=btnCancel;
 
@@ -2634,7 +2653,8 @@ namespace VeeaMatrix
                         double srcAR = (double)img.Width / img.Height;
                         int dw = pb.Width;
                         int dh = (int)(dw / srcAR);
-                        int dx = 0;
+                        if (dh > pb.Height) { dh = pb.Height; dw = (int)(dh * srcAR); }
+                        int dx = (pb.Width - dw) / 2;
                         int dy = (pb.Height - dh) / 2;
                         bpe.Graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
                         bpe.Graphics.DrawImage(img,
