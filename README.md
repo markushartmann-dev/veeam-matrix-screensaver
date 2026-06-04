@@ -6,9 +6,13 @@ A fully-functional Windows screensaver (`.scr`) where the Matrix digital rain sp
 
 ## Download
 
-👉 **[Latest Release → VeeaMatrix.scr](../../releases/latest/download/VeeaMatrix.scr)**
+👉 **[VeeaMatrix.scr](../../releases/latest/download/VeeaMatrix.scr)** — direct download
+
+👉 **[VeeaMatrix.zip](../../releases/latest/download/VeeaMatrix.zip)** — if the `.scr` download gets blocked by your browser
 
 Single `.scr` file — no installer, no dependencies. .NET Framework 4.x ships with every Windows 10/11 system.
+
+> **ZIP download:** Extract with **7-Zip** or **WinRAR** for best results — Windows built-in extraction may still trigger SmartScreen. After extracting, right-click the `.scr` → **Properties** → tick **Unblock** → **OK**.
 
 ---
 
