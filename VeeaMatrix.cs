@@ -1,4 +1,4 @@
-// VeeaMatrix.cs  -  Windows Screensaver v1.86
+// VeeaMatrix.cs  -  Windows Screensaver v1.87
 // Build: Build-VeeaMatrix.ps1  (outputs VeeaMatrix.scr)
 using System;
 using System.Collections.Generic;
@@ -618,7 +618,7 @@ namespace VeeaMatrix
 
         private readonly Settings      s;
         private readonly int           W, H;
-        private readonly Random        rng     = new Random();
+        private readonly Random        rng     = new Random(Guid.NewGuid().GetHashCode());
         private readonly string[]      allTerms;
         private readonly PopupMode[]   enabledModes;
 
@@ -2637,6 +2637,7 @@ namespace VeeaMatrix
             Section(T("CHANGE LOG","ÄNDERUNGSPROTOKOLL"), c3, yR, cW3); yR += 26;
             {
                 string changelog =
+                    "v1.87  Random seed per screen — each monitor shows different names/terms\r\n" +
                     "v1.86  CRAWL intro phase respects Bold/Italic settings (was hardcoded Italic)\r\n" +
                     "v1.85  CRAWL font respects Bold/Italic settings (was hardcoded Bold+Italic)\r\n" +
                     "v1.84  Credits: DE Hommage text; Blog/GitHub prefixes; blank line; links only on URLs\r\n" +
